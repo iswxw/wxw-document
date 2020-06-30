@@ -2,26 +2,56 @@
 
 ---
 
-### 一、Docker 入门
+### 一、Docker 简介
 
 - 官网文档：https://docs.docker.com/v18.09/get-started/
 - 学习教程：https://www.runoob.com/docker/windows-docker-install.html
 - docker论坛：https://www.docker.org.cn/book/
 - docker 镜像加速地址：https://www.runoob.com/docker/docker-mirror-acceleration.html
 
-#### （1）环境准备
+#### （1）技术定位
 
-> docker 是基于 unix 开发的系列工具，所以在 windows 上安装 docker 非常容易出现环境不兼容的问题。
+- JavaEE   Java     springMVC/springboot/mybatis...
+- Docker     go        Swarm/Compose/Machine/mesos/k8s/ --- CI/CD  jenkins 整合
 
-- 如果 windows 版本是 pro，一般是可以直接安装 docker for desktop 的。
+#### （2）Docker是什么
 
--  如果是 windows home 版本。有 2 种方式解决，第一种方式是通过 docker toolbox, 第二种方式通过 wsl2。本文介绍第一种方式。
+> **1. 为什么会出现Docker** 
+
+​        一款产品从开发到上线，从操作系统，到运行环境，再到应用配置。作为开发+运维之间的协作我们需要关心很多东西，这也是很多互联网公司都不得不面对的问题，特别是各种版本的迭代之后，不同版本环境的兼容，对运维人员都是考验Docker之所以发展如此迅速，也是因为它对此给出了一个标准化的解决方案。环境配置如此麻烦，换一台机器，就要重来一次，费力费时。很多人想到，能不能从根本上解决问题，
+
+- 软件可以带环境安装？
+
+  也就是说，安装的时候，把原始环境一模一样地复制过来。开发人员利用 Docker 可以消除协作编码时“在我的机器上可正常工作”的问题。
+
+![](./img/1.png)
+
+ 之前在服务器配置一个应用的运行环境，要安装各种软件，就拿尚硅谷电商项目的环境来说吧，Java/Tomcat/MySQL/JDBC驱动包等。安装和配置这些东西有多麻烦就不说了，它还不能跨平台。假如我们是在 Windows 上安装的这些环境，到了 Linux 又得重新装。况且就算不跨操作系统，换另一台同样操作系统的服务器，要移植应用也是非常麻烦的。
+
+- 传统上认为，软件编码开发/测试结束后，所产出的成果即是程序或是能够编译执行的二进制字节码等(java为例)。而为了让这些程序可以顺利执行，开发团队也得准备完整的部署文件，让维运团队得以部署应用程式，开发需要清楚的告诉运维部署团队，用的全部配置文件+所有软件环境。不过，即便如此，仍然常常发生部署失败的状况。
+- Docker镜像的设计，使得Docker得以打破过去「程序即应用」的观念。透过镜像(images)将作业系统核心除外，运作应用程式所需要的系统环境，由下而上打包，达到应用程式跨平台间的无缝接轨运作。
+
+> **2. docker理念**
+
+- Docker是基于Go语言实现的云开源项目。
+
+- Docker的主要目标是“Build，Ship and Run Any App,Anywhere”，也就是通过对应用组件的封装、分发、部署、运行等生命周期的管理，使用户的APP（可以是一个WEB应用或数据库应用等等）及其运行环境能够做到“一次封装，到处运行”。
+
+  ![](./img/2.png)
+
+Linux 容器技术的出现就解决了这样一个问题，而 Docker 就是在它的基础上发展过来的。将应用运行在 Docker 容器上面，而 Docker 容器在任何操作系统上都是一致的，这就实现了跨平台、跨服务器。只需要一次配置好环境，换到别的机子上就可以一键部署好，大大简化了操作
+
+> **解决了运行环境和配置问题软件容器，方便做持续集成并有助于整体发布的容器虚拟化技术。**
+
+#### （3）Docker能干嘛
 
 
-**过程记录**：
 
-1. 下载 docker toolbox。
 
-   阿里云提供了镜像，下载会比较快，直接访问 http://mirrors.aliyun.com/docker-toolbox/windows/docker-toolbox/ 下载。
 
-2. 检查是否开启了 windows 的虚拟化技术。
+
+
+
+
+
+
