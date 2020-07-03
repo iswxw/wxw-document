@@ -128,7 +128,7 @@ Linux 容器技术的出现就解决了这样一个问题，而 Docker 就是在
   - 容器
   - 仓库
 
-### 二、Docker  安装
+### 二、Docker  入门
 
 #### （1）前提说明
 
@@ -216,32 +216,61 @@ Docker 利用容器（Container）独立运行的一个或一组应用。容器�
   1. 启动Docker后台服务：service docker start
   2. docker version验证
 
-  ![](./img/19.png)
+​            ![](./img/19.png)
+
+> **centos7版本安装**  
+
+1. 安装地址：https://docs.docker.com/engine/install/centos/
+2. 具体安装参考我的博客链接：https://blog.csdn.net/qq_41893274/article/details/107094598
 
 #### （3）永远的 Hello World
 
-- **阿里云镜像加速:** 
-
-  - 地址：https://dev.aliyun.com/search.html
-
-  - 注册一个属于自己的阿里云账户(可复用淘宝账号)
-
-  - 获得加速器地址连接：
-
-    1. 登陆阿里云开发者平台
-
-       ![](./img/20.png)
-
-    2. 获取加速器地址
-
-       ![](./img/21.png)
+- **阿里云镜像加速**  等价于 **Docker Hub **
+- 启动Docker后台容器(测试运行 hello-world)
 
 
+```dockerfile
+docker run hello-world
+```
 
+- 运行原理
 
+![](./img/22.png)
 
+##### 1. Docker 原理
 
+- Docker 是怎么工作的
 
+​      Docker是一个Client-Server结构的系统，Docker守护进程运行在主机上， 然后通过Socket连接从客户端访问，守护进程从客户端接受命令并管理运行在主机上的容器。 **容器，是一个运行时环境，就是我们前面说到的集装箱**。
+
+![](./img/23.png)
+
+##### 2. 为什么Docker比较比VM快
+
+1. docker有着比虚拟机更少的抽象层。由亍docker不需要Hypervisor实现硬件资源虚拟化,运行在docker容器上的程序直接使用的都是实际物理机的硬件资源。因此在CPU、内存利用率上docker将会在效率上有明显优势。
+2. docker利用的是宿主机的内核,而不需要Guest OS。因此,当新建一个容器时,docker不需要和虚拟机一样重新加载一个操作系统内核。仍而避免引寻、加载操作系统内核返个比较费时费资源的过程,当新建一个虚拟机时,虚拟机软件需要加载Guest OS,返个新建过程是分钟级别的。而docker由于直接利用宿主机的操作系统,则省略了返个过程,因此新建一个docker容器只需要几秒钟。
+
+![](./img/24.png)
+
+![](./img/25.png)
+
+#### （4）Docker 常用命令
+
+![](./img/26.png)
+
+#### （5）Docker 镜像
+
+##### 1. 什么是镜像
+
+> 镜像是一种轻量级、可执行的独立软件包，用来打包软件运行环境和基于运行环境开发的软件，它包含运行某个软件所需的所有内容，包括代码、运行时、库、环境变量和配置文件。
+
+**UnionFS（联合文件系统） **  
+
+ UnionFS（联合文件系统）：Union文件系统（UnionFS）是一种分层、轻量级并且高性能的文件系统，它支持对文件系统的修改作为一次提交来一层层的叠加，同时可以将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)。Union 文件系统是 Docker 镜像的基础。镜像可以通过分层来进行继承，基于基础镜像（没有父镜像），可以制作各种具体的应用镜像。
+
+- 特性：一次同时加载多个文件系统，但从外面看起来，只能看到一个文件系统，联合加载会把各层文件系统叠加起来，这样最终的文件系统会包含所有底层的文件和目录
+
+ **Docker镜像加载原理**
 
 
 
