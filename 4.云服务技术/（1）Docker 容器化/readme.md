@@ -1,4 +1,4 @@
-### Docker 技术
+Docker 技术
 
 ---
 
@@ -434,27 +434,73 @@ docker run hello-world
 
 **DockerFIle 添加数据卷** 
 
+1. 根目录下新建mydocker文件夹并进入
+
+2. 可在Dockerfile中使用VOLUME指令来给镜像添加一个或多个数据卷
+
+   ```dockerfile
+   VOLUME["/dataVolumeContainer","/dataVolumeContainer2","/dataVolumeContainer3"]
+    
+   说明：
+   出于可移植和分享的考虑，用-v 主机目录:容器目录这种方法不能够直接在Dockerfile中实现。
+   由于宿主机目录是依赖于特定宿主机的，并不能够保证在所有的宿主机上都存在这样的特定目录。
+   ```
+
+3. File 构建
+
+   ![](./img/36.png)
+
+```dockerfile
+# volume test
+FROM centos
+VOLUME ["/dataVolumeContainer1","/dataVolumeContainer2"]
+CMD echo "finished,--------success1"
+CMD /bin/bash
+```
+
+4. build后生成镜像
+
+   ![](./img/37.png)
 
 
 
+> 获得一个新镜像zzyy/centos
 
+5. run容器
 
+![](./img/38.png)
 
+6. 通过上述步骤，容器内的卷目录地址已经知道,对应的主机目录地址哪？？
 
+   ![](./img/39.png)
 
+   ![](./img/40.png)
 
+7. 主机对应默认地址
 
+   ![](./img/41.png)
 
+> **Docker挂载主机目录Docker访问出现cannot open directory .: Permission denied**
+> **解决办法：在挂载目录后多加一个--privileged=true参数即可**
 
+#### （7）数据卷容器
 
+> **是什么？**
 
+**命名的容器挂载数据卷，其它容器通过挂载这个(父容器)实现数据共享，挂载数据卷的容器，称之为数据卷容器**
 
+##### 1. 总体介绍
 
+- 以上一步新建的镜像zzyy/centos为模板并运行容器dc01/dc02/dc03
+- 它们已经具有容器卷
+  - /dataVolumeContainer1
+  - /dataVolumeContainer2
 
+##### 2. 容器间传递共享
 
-
-
-
+```dockerfile
+--volumes-from
+```
 
 
 
