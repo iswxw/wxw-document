@@ -18,9 +18,9 @@
 
 ## 目录
 
-- [Java基础](#Java)
-- [Java集合](doc/Java/Java集合/【Java基础】集合.md)
-  - [JVM虚拟机](doc/Java/Java基础/【Java基础】JVM虚拟机.md)
+- [Java基础](#8.Java基础知识)
+  - [JVM虚拟机](#（1）JVM虚拟机)   
+  - [JUC并发编程](#（2）JUC并发编程)    
 - [Spring系列](#Spring)
   - [Spring Boot](doc/SpringBoot/SpringBoot.md)
 - [中间件](#java)
@@ -32,5 +32,4 @@
   - [I/O](#io)
   - [Java 8](#java-8)
   - [编程规范](#编程规范)
-  
 - [数据结构与算法](#数据结构与算法)
