@@ -35,8 +35,7 @@
   - [编程规范](#编程规范)
 - [数据结构与算法](#数据结构与算法)
 - [互联网工具](#互联网工具)  
-  - [Linux](6.互联网工具\（1）Linux\readme.md)
-  - [Shell](6.互联网工具\（2）Shell\readme.md) 
-  - [Golang](6.互联网工具\（3）Golang\readme.md)   
-
+  - [Linux](6.互联网工具/（1）Linux/readme.md)
+  - [Shell](6.互联网工具/（2）Shell/readme.md) 
+  - [Golang](6.互联网工具/（3）Golang/readme.md)   
 
