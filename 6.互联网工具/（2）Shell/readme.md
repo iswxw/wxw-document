@@ -485,15 +485,15 @@ Tab只能补全==命令和文件== （RHEL6/Centos6）
 ##### 2、常见的快捷键
 
 ```powershell
-^c   			终止前台运行的程序
-^z	  			将前台运行的程序挂起到后台
-^d   			退出 等价exit
-^l   			清屏 
-^a |home  	     光标移到命令行的最前端
-^e |end  	     光标移到命令行的后端
-^u   			删除光标前所有字符
-^k   			删除光标后所有字符
-^r	 			搜索历史命令
+ctrl+^c   			终止前台运行的程序
+ctrl^z	  			将前台运行的程序挂起到后台
+ctrl^d   			退出 等价exit
+ctrl^l   			清屏 
+ctrl^a |home  	     光标移到命令行的最前端
+ctrl^e |end  	     光标移到命令行的后端
+ctrl^u   			删除光标前所有字符
+ctrl^k   			删除光标后所有字符
+ctrl^r	 			搜索历史命令
 ```
 
 ##### 3 、常用的通配符（重点）
@@ -563,7 +563,7 @@ date +%F
 
 这种方式运行的脚本，不需要在第一行指定解释器信息，写了也没用。
 
-### 二、Shell  背景
+### 二、Shell  入门
 
 **前言：**
 
@@ -1493,6 +1493,699 @@ fi
 
 ##### 3. 层层嵌套结构
 
+- 多次判断，带你走出人生迷雾
+
+  ```powershell
+  if [ condition1 ];then
+  		command1		
+  		if [ condition2 ];then
+  			command2
+  		fi
+   else
+  		if [ condition3 ];then
+  			command3
+  		elif [ condition4 ];then
+  			command4
+  		else
+  			command5
+  		fi
+  fi
+  注释：
+  如果条件1满足，执行命令1；如果条件2也满足执行命令2，如果不满足就只执行命令1结束；
+  如果条件1不满足，不看条件2；直接看条件3，如果条件3满足执行命令3；如果不满足则看条件4，如果条件4满足执行命令4；否则执行命令5
+  ```
+
+  ![](./img/流程判断4.png)
+
+##### 4. 应用案例
+
+- 判断当前主机和远程主机是否ping 通
+
+  ① 思路
+
+1. 使用哪个命令实现  `ping -c次数`
+2. 根据命令的==执行结果状态==来判断是否通`$?`
+3. 根据逻辑和语法结构来编写脚本(条件判断或者流程控制)
+
+   ② 落地实现
+
+```powershell
+#!/bin/env bash
+# 该脚本用于判断当前主机是否和远程指定主机互通
+
+# 交互式定义变量，让用户自己决定ping哪个主机
+read -p "请输入你要ping的主机的IP:" ip
+
+# 使用ping程序判断主机是否互通
+ping -c1 $ip &>/dev/null
+
+if [ $? -eq 0 ];then
+	echo "当前主机和远程主机$ip是互通的"
+ else
+ 	echo "当前主机和远程主机$ip不通的"
+fi
+
+逻辑运算符
+test $? -eq 0 &&  echo "当前主机和远程主机$ip是互通的" || echo "当前主机和远程主机$ip不通的"
+
+```
+
+- 判断一个进程是否存在
+
+**需求：**判断web服务器中httpd进程是否存在
+
+① 思路
+
+1. 查看进程的相关命令 ps 和 pgrep
+2. 根据命令的返回状态值来判断进程是否存在
+3. 根据逻辑用脚本语言实现
+
+② 落地实现
+
+```powershell
+#!/bin/env bash
+# 判断一个程序(httpd)的进程是否存在
+# >/dev/null 代表重定向到空设备，丢弃结果
+pgrep httpd &>/dev/null
+if [ $? -ne 0 ];then
+	echo "当前httpd进程不存在"
+else
+	echo "当前httpd进程存在"
+fi
+
+或者
+test $? -eq 0 && echo "当前httpd进程存在" || echo "当前httpd进程不存在"
+```
+
+③ 补充命令
+
+```powershell
+pgrep命令：以名称为依据从运行进程队列中查找进程，并显示查找到的进程id
+选项
+-o：仅显示找到的最小（起始）进程号;
+-n：仅显示找到的最大（结束）进程号；
+-l：显示进程名称；
+-P：指定父进程号；pgrep -p 4764  查看父进程下的子进程id
+-g：指定进程组；
+-t：指定开启进程的终端；
+-u：指定进程的有效用户ID。
+```
+
+- 判断网站是否 正常
+
+**需求：**判断门户网站是否能够正常访问
+
+ ① 思路
+
+1. 可以判断进程是否存在，用/etc/init.d/httpd status判断状态等方法
+2. 最好的方法是==直接去访问==一下，通过访问成功和失败的返回值来判断
+   - Linux环境，==wget==  curl  elinks -dump
+
+② 落地实现
+
+```powershell
+#!/bin/env bash
+# 判断门户网站是否能够正常提供服务
+
+#定义变量
+web_server=blog.wxw.plus
+#访问网站
+wget -P /shell/ $web_server &>/dev/null
+[ $? -eq 0 ] && echo "当前网站服务是ok" && rm -f /shell/index.* || echo "当前网站服务不ok，请立刻处理"
+
+```
+
+#### （5）循环语句
+
+##### 1. 列表循环
+
+> 列表for循环：用于将一组命令执行**已知的次数**
+
+- 基本语法
+
+  ```powershell
+  for variable in {list}
+       do
+            command 
+            command
+            …
+       done
+  或者
+  for variable in a b c
+       do
+           command
+           command
+       done
+  ```
+
+- 举例说明
+
+  ```powershell
+  # for var in {1..10};do echo $var;done
+  # for var in 1 2 3 4 5;do echo $var;done
+  # for var in `seq 10`;do echo $var;done
+  # for var in $(seq 10);do echo $var;done
+  # for var in {0..10..2};do echo $var;done
+  # for var in {2..10..2};do echo $var;done
+  # for var in {10..1};do echo $var;done
+  # for var in {10..1..-2};do echo $var;done
+  # for var in `seq 10 -2 1`;do echo $var;done
+  ```
+
+##### 2. 不带列表循环
+
+> 不带列表的for循环执行时由**用户指定参数和参数的个数**
+
+- 基本语法格式
+
+  ```powershell
+   for variable
+      do
+          command 
+          command
+          …
+     done
+  ```
+
+- 举例说明
+
+  ```powershell
+  #!/bin/bash
+  for var
+  do
+  echo $var
+  done
+  
+  echo "脚本后面有$#个参数"
+  ```
+
+**应用案例**
+
+1. ### 脚本计算1-100奇数和
+
+   ① 思路
+
+   1. 定义一个变量来保存奇数的和 sum=0
+   2. 找出1-100的奇数，保存到另一个变量里 i=遍历出来的奇数
+   3. 从1-100中找出奇数后，再相加，然后将和赋值给变量 循环变量 for
+   4. 遍历完毕后，将sum的值打印出来
+
+   ② 落地实现（条条大路通罗马）
+
+   ```powershell
+   #!/bin/env bash
+   # 计算1-100的奇数和
+   # 定义变量来保存奇数和
+   sum=0
+   
+   #for循环遍历1-100的奇数，并且相加，把结果重新赋值给sum
+   
+   for i in {1..100..2}
+   do
+   	let sum=$sum+$i
+   done
+   #打印所有奇数的和
+   echo "1-100的奇数和是:$sum"
+   
+   
+   方法1：
+   #!/bin/bash
+   sum=0
+   for i in {1..100..2}
+   do
+   	sum=$[$i+$sum]
+   done
+   echo "1-100的奇数和为:$sum"
+   
+   方法2：
+   #!/bin/bash
+   sum=0
+   for ((i=1;i<=100;i+=2))
+   do
+   	let sum=$i+$sum
+   done
+   echo "1-100的奇数和为:$sum"
+   
+   方法3：
+   #!/bin/bash
+   sum=0
+   for ((i=1;i<=100;i++))
+   do
+   	if [ $[$i%2] -ne 0 ];then
+   	let sum=$sum+$i
+   	fi
+   或者
+   test $[$i%2] -ne 0 && let sum=$sum+$i
+   
+   done
+   echo "1-100的奇数和为:$sum"
+   
+   方法4：
+   sum=0
+   for ((i=1;i<=100;i++))
+   do
+   	if [ $[$i%2] -eq 0 ];then
+   	continue
+   	else
+   	let sum=$sum+$i
+   	fi
+   done
+   echo "1-100的奇数和为:$sum"
+   
+   #!/bin/bash
+   sum=0
+   for ((i=1;i<=100;i++))
+   do
+   	test $[$i%2] -eq 0 && continue || let sum=sum+$i
+   done
+   echo "1-100的奇数和是:$sum"
+   
+   ```
+
+##### 3. for 循环控制语句
+
+> **循环体：** do....done之间的内容
+
+- continue：继续；表示循环体内下面的代码不执行，重新开始下一次循环
+- break：打断；马上停止执行本次循环，执行循环体后面的代码
+- exit：表示直接跳出程序
+
+```powershell
+[root@server ~]# cat for5.sh 
+#!/bin/bash
+for i in {1..5}
+do
+	test $i -eq 2 && break || touch /tmp/file$i
+done
+echo hello hahahah
+```
+
+1. **判断所输入的整数是否为质数**
+   - **质数（素数）** ： 判断只能被1和它本身整除的数叫质数。
+
+  ① 思路
+
+1. 让用户输入一个数，保存到一个变量里 `read -p "请输入一个正整数:" num`
+2. 如果能被其他数整除就不是质数——>`$num%$i`是否等于0 `$i=2到$num-1`
+3. 如果输入的数是1或者2取模根据上面判断又不符合，所以先排除1和2
+4. 测试序列从2开始，输入的数是4——>得出结果`$num`不能和`$i`相等，并且`$num`不能小于`$i`
+
+② 落地实现
+
+```powershell
+#!/bin/env bash
+#定义变量来保存用户所输入数字
+read -p "请输入一个正整数字:" number
+
+#先排除用户输入的数字1和2
+[ $number -eq 1 ] && echo "$number不是质数" && exit
+[ $number -eq 2 ] && echo "$number是质数" && exit
+
+#循环判断用户所输入的数字是否质数
+
+for i in `seq 2 $[$number-1]`
+	do
+	 [ $[$number%$i] -eq 0 ] && echo "$number不是质数" && exit
+	done
+echo "$number是质数"
+
+优化思路：没有必要全部产生2~$[$number-1]序列，只需要产生一半即可。
+
+更好解决办法：类C风格完美避开了生成序列的坑
+for (( i=2;i<=$[$number-1];i++))
+do
+        [ $[$number%$i] -eq 0 ] && echo "$number不是质数" && exit
+
+done
+echo "$number是质数"
+```
+
+2. ### 批量创建用户
+
+**需求：**批量加5个新用户，以u1到u5命名，并统一加一个新组，组名为class,统一改密码为123
+
+① 思路
+
+1. 添加用户的命令 `useradd -G class`
+2. 判断class组是否存在 `grep -w ^class /etc/group` 或者`groupadd class`
+3. 根据题意，判断该脚本循环5次来添加用户 `for`
+4. 给用户设置密码，应该放到循环体里面
+
+② 落地实现
+
+```powershell
+#!/bin/env bash
+#判断class组是否存在
+grep -w ^class /etc/group &>/dev/null
+test $? -ne 0 && groupadd class
+
+#循环创建用户
+for ((i=1;i<=5;i++))
+do
+	useradd -G class u$i
+	echo 123|passwd --stdin u$i
+done
+#用户创建信息保存日志文件
+
+方法一：
+#!/bin/bash
+#判断class组是否存在
+grep -w class /etc/group &>/dev/null
+[ $? -ne 0 ] && groupadd class
+#批量创建5个用户
+for i in {1..5}
+do
+	useradd -G class u$i
+	echo 123|passwd --stdin u$i
+done
+
+方法二：
+#!/bin/bash
+#判断class组是否存在
+cut -d: -f1 /etc/group|grep -w class &>/dev/null
+[ $? -ne 0 ] && groupadd class
+
+#循环增加用户，循环次数5次，for循环,给用户设定密码
+for ((i=1;i<=5;i++))
+do
+	useradd u$i -G class
+	echo 123|passwd --stdin u$i
+done
+
+
+方法三：
+#!/bin/bash
+grep -w class /etc/group &>/dev/null
+test $? -ne 0 && groupadd class
+或者
+groupadd class &>/dev/null
+
+for ((i=1;i<=5;i++))
+do
+useradd -G class u$i && echo 123|passwd --stdin u$i
+done
+
+```
+
+3. ### 判断闰年
+
+**需求3：**
+
+输入一个年份，判断是否是润年（能被4整除但不能被100整除，或能被400整除的年份即为闰年）
+
+```
+#!/bin/bash
+read -p "Please input year:(2017)" year
+if [ $[$year%4] -eq 0 -a $[$year%100] -ne 0 ];then
+	echo "$year is leap year"
+elif [ $[$year%400] -eq 0 ];then
+	echo "$year is leap year"
+else
+	echo "$year is not leap year"
+fi
+```
+
+\##4. 总结
+
+- FOR循环语法结构
+
+- FOR循环可以结合
+
+  条件判断和流程控制语句
+
+  - do ......done 循环体
+  - 循环体里可以是命令集合，再加上条件判断以及流程控制
+
+- 控制循环语句
+
+  - continue 继续，跳过本次循环，继续下一次循环
+  - break 打断，跳出循环，执行循环体外的代码
+  - exit 退出，直接退出程序
+
+##### 4. While 循环语句
+
+**特点：**条件为真就进入循环；条件为假就退出循环
+
+1. while循环语法结构
+
+```powershell
+while 表达式
+	do
+		command...
+	done
+	
+while  [ 1 -eq 1 ] 或者 (( 1 > 2 ))
+  do
+     command
+     command
+     ...
+ done
+```
+
+test1 **循环打印1-5数字**
+
+```powershell
+FOR循环打印：
+for ((i=1;i<=5;i++))
+do
+	echo $i
+done
+
+while循环打印：
+i=1
+while [ $i -le 5 ]
+do
+	echo $i
+	let i++
+done
+```
+
+test2 **脚本计算1-50偶数和**
+
+```powershell
+#!/bin/env bash
+sum=0
+for ((i=0;i<=50;i+=2))
+do
+	let sum=$sum+$i  (let sum=sum+i)
+done
+echo "1-50的偶数和为:$sum"
+
+
+#!/bin/bash
+#定义变量
+sum=0
+i=2
+#循环打印1-50的偶数和并且计算后重新赋值给sum
+while [ $i -le 50 ]
+do
+	let sum=$sum+$i
+	let i+=2  或者 $[$i+2]
+done
+#打印sum的值
+echo "1-50的偶数和为:$sum"
+```
+
+test3 **脚本同步系统时间**
+
+① 具体需求
+
+1. 写一个脚本，30秒同步一次系统时间，时间同步服务器10.1.1.1
+2. 如果同步失败，则进行邮件报警,每次失败都报警
+3. 如果同步成功,也进行邮件通知,但是成功100次才通知一次
+
+② 思路
+
+1. 每隔30s同步一次时间，该脚本是一个死循环 while 循环
+2. 同步失败发送邮件 1) ntpdate 10.1.1.1 2) rdate -s 10.1.1.1
+3. 同步成功100次发送邮件 定义变量保存成功次数
+
+③ 落地实现
+
+```powershell
+#!/bin/env bash
+# 该脚本用于时间同步
+NTP=10.1.1.1
+count=0
+while true
+do
+	ntpdate $NTP &>/dev/null
+	if [ $? -ne 0 ];then
+		echo "system date failed" |mail -s "check system date"  root@localhost
+	else
+		let count++
+		if [ $count -eq 100 ];then
+		echo "systemc date success" |mail -s "check system date"  root@localhost && count=0
+		fi
+	fi
+sleep 30
+done
+
+
+#!/bin/bash
+#定义变量
+count=0
+ntp_server=10.1.1.1
+while true
+do
+	rdate -s $ntp-server &>/dev/null
+	if [ $? -ne 0 ];then
+		echo "system date failed" |mail -s 'check system date'  root@localhost	
+	else
+		let count++
+		if [ $[$count%100] -eq 0 ];then
+		echo "system date successfull" |mail -s 'check system date'  root@localhost && count=0
+		fi
+	fi
+sleep 3
+done
+
+以上脚本还有更多的写法，课后自己完成
+```
+
+##### 5. until循环
+
+**特点**：条件为假就进入循环；条件为真就退出循环
+
+1. until语法结构
+
+```powershell
+until expression   [ 1 -eq 1 ]  (( 1 >= 1 ))
+	do
+		command
+		command
+		...
+	done
+```
+
+**打印1-5数字**
+
+```powershell
+i=1
+while [ $i -le 5 ]
+do
+	echo $i
+	let i++
+done
+
+i=1
+until [ $i -gt 5 ]
+do
+	echo $i
+	let i++
+done
+```
+
+### 五、文本处理工具
+
+**awk、sed、grep更适合的方向：**
+
+-  grep 更适合单纯的查找或匹配文本
+-  sed 更适合编辑匹配到的文本
+-  awk 更适合格式化文本，对文本进行较复杂格式处理
+
+#### 1. awk 概述
+
+- awk是一种编程语言，主要用于在linux/unix下对文本和数据进行处理，是linux/unix下的一个工具。数据可以来自标准输入、一个或多个文件，或其它命令的输出
+- awk的处理文本和数据的方式：**逐行扫描文件**，默认从第一行到最后一行，寻找匹配的特定模式的行，并在这些行上进行你想要的操作
+
+- 工作流程
+
+  - 读输入文件之前执行的代码段（由BEGIN关键字标识）。
+  - 主循环执行输入文件的代码段。
+  - 读输入文件之后的代码段（由END关键字标识
+
+- 命令结构
+
+  ```powershell
+  awk 'BEGIN{ commands } pattern{ commands } END{ commands }'
+  ```
+
+  下面的流程图描述出了 AWK 的工作流程：
+
+![](./img/awk.png)
+
+- 通过关键字 BEGIN 执行 BEGIN 块的内容，即 BEGIN 后花括号 **{}** 的内容。
+- 完成 BEGIN 块的执行，开始执行body块。
+- 读入有 **\n** 换行符分割的记录。
+- 将记录按指定的域分隔符划分域，填充域，**$0** 则表示所有域(即一行内容)，**$1** 表示第一个域，**$n** 表示第 n 个域。
+- 依次执行各 BODY 块，pattern 部分匹配该行内容成功后，才会执行 awk-commands 的内容。
+- 循环读取并执行各行直到文件结束，完成body块执行。
+- 开始 END 块执行，END 块可以输出最终结果。
+
+#### 2. awk语法
+
+```powershell
+awk 选项 '命令部分' 文件名
+
+特别说明：引用shell变量需用双引号引起
+```
+
+##### **（1）开始块（BEGIN）**
+
+开始块的语法格式如下：
+
+```
+BEGIN {awk-commands}
+```
+
+开始块就是在程序启动的时候执行的代码部分，并且它在整个过程中只执行一次。
+
+一般情况下，我们可以在开始块中初始化一些变量。
+
+BEGIN 是 AWK 的关键字，因此它必须是大写的。
+
+**注意：**开始块部分是可选的，你的程序可以没有开始块部分。
+
+##### （2）主体块（BODY）
+
+主体部分的语法格式如下：
+
+```
+/pattern/ {awk-commands}
+```
+
+对于每一个输入的行都会执行一次主体部分的命令。
+
+默认情况下，对于输入的每一行，AWK 都会执行命令。但是，我们可以将其限定在指定的模式中。
+
+**注意**：在主体块部分没有关键字存在。
+
+##### （3）结束块（END）
+
+结束块的语法格式如下：
+
+```
+END {awk-commands}
+```
+
+结束块是在程序结束时执行的代码。 END 也是 AWK 的关键字，它也必须大写。 与开始块相似，结束块也是可选的。
+
+**实例：** 
+
+```powershell
+awk 'BEGIN{printf "序号\t名字\t课程\t分数\n"} {print}' marks.txt
+```
+
+
+
+![](./img/awk1.png)
+
+
+
+
+
+
+
+
+
+
+
+**相关文章** 
+
+1. [AWK 工作原理](https://www.runoob.com/w3cnote/awk-work-principle.html)
+2. [AWK内置函数](https://www.runoob.com/w3cnote/awk-built-in-functions.html)  
+3. [AWK自定义函数](https://www.runoob.com/w3cnote/awk-user-defined-functions.html)   
 
 
 
@@ -1508,6 +2201,61 @@ fi
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
 
