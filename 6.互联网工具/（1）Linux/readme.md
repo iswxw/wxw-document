@@ -6,3 +6,4 @@
 2. ` hostname -i` 查看本机对应的IP
 3. `hostnamectl ` `set-hostname` `wxw　`  修改主机名
 
+
