@@ -64,7 +64,7 @@
 
 1. [通用型业务解决方案设计](https://blog.csdn.net/u013256816/article/details/100570732)  
 2. [Java后台开发实习生-面试总结-3.18](https://honeypps.com/architect/bytedance-interview-general-business-solutions/)  
-3. [[字节跳动面试题](https://www.cnblogs.com/yfzhou/p/10306443.html)](https://www.cnblogs.com/yfzhou/p/10306443.html)  
+3. [字节跳动面试题](https://www.cnblogs.com/yfzhou/p/10306443.html) 
 
 
 
