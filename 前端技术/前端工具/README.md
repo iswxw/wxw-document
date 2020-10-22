@@ -1,0 +1,21 @@
+## 前端工具文档
+
+
+
+## 文档目录
+
+
+
+### **包管理工具**
+
+#### [npm](https://docs.npmjs.com/) 
+
+- 查看版本：` npm -v` 
+- 查看安装信息：` npm list -g ` 
+- 使用淘宝镜像：
+  - 安装时配置：` npm install -g --registry=https://registry.npm.taobao.org`
+  - 安装后配置：` npm config set registry https://registry.npm.taobao.org` 
+- 查看配置信息：` npm config list` 
+
+
+
