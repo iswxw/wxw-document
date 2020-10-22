@@ -1,4 +1,39 @@
-# Headline
+## wxw-document项目
 
-> An awesome project.
+## 项目介绍
 
+学习笔记，主要来源于B站上视频的学习，同时会记录平时一些学习和项目中遇到的问题，如果对我的博客网站感兴趣的话，欢迎关注我的博客项目 
+如果笔记对您有帮助的话，欢迎star支持，谢谢~
+
+笔记主要涵盖：Java，JVM、JUC、Spring，SpringCloud，计算机网络，操作系统，数据结构，Vue等
+
+本仓库有来源自己总结、网上收集、视频笔记，如果有侵权之处，可以联系我进行删除
+
+因个人能力有限，笔记中可能还有很多错误的地方，还请大家能够多多指出交流，也欢迎各位小伙伴能够提交pull request请求进行完善
+
+如果您要转载本仓库中的笔记到其它地方，欢迎添加笔记的仓库地址：[wxw-document](https://gitee.com/wwxw/wxw-document)  
+
+## 在线文档
+
+为了更方便小伙伴的复习和查询，把本仓库做成一个在线的文档
+
+- 在线文档：http://wwxw.gitee.io/wxw-document
+
+## 仓库地址
+
+本仓库同步托管在Github和Gitee中
+
+- Gitee仓库：https://gitee.com/wwxw/wxw-document
+- Github仓库：https://github.com/GitHubWxw/wxw-document
+
+## 文档目录
+
+## Java
+
+> 来源Bilibili尚硅谷周阳老师学习视频：[点我传送](https://www.bilibili.com/video/BV15J4112785)
+
+ 
+
+## 赞赏
+
+如果觉得本仓库对您有帮助的话，希望朋友能够给博主喝一杯咖啡（ps.. 小伙伴赞赏的时候可以备注一下下~）
