@@ -1,13 +1,8 @@
-## wxw-document
-
-回头夯实基础
+!>   后端技术 
 
 <a href="https://github.com/GitHubWxw/Study"><img src="https://img.shields.io/badge/阅读-read-brightgreen.svg" alt="阅读"></a><a href="https://github.com/GitHubWxw/Study#io"><img src="https://img.shields.io/badge/Java-面试指南-important" alt="投稿"></a>
 
----
-
-
-### （1）权威官网指南
+?>  权威官网指南
 
 |    技术     |     说明     | 官网 |
 | :---------: | :----------: | :-------------------------------------------- |
@@ -22,26 +17,61 @@
 |  Java简明教程  | 中文《Java简明教程》 | http://blog.didispace.com/books/java8-tutorial/ch5.html      |
 | 程序员自我修养 |    程序员自我修养    | http://blog.didispace.com/books/a-programmer-prepares        |
 
-## 目录
+?>  目录
 
-- [服务端技术](#8.Java基础知识) 
-  - [JVM虚拟机](8.Java基础知识/（1）JVM虚拟机/readme.md)   
-  - [JUC并发编程](8.Java基础知识/（2）JUC并发编程/readme.md)    
-- [Spring系列](#Spring)
-  - [Spring Boot](5.Spring系列/（1）SpringBoot/SpringBoot.md) 
-  - [Spring Cloud](5.Spring系列/（2）SpringCloud/springcloud.md)  
-- [中间件](#java)
-- [Dubbo](doc/Dubbo/dubbo.md)
-  - [Zookeeper](doc/ZooKeeper/zookpeer.md)
-  - [RabbitMQ](doc/RabbitMQ/RabbitMQ.md)
-  - [Redis](doc/Redis/Redis.md)
-  - [JVM](#jvm)
-  - [I/O](#io)
-  - [Java 8](#java-8)
-  - [编程规范](#编程规范)
-- [数据结构与算法](1.数据结构与算法/readme.md)  
-- [互联网工具](#互联网工具)  
-  - [Linux](6.互联网工具/（1）Linux/readme.md)
-  - [Shell](6.互联网工具/（2）Shell/readme.md) 
-  - [Golang](6.互联网工具/（3）Golang/readme.md)   
 
+
+### Java核心基础
+
+- Java必会基础与新特性
+- Java集合
+- 操作系统
+- 计算机网络
+- 设计模式及使用场景集合
+
+
+
+### 深入浅出JVM
+
+- JVM内存模型
+- 性能调优与线上问题排查
+- 垃圾回收机制
+- 垃圾收集器和垃圾回收算法
+
+### 并发与多线程
+
+- 线程的状态转换和通信机制
+- 线程同步和互斥
+- 线程池
+- 常见JUC工具类
+
+### 数据结构与算法
+
+- 数组
+- 链表
+- 树
+- 图
+- 经典算法
+
+### 必会框架
+
+- Spring系列及源码分析
+- 高性能NIO—Netty
+- RPC
+- MyBatis源码解析
+
+### 缓存
+
+- Redis基础
+- 缓存击穿、雪崩、穿透
+
+### 消息队列
+
+- kafka
+- RocketMQ
+
+### 数据库
+
+- MySQL
+
+  ​

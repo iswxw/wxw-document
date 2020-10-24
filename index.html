@@ -19,8 +19,6 @@
     content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <!-- 默认主题 -->
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css">
-  <!-- Gitalk是基于Github Issue和Preact的现代评论组件 -->
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk/dist/gitalk.css">
 </head>
 
 <body>
@@ -40,8 +38,11 @@
       repo: 'https://github.com/GitHubWxw/wxw-document',
       // 侧边栏支持，默认加载的是项目根目录下的_sidebar.md文件  
       loadSidebar: true, // 开启侧边栏
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
       // 自定义侧边栏后默认不会再生成目录，设置生成目录的最大层级，建议配置为1或者2
-      subMaxLevel: 2,
+      subMaxLevel: 3,
       // 最大支持渲染的标题层级
       maxLevel: 4,
       // 导航栏支持，默认加载的是项目根目录下的_navbar.md文件
@@ -86,27 +87,31 @@
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
   <!-- 添加一键拷贝代码-->
   <script src="//unpkg.com/docsify-copy-code"></script>
-  <!-- 分页 -->
-  <!-- <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script> -->
-  <!-- gitalk评论 -->
-  <script src="//cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js"></script>
-  <script>
-    const gitalk = new Gitalk({
-      clientID: 'c82b0cd78b807e5ad45ccf1c1d5e1ca66cde4b4370022a03c1b9ebc18f5ff566',
-      clientSecret: '4a99fe558dbe22a61710294c38425a468d83f6276b3eb1a77c337e909fd2e290',
-      repo: 'YiliaPlus-ThemeComments',
-      owner: 'wwxw', //仓库所有者
-      admin: ['wwxw'], // 仓库有写权限 Github repo collaborators, only these guys can initialize github issues
-      // facebook-like distraction free mode
-      distractionFreeMode: false
-    })
-  </script>
+
   <!-- 添加代码高亮 -->
   <script src="//unpkg.com/prismjs/components/prism-bash.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-java.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-sql.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-java.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-sql.js"></script>
+  <!-- 分页 -->
+  <!-- <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script> -->
+  <!-- gitalk评论 -->
+  <!-- 引入 gitalk留言功能 -->
+  <!-- Gitalk是基于Github Issue和Preact的现代评论组件 -->
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/gitalk/1.6.2/gitalk.css">
+  <script src="https://cdn.bootcdn.net/ajax/libs/gitalk/1.6.2/gitalk.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/docsify/4.11.2/plugins/gitalk.min.js"></script>
+  <script>
+    const gitalk = new Gitalk({
+      clientID: '81e1e9c987a67b83cb2a',
+      clientSecret: 'f01281b56c3e16117e5f0aa7c1367610fd5ee1cc',
+      repo: 'wxw-blog', // 存放评论
+      owner: 'GitHubWxw', //仓库所有者
+      admin: ['GitHubWxw'], // 仓库有写权限 Github repo collaborators, only these guys can initialize github issues
+      id: location.pathname, // 用于标记评论是哪个页面的
+    })
+  </script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-## wxw-document项目
+?> **wxw-document 项目**
 
 ## 项目介绍
 
@@ -26,14 +26,21 @@
 - Gitee仓库：https://gitee.com/wwxw/wxw-document
 - Github仓库：https://github.com/GitHubWxw/wxw-document
 
-## 文档目录
 
-## Java
 
-> 来源Bilibili尚硅谷周阳老师学习视频：[点我传送](https://www.bilibili.com/video/BV15J4112785)
 
- 
+
+## 关注&交流
+
+目前项目还存在很多不足之处，欢迎各位老哥关注进行技术交流，为了防止广告进入，希望的时候能添加备注，谢谢~
+
+| 微信公众号：Java半颗糖                                       |
+| ------------------------------------------------------------ |
+| ![https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg](https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg) |
+
+
 
 ## 赞赏
 
 如果觉得本仓库对您有帮助的话，希望朋友能够给博主喝一杯咖啡（ps.. 小伙伴赞赏的时候可以备注一下下~）
+
