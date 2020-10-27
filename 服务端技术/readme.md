@@ -12,17 +12,24 @@
 
 ### GoLang
 
-
+- [GO 语言入门](/服务端技术/GoLang/1.Go语言入门.md) 
+- [Go 语言进阶](/服务端技术/GoLang/1.Go语言入门.md) 
 
 ### Python
 
-
+- [Python入门](/服务端技术/Python/Python入门.md) 
 
 ### Shell
 
-
+- [Shell 入门](/服务端技术/Shell/Shell 入门.md) 
 
 ### Linux
+
+- [Linux 入门](/服务端技术/Linux/Linux入门.md) 
+
+### Curl 
+
+- [Curl 入门](/服务端技术/Curl/Curl入门.md) 
 
 
 
