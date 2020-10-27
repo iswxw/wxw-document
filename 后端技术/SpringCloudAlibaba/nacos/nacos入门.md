@@ -206,3 +206,17 @@ Nacos 0.8.0版本完善了监控系统，支持通过暴露metrics数据接入�
 
 
 
+### 常见问题
+
+1. nacos [启动默认是集群模式，设置为单机默认](https://www.cnblogs.com/dingzt/p/13666101.html) 
+
+
+
+
+
+
+
+
+
+
+
