@@ -19,6 +19,16 @@
     content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <!-- 默认主题 -->
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css">
+  <style>
+      nav.app-nav li ul {
+        min-width: 100px;
+      }
+  
+      #carbonads {
+  			box-shadow: none !important;
+        width: auto !important;
+  		}
+    </style>
 </head>
 
 <body>
@@ -42,10 +52,10 @@
         '/.*/_sidebar.md': '/_sidebar.md'
       },
       // 自定义侧边栏后默认不会再生成目录，设置生成目录的最大层级，建议配置为1或者2
-      subMaxLevel: 5,
+      subMaxLevel: 2,
 	  onlyCover: true, // 只显示封面
       // 最大支持渲染的标题层级
-      maxLevel: 5,
+      maxLevel: 4,
       // 导航栏支持，默认加载的是项目根目录下的_navbar.md文件
       loadNavbar: true,
       // 封面支持，默认加载的是项目根目录下的_coverpage.md文件
@@ -72,7 +82,7 @@
         // maxAge: 86400000, // Expiration time, the default one day
         paths: auto,
         noData: '找不到结果！',
-        depth: 4,
+        depth: 3,
         hideOtherSidebarContent: false,
         namespace: 'wxw-document',
       }
