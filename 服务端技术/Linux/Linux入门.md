@@ -1063,7 +1063,105 @@ Linux磁盘管理常用三个命令为df、du和fdisk。
 
 #### 5.1 ` df` 
 
+检查文件系统的磁盘空间占用情况。可以利用该命令来获取硬盘被占用了多少空间，目前还剩下多少空间等信息。
 
+```shell
+df [-ahikHTm] [目录或文件名]
+
+选项与参数：
+-a ：列出所有的文件系统，包括系统特有的 /proc 等文件系统；
+-k ：以 KBytes 的容量显示各文件系统；
+-m ：以 MBytes 的容量显示各文件系统；
+-h ：以人们较易阅读的 GBytes, MBytes, KBytes 等格式自行显示；
+-H ：以 M=1000K 取代 M=1024K 的进位方式；
+-T ：显示文件系统类型, 连同该 partition 的 filesystem 名称 (例如 ext3) 也列出；
+-i ：不用硬盘容量，而以 inode 的数量来显示
+```
+
+实例
+
+```bash
+[root@www ~] df -h /etc 将 /etc  #底下的可用的磁盘容量以易读的容量格式显示
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/hdc2             9.5G  3.7G  5.4G  41% /
+```
+
+#### 5.2 ` du` 
+
+> 与df命令不同的是Linux du命令是对文件和目录磁盘使用的空间的查看
+
+```bash
+du [-ahskm] 文件或目录名称
+
+选项与参数：
+-a ：列出所有的文件与目录容量，因为默认仅统计目录底下的文件量而已。
+-h ：以人们较易读的容量格式 (G/M) 显示；
+-s ：列出总量而已，而不列出每个各别的目录占用容量；
+-S ：不包括子目录下的总计，与 -s 有点差别。
+-k ：以 KBytes 列出容量显示；
+-m ：以 MBytes 列出容量显示；
+```
+
+实例
+
+```bash
+[root@www ~]# du  //只列出当前目录下的所有文件夹容量（包括隐藏文件夹）:
+8       ./test4     <==每个目录都会列出来
+8       ./test2
+....中间省略....
+12      ./.gconfd   <==包括隐藏文件的目录
+220     .           <==这个目录(.)所占用的总量
+```
+
+通配符 * 来代表每个目录。
+
+```bash
+# 检查根目录底下每个目录所占用的容量
+[root@www ~]# du -sm /*
+7       /bin
+6       /boot
+.....中间省略....
+0       /proc
+.....中间省略....
+1       /tmp
+3859    /usr     <==系统初期最大就是他了啦！
+77      /var
+```
+
+#### 5.3 ` 磁盘的挂载与卸除`  
+
+> Linux 的磁盘挂载使用 `mount` 命令，卸载使用 `umount` 命令。
+
+磁盘挂载语法：
+
+```
+mount [-t 文件系统] [-L Label名] [-o 额外选项] [-n]  装置文件名  挂载点
+```
+
+实例 1
+
+用默认的方式，将刚刚创建的 /dev/hdc6 挂载到 /mnt/hdc6 上面！
+
+```
+[root@www ~]# mkdir /mnt/hdc6
+[root@www ~]# mount /dev/hdc6 /mnt/hdc6
+[root@www ~]# df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+.....中间省略.....
+/dev/hdc6              1976312     42072   1833836   3% /mnt/hdc6
+```
+
+磁盘卸载命令 `umount` 语法：
+
+```bash
+umount [-fn] 装置文件名或挂载点
+
+选项与参数：
+-f ：强制卸除！可用在类似网络文件系统 (NFS) 无法读取到的情况下；
+-n ：不升级 /etc/mtab 情况下卸除。
+
+[root@www ~]# umount /dev/hdc6    # 卸载/dev/hdc6 
+```
 
 ### Linux 常见问题
 
