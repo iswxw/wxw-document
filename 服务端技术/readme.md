@@ -21,7 +21,7 @@
 
 ### Shell
 
-- [Shell 入门](/服务端技术/Shell/Shell 入门.md)   
+- [Shell 入门](/服务端技术/Shell/Shell入门.md)    
 
 ### Linux
 
