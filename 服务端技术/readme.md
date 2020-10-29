@@ -21,7 +21,7 @@
 
 ### Shell
 
-- [Shell 入门](/服务端技术/Shell/Shell 入门.md) 
+- [Shell 入门](/服务端技术/Shell/Shell 入门.md)   
 
 ### Linux
 
@@ -30,6 +30,3 @@
 ### Curl 
 
 - [Curl 入门](/服务端技术/Curl/Curl入门.md) 
-
-
-
