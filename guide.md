@@ -3,6 +3,11 @@
 !>  服务端技术
 
 - [服务器](/服务端技术/home,md) 
+- [Curl 脚本](https://gitee.com/moxi159753/LearningNotes.git) 
+- [GoLang](https://gitee.com/moxi159753/LearningNotes.git) 
+- [Linux ](https://gitee.com/moxi159753/LearningNotes.git) 
+- [Python](https://gitee.com/moxi159753/LearningNotes.git) 
+- [Shell](https://gitee.com/moxi159753/LearningNotes.git) 
 
 
 

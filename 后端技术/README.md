@@ -30,6 +30,55 @@
 - 设计模式及使用场景集合
 
 
+### 并发与多线程
+
+- 线程的状态转换和通信机制
+- 线程同步和互斥
+- 线程池
+- 常见JUC工具类
+
+### 数据库
+
+- MySQL
+- PostgreSQL
+
+### 分布式中间件
+
+- 消息队列
+  - RocketMQ
+  - RabbitMQ
+  - Kafka
+- 缓存
+  - Redis
+  - MongoDB
+  - Memecache
+
+
+- **Zookeeper** 
+  - [zookeeper 入门](/后端技术/分布式中间件/Zookeeper/readme.md)  
+
+
+- Dubbo
+  - [Dubbo 入门](/后端技术/分布式中间件/Dubbo/readme.md) 
+
+### Spring 系列
+
+- [Spring Boot](/后端技术/Spring系列/1_SpringBoot/SpringBoot.md) 
+- [SpringCloud](/后端技术/Spring系列/2_SpringCloud/springcloud.md)  
+
+### spring cloud alibaba
+
+- **nacos** 
+  - [nacos 入门](/后端技术/SpringCloudAlibaba/nacos/nacos入门.md) 
+- **seata** 
+  - [seata 入门](/后端技术/SpringCloudAlibaba/seata/seata入门.md) 
+- **sentinel** 
+  - [sentinel 入门](/后端技术/SpringCloudAlibaba/sentinel/sentinel入门.md) 
+
+### DevOps
+
+- [Docker容器化](/后端技术/DevOps/Docker容器化/readme.md) 
+- [K8S容器编排](/后端技术/DevOps/k8s容器编排/readme.md) 
 
 ### 深入浅出JVM
 
@@ -37,13 +86,6 @@
 - 性能调优与线上问题排查
 - 垃圾回收机制
 - 垃圾收集器和垃圾回收算法
-
-### 并发与多线程
-
-- 线程的状态转换和通信机制
-- 线程同步和互斥
-- 线程池
-- 常见JUC工具类
 
 ### 数据结构与算法
 
@@ -59,21 +101,3 @@
 - 高性能NIO—Netty
 - RPC
 - MyBatis源码解析
-
-### 缓存
-
-- Redis基础
-- 缓存击穿、雪崩、穿透
-
-### 消息队列
-
-- kafka
-- RocketMQ
-
-### 数据库
-
-- MySQL
-
-  ​
-
-### spring cloud alibaba

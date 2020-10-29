@@ -1,3 +1,5 @@
+<!-- docs/_sidebar.md --> 
+
 !> 服务端技术
 
 - Linux 服务器监控工具集：<https://www.tecmint.com/tag/linux-server-monitoring/> 
@@ -12,7 +14,7 @@
 
 ### GoLang
 
-- [GO 语言入门](/服务端技术/GoLang/1.Go语言入门.md) 
+- [GO 语言入门](/服务端技术/GoLang/1.Go语言入门.md)  
 - [Go 语言进阶](/服务端技术/GoLang/1.Go语言入门.md) 
 
 ### Python

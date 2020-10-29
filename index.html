@@ -42,9 +42,10 @@
         '/.*/_sidebar.md': '/_sidebar.md'
       },
       // 自定义侧边栏后默认不会再生成目录，设置生成目录的最大层级，建议配置为1或者2
-      subMaxLevel: 3,
+      subMaxLevel: 5,
+	  onlyCover: true, // 只显示封面
       // 最大支持渲染的标题层级
-      maxLevel: 4,
+      maxLevel: 5,
       // 导航栏支持，默认加载的是项目根目录下的_navbar.md文件
       loadNavbar: true,
       // 封面支持，默认加载的是项目根目录下的_coverpage.md文件
@@ -99,7 +100,7 @@
   <!-- gitalk评论 -->
   <!-- 引入 gitalk留言功能 -->
   <!-- Gitalk是基于Github Issue和Preact的现代评论组件 -->
-  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/gitalk/1.6.2/gitalk.css">
+ <!-- <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/gitalk/1.6.2/gitalk.css">
   <script src="https://cdn.bootcdn.net/ajax/libs/gitalk/1.6.2/gitalk.js"></script>
   <script src="https://cdn.bootcdn.net/ajax/libs/docsify/4.11.2/plugins/gitalk.min.js"></script>
   <script>
@@ -111,7 +112,7 @@
       admin: ['GitHubWxw'], // 仓库有写权限 Github repo collaborators, only these guys can initialize github issues
       id: location.pathname, // 用于标记评论是哪个页面的
     })
-  </script>
+  </script> -->
 </body>
 
 </html>
