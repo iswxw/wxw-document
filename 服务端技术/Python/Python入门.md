@@ -1,4 +1,4 @@
-## Python  基础
+## Python3  基础
 
 
 
@@ -9,6 +9,8 @@
 ## Python 概述
 
 Python是一个高层次的结合了解释性、编译性、互动性和面向对象的脚本语言。
+
+- Python 官方文档：https://docs.python.org/zh-cn/3
 
 > 程序指的就是一系列指令，用来告诉计算机做什么，而编写程序的关键在于，我们需要用计算机可以理解的语言来提供这些指令。
 
@@ -178,17 +180,168 @@ Python 经常被用于 Web 开发，尽管目前 [PHP](http://c.biancheng.net/ph
 
 不仅如此，全球最大的视频网站 Youtube 以及 Dropbox（一款网络文件同步工具）也都是用 Python 开发的。
 
+> 自动化运维
+
+很多操作系统中，Python 是标准的系统组件，大多数 Linux 发行版以及 NetBSD、OpenBSD 和 Mac OS X 都集成了 Python，可以在终端下直接运行 Python。
+
+有一些 Linux 发行版的安装器使用 Python 语言编写，例如 Ubuntu 的 Ubiquity 安装器、Red Hat Linux 和 Fedora 的 Anaconda 安装器等等。
+
+另外，Python 标准库中包含了多个可用来调用操作系统功能的库。例如，通过 pywin32 这个软件包，我们能访问 Windows 的 COM 服务以及其他 Windows API；使用 IronPython，我们能够直接调用 .Net Framework。
+
+- 通常情况下，Python 编写的系统管理脚本，无论是可读性，还是性能、代码重用度以及扩展性方面，都优于普通的 shell 脚本。  
+
+> 人工智能领域
+
+人工智能是项目非常火的一个研究方向，如果要评选当前最热、工资最高的 IT 职位，那么人工智能领域的工程师最有话语权。而 Python 在人工智能领域内的机器学习、神经网络、深度学习等方面，都是主流的编程语言。
+
+可以这么说，基于[大数据](http://c.biancheng.net/big_data/) 分析和深度学习发展而来的人工智能，其本质上已经无法离开 Python 的支持了，原因至少有以下几点：
+
+1. 目前世界上优秀的人工智能学习框架，比如 Google 的 TransorFlow（神经网络框架）、FaceBook 的 PyTorch（神经网络框架）以及开源社区的 Karas 神经网络库等，都是用 Python 实现的；
+2. 微软的 CNTK（认知工具包）也完全支持 Python，并且该公司开发的 VS Code，也已经把 Python 作为第一级语言进行支持。
+3. Python 擅长进行科学计算和数据分析，支持各种数学运算，可以绘制出更高质量的 2D 和 3D 图像。
+
+> VS Code 是微软推出的一款代码编辑工具（IDE），有关它的下载、安装和使用，后续章节会做详细介绍。
+
+总之，AI 时代的来临，使得 Python 从众多编程语言中脱颖而出，Python 作为 AI 时代头牌语言的位置，基本无人可撼动！
+
+> 网络爬虫
+
+ Python 语言很早就用来编写网络爬虫。Google 等搜索引擎公司大量地使用 Python 语言编写网络爬虫。
+
+从技术层面上将，Python 提供有很多服务于编写网络爬虫的工具，例如 urllib、Selenium 和 BeautifulSoup 等，还提供了一个网络爬虫框架 Scrapy。  
+
+> 科学计算
+
+自 1997 年，NASA 就大量使用 Python 进行各种复杂的科学运算。
+
+并且，和其它解释型语言（如 shell、js、PHP）相比，Python 在数据分析、可视化方面有相当完善和优秀的库，例如 NumPy、SciPy、Matplotlib、pandas 等，这可以满足 Python 程序员编写科学计算程序。  
+
+> 游戏开发
+
+很多游戏使用 [C++](http://c.biancheng.net/cplus/) 编写图形显示等高性能模块，而使用 Python 或 Lua 编写游戏的逻辑。和 Python 相比，Lua 的功能更简单，体积更小；而 Python 则支持更多的特性和数据类型。
+
+除此之外，Python 可以直接调用 Open GL 实现 3D 绘制，这是高性能游戏引擎的技术基础。事实上，有很多 Python 语言实现的游戏引擎，例如 Pygame、Pyglet 以及 Cocos 2d 等。
+ 
+
+以上也仅是介绍了 Python 应用领域的“冰山一角”，例如，还可以利用 Pygame  进行游戏编程；用 PIL 和其他的一些工具进行图像处理；用 PyRo 工具包进行机器人控制编程，等等。有兴趣的读者，可自行搜索资料进行详细了解。
+
+#### （5）Python 环境
+
+- Python2和Python3 的区别：[快速访问](http://c.biancheng.net/view/4147.html) 
+- Python 环境准备：[快速访问](http://c.biancheng.net/python/explore/) 
+
+#### （6）Python 编码规范
+
+1. 每个 import 语句只导入一个模块，尽量避免一次导入多个模块
+
+   ```python
+   #推荐
+   import os
+   import sys
+   #不推荐
+   import os,sys
+   ```
+
+2. 不要在行尾添加分号，也不要用分号将两条命令放在同一行
+
+   ```python
+   #不推荐
+   height=float(input("输入身高：")) ; weight=fioat(input("输入体重：")) ;
+   ```
+
+3. 建议每行不超过 80 个字符，如果超过，建议使用小括号将多行内容隐式的连接起来，而不推荐使用反斜杠 \ 进行连接。例如，如果一个字符串文本无法实现一行完全显示，则可以使用小括号将其分开显示.
+
+   ```python
+   #推荐
+   s=("C语言中文网是中国领先的C语言程序设计专业网站，"
+   "提供C语言入门经典教程、C语言编译器、C语言函数手册等。")
+   #不推荐
+   s="C语言中文网是中国领先的C语言程序设计专业网站，\
+   提供C语言入门经典教程、C语言编译器、C语言函数手册等。"
+   ```
+
+   注意，此编程规范适用于绝对大多数情况，但以下 2 种情况除外：
+
+   - 导入模块的语句过长。
+   - 注释里的 URL。
+
+4. 用必要的空行可以增加代码的可读性，通常在顶级定义（如函数或类的定义）之间空两行，而方法定义之间空一行，另外在用于分隔某些功能的位置也可以空一行
+
+5. 通常情况下，在运算符两侧、函数参数之间以及逗号两侧，都建议使用空格进行分隔。
+
+#### （7）Python 关键字（保留字） 
+
+保留字是 [Python](http://c.biancheng.net/python/) 语言中一些已经被赋予特定意义的单词，这就要求开发者在开发程序时，不能用这些保留字作为标识符给变量、函数、类、模板以及其他对象命名。
+
+Python 包含的保留字可以执行如下命令进行查看：
+
+```python
+>>> import keyword
+>>> keyword.kwlist
+['False', 'None', 'True', 'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']
+```
+
+所有的保留字：
+
+| and   | as   | assert | break    | class  | continue |
+| ----- | ---- | ------ | -------- | ------ | -------- |
+| def   | del  | elif   | else     | except | finally  |
+| for   | from | False  | global   | if     | import   |
+| in    | is   | lambda | nonlocal | not    | None     |
+| or    | pass | raise  | return   | try    | True     |
+| while | with | yield  |          |        |          |
+
+**需要注意的是**，由于 Python 是**严格区分大小写**的，保留字也不例外。所以，我们可以说 if 是保留字，但 IF 就不是保留字。
+
+在实际开发中，如果使用 Python 中的保留字作为标识符，则解释器会提示“invalid syntax” 的错误信息。
+
+#### （8）Python 内置函数
+
+[Python](http://c.biancheng.net/python/) 解释器自带的函数叫做内置函数，这些函数可以直接使用，不需要导入某个模块。
+
+如果你熟悉 Shell 编程，了解什么是 [Shell 内置命令](http://c.biancheng.net/view/1136.html)，那么你也很容易理解什么是 Python 内置函数，它们的概念是类似的。
+
+> 将使用频繁的代码段封装起来，并给它起一个名字，以后使用的时候只要知道名字就可以，这就是函数。函数就是一段封装好的、可以重复使用的代码，它使得我们的程序更加模块化，不需要编写大量重复的代码。
+
+- Python 3.x 中的所有内置函数
+
+  | 内置函数      |             |              |              |                |
+  | ------------- | ----------- | ------------ | ------------ | -------------- |
+  | abs()         | delattr()   | hash()       | memoryview() | set()          |
+  | all()         | dict()      | help()       | min()        | setattr()      |
+  | any()         | dir()       | hex()        | next()       | slicea()       |
+  | ascii()       | divmod()    | id()         | object()     | sorted()       |
+  | bin()         | enumerate() | input()      | oct()        | staticmethod() |
+  | bool()        | eval()      | int()        | open()       | str()          |
+  | breakpoint()  | exec()      | isinstance() | ord()        | sum()          |
+  | bytearray()   | filter()    | issubclass() | pow()        | super()        |
+  | bytes()       | float()     | iter()       | print()      | tuple()        |
+  | callable()    | format()    | len()        | property()   | type()         |
+  | chr()         | frozenset() | list()       | range()      | vars()         |
+  | classmethod() | getattr()   | locals()     | repr()       | zip()          |
+  | compile()     | globals()   | map()        | reversed()   | __import__()   |
+  | complex()     | hasattr()   | max()        | round()      |                |
+
+表 1 中各个内置函数的具体功能和用法，可通过访问 https://docs.python.org/zh-cn/3/library/functions.html 进行查看。
+
+**注意：** 不要使用内置函数的名字作为标识符使用（例如变量名、函数名、类名、模板名、对象名等），虽然这样做 Python 解释器不会报错，但这会导致同名的内置函数被覆盖，从而无法使用。例如：
+
+```python
+>>> print = "http://c.biancheng.net/python/"  #将print作为变量名
+>>> print("Hello World!")  #print函数被覆盖，失效
+Traceback (most recent call last):
+  File "<pyshell#1>", line 1, in <module>
+    print("Hello World!")
+TypeError: 'str' object is not callable
+```
+
+## Python 基础语法
+
+### 2.1 变量类型与运算符
 
 
 
-
-
-
-
-
-
-
-
+### 2.2 列表、元组、字典和集合
 
 
 
