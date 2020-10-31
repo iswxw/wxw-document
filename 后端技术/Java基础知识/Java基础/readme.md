@@ -110,6 +110,13 @@ DeserializeDemo 程序实例了反序列化，/tmp/employee.ser 存储了 Employ
 
 - 示例代码：[快速定位](https://github.com/GitHubWxw/java-general/tree/master/java-jdkx/src/test/java/com/wxw/jdk8) 
 
+> 终于有人说明白了这些新特性
+
+-   **Consumer<T>** – 在T上执行一个操作，无返回结果
+-   **Supplier<T>** –无输入参数，返回T的实例
+-   **Predicate<T>** –输入参数为T的实例，返回boolean值
+-   **Function<T,R>** –输入参数为T的实例，返回R的实例
+
 | 序号 | 特性                                                         |
 | ---- | ------------------------------------------------------------ |
 | 1    | [Lambda 表达式](https://www.runoob.com/java/java8-lambda-expressions.html) |
