@@ -23,12 +23,12 @@
 
 ### Java核心基础
 
-- Java必会基础与新特性
-- Java集合
-- 操作系统
+1. [Java基础](/后端技术/Java基础知识/Java基础/readme.md) 
+2. [JUC并发编程](/后端技术/Java基础知识/JUC并发编程/readme.md) 
+3. [JVM虚拟机](/后端技术/Java基础知识/JVM虚拟机/readme.md)  
+4. 操作系统
 - 计算机网络
 - 设计模式及使用场景集合
-
 
 ### 并发与多线程
 
@@ -51,7 +51,7 @@
 - 缓存
   - Redis
   - MongoDB
-  - Memecache
+  - Memcached
 
 
 - **Zookeeper** 
