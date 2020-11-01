@@ -52,6 +52,8 @@
   - Redis
   - MongoDB
   - Memcached
+- 搜索引擎
+  - [ElasticStack](/后端技术/分布式中间件/搜索引擎/README.md) 
 
 
 - **Zookeeper** 
