@@ -49,6 +49,8 @@
 
 源码地址：https://github.com/elastic/elasticsearch
 
+ElasticSearch配置：[官网配置文档](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/settings.html) 
+
 ElasticSearch是一个基于Lucene的搜索服务器。它提供了一个分布式多用户能力的全文搜索引擎，基于RESTful web接口。Elasticsearch是用Java开发的，并作为Apache许可条款下的开放源码发布，是当前流行的企业级搜索引擎。设计用于云计算中，能够达到实时搜索，稳定，可靠，快速，安装使用方便。
 
 > 需求
@@ -511,7 +513,9 @@ shard在使用时比较简单，只需要在创建索引时指定shard的数量�
 3. 拓扑更新，分发给该Node的请求重新映射到目前正常的Node上。
 
 
+### 1.5 配置ElasticSearch
 
+- [当前地址](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/settings.html) 
 
 
 
