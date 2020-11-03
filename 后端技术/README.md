@@ -49,9 +49,11 @@
   - RabbitMQ
   - Kafka
 - 缓存
-  - Redis
-  - MongoDB
-  - Memcached
+  - [Redis基础](/后端技术/分布式中间件/缓存/Redis基础.md) 
+  - [MongoDB基础](/后端技术/分布式中间件/缓存/MongoDB基础.md) 
+  - [Memcached基础](/后端技术/分布式中间件/缓存/Memcached基础.md) 
+- 搜索引擎
+  - [ElasticStack](/后端技术/分布式中间件/搜索引擎/README.md) 
 
 
 - **Zookeeper** 
@@ -89,11 +91,8 @@
 
 ### 数据结构与算法
 
-- 数组
-- 链表
-- 树
-- 图
-- 经典算法
+- [数据结构与算法入门](/后端技术/数据结构与算法/数据结构与算法入门/readme.md) 
+- [leetcode](/后端技术/数据结构与算法/leetcode/readme.md) 
 
 ### 必会框架
 
