@@ -515,29 +515,115 @@ shard在使用时比较简单，只需要在创建索引时指定shard的数量�
 
 ### 1.5 配置ElasticSearch
 
-- [当前地址](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/settings.html) 
+> 官方配置文档：[快速验证](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/settings.html#settings) 
+
+**ElasticSearch配置文件** 
+
+1. `elasticsearch.yml` 用于配置Elasticsearch
+2. `jvm.options` 用于配置Elasticsearch JVM设置
+3. `log4j2.properties` 用于配置Elasticsearch日志记录
+
+#### （1）基本配置
+
+> **path.data 和 path.logs** 
+
+- 生产环境配置
+
+  ```yaml
+  path:
+    logs: /var/log/elasticsearch
+    data: /var/data/elasticsearch
+  ```
+
+> **cluster.name** 
+
+当`cluster.name`节点与集群中的所有其他节点共享节点时，该节点只能加入集群。默认名称为`elasticsearch`，但您应将其更改为描述群集用途的适当名称。
+
+```yaml
+cluster.name: logging-prod
+```
+
+确保不要在不同的环境中重复使用相同的集群名称，否则最终可能会导致节点加入错误的集群。
+
+> **node.name**
+
+Elasticsearch`node.name`用作Elasticsearch特定实例的人类可读标识符，因此它被包含在许多API的响应中。它默认为计算机在Elasticsearch启动时具有的主机名，但可以`elasticsearch.yml`按以下方式显式配置 ：
+
+```yaml
+node.name: prod-data-2
+```
+
+> **network.host** 
 
 
 
 
 
+#### （2）配置JVM
 
 
 
+#### （3）HTTP
 
+> 文档地址：[快速访问](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-http.html#modules-http) 
 
+- HTTP机制本质上是完全异步的，这意味着没有阻塞线程在等待响应。使用HTTP异步通信的好处是解决了 [C10k问题](https://en.wikipedia.org/wiki/C10k_problem)。
 
+#### （4）节点
 
+> 文档地址：[快速访问](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-node.html) 
 
+每当您启动Elasticsearch实例时，您都在启动*node*。连接的节点的集合称为[群集](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-cluster.html)。如果您正在运行Elasticsearch的单个节点，那么您将拥有一个节点的集群。
 
+默认情况下，群集中的每个节点都可以处理[HTTP](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-http.html)和 [传输](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-transport.html)流量。传输层专门用于节点之间的通信。HTTP层由REST客户端使用。
 
+所有节点都知道群集中的所有其他节点，并且可以将客户端请求转发到适当的节点。
 
+默认情况下，节点据点具有以下所有类型：符合Master资格，数据，接收和（如果可用）机器学习。所有数据节点也是变换节点。
 
+**节点角色** 
 
+- 主节点：具有`master`角色（默认）的节点，这使其有资格被 [选作](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-discovery.html)控制群集[的](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-discovery.html)[*主*](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-discovery.html)[节点](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-discovery.html)。
 
+- 数据节点：具有`data`角色的节点（默认）。数据节点保存数据并执行与数据相关的操作，例如CRUD，搜索和聚合。
 
+- 提取节点：具有`ingest`角色的节点（默认）。[提取](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/pipeline.html)节点能够将 [提取管道](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/pipeline.html)应用于文档，以便在建立索引之前转换和丰富文档。在繁重的摄取负载下，使用专用的摄取节点而不包含`ingest`具有`master`或`data`角色的节点中的角色是有意义的。
 
+- 远程客户端节点：具有`remote_cluster_client`角色（默认）的节点，这使其有资格充当远程客户端。默认情况下，集群中的任何节点都可以充当跨集群客户端并连接到远程集群。
 
+- 机器学习的节点：具有`xpack.ml.enabled`和`ml`角色的节点，这是Elasticsearch默认分发中的默认行为。如果要使用机器学习功能，则集群中必须至少有一个机器学习节点。
+
+  有关机器学习功能的更多信息，请参阅[Elastic Stack中的机器学习](https://www.elastic.co/guide/en/machine-learning/7.9/index.html)。
+
+- 转换节点：具有`transform`角色的节点。如果要使用转换，则群集中至少有一个转换节点。有关更多信息，请参见 [变换设置](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/transform-settings.html)和[*变换数据*](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/transforms.html)。
+
+**协调节点** 
+
+诸如搜索请求或批量索引请求之类的请求可能涉及保存在不同数据节点上的数据。例如，搜索请求在两个阶段中执行，由接收客户端请求的*节点（协调节点）协调*。
+
+在*分散*阶段，协调节点将请求转发到保存数据的数据节点。每个数据节点在本地执行该请求，并将其结果返回到协调节点。在*收集* 阶段，协调节点将每个数据节点的结果缩减为单个全局结果集。
+
+每个节点都隐式地是一个协调节点。这意味着具有“角色”显式空列表的`node.roles`节点将仅充当协调节点，无法禁用。结果，这样的节点需要具有足够的内存和CPU才能处理收集阶段。
+
+#### （5）线程池
+
+一个节点使用多个线程池来管理内存消耗。与许多线程池关联的队列使待处理的请求得以保留而不是被丢弃。
+
+更改特定线程池可以通过设置其特定于类型的参数来完成。例如，更改`write`线程池中的线程数：
+
+```yaml
+thread_pool:
+    write: #ES中线程池名称
+        size: 30
+```
+
+**分配的处理器设置** 
+
+自动检测处理器数量，并基于此数量自动设置线程池设置。在某些情况下，覆盖检测到的处理器数量可能很有用。这可以通过显式设置`node.processors`设置来完成 。
+
+```yaml
+node.processors: 2
+```
 
 
 
