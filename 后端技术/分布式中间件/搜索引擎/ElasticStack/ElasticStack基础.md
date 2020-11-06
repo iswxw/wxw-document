@@ -555,9 +555,17 @@ node.name: prod-data-2
 
 > **network.host** 
 
+默认情况下，Elasticsearch仅绑定到环回地址（例如`127.0.0.1` 和）`[::1]`。这足以在服务器上运行单个开发节点。
 
+为了与其他服务器上的节点形成集群，您的节点将需要绑定到非环回地址。尽管[网络设置](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-network.html)很多 ，通常您需要配置的是 `network.host`：
 
+```yaml
+network.host: 192.168.1.10
+```
 
+该`network.host`设置也了解一些特殊的值，比如 `_local_`，`_site_`，`_global_`和喜欢修饰`:ip4`和`:ip6`，其中的细节中可以找到[特殊值`network.host`](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-network.html#network-interface-values)。
+
+注意：一旦为提供了自定义设置`network.host`，Elasticsearch就会假定您正在从开发模式转换为生产模式，并将许多系统启动检查从警告升级为异常。有关更多信息，请参见[开发模式与生产模式](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/system-config.html#dev-vs-prod)。
 
 #### （2）配置JVM
 
@@ -625,10 +633,20 @@ thread_pool:
 node.processors: 2
 ```
 
+#### （6）TCP重传超时
 
+> 相关文档：https://www.elastic.co/guide/en/elasticsearch/reference/7.9/system-config-tcpretries.html
 
+ 群集中的每一对节点都通过许多TCP连接进行通信，这些TCP连接[保持打开状态，](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/modules-transport.html#long-lived-connections)直到其中一个节点关闭或由于基础结构故障导致节点之间的通信中断。
 
+通过隐藏通信应用程序中的临时网络中断，TCP可以在偶尔不可靠的网络上提供可靠的通信。在通知发件人任何问题之前，您的操作系统将多次重发丢失的消息。大多数Linux发行版默认将任何丢失的数据包重传15次。重新传输以指数方式回退，因此这15次重新传输需要900秒钟以上的时间才能完成。这意味着使用这种方法，Linux需要花费几分钟的时间来检测网络分区或故障节点。Windows默认仅重传5次，相应的超时时间约为6秒。
 
+Linux的默认设置允许通过可能遭受很长数据包丢失的网络进行通信，但是对于大多数Elasticsearch集群而言，此默认设置对于单个数据中心内的生产网络来说过高。高可用性群集必须能够快速检测节点故障，以便它们可以通过重新分配丢失的碎片，重新路由搜索以及可能选择一个新的主节点来迅速做出反应。因此，Linux用户应减少TCP重传的最大次数。
 
+您可以`5`通过运行以下命令来减少最大TCP重传次数`root`。五次重发对应于大约六秒钟的超时。
+
+```sh
+sysctl -w net.ipv4.tcp_retries2=5
+```
 
 
