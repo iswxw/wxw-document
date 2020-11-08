@@ -34,9 +34,9 @@
 
 目前项目还存在很多不足之处，欢迎各位老哥关注进行技术交流，为了防止广告进入，希望的时候能添加备注，谢谢~
 
-| 微信公众号：Java半颗糖                                       |
-| ------------------------------------------------------------ |
-| ![https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg](https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg) |
+| 微信公众号：Java半颗糖                                       | QQ群（加群备注：`Java半颗糖`）                               | QQ（加群备注：`Java半颗糖`）                                 |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg](https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg) | ![](https://gitee.com/wwxw/image/raw/master/document/NO*KadZQyD*8.png) | ![](https://gitee.com/wwxw/image/raw/master/document/wgJ33vTPLixY.png) |
 
 
 
