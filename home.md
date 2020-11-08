@@ -36,7 +36,7 @@
 
 | 微信公众号：Java半颗糖                                       | QQ群（加群备注：`Java半颗糖`）                               | QQ（加群备注：`Java半颗糖`）                                 |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ![https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg](https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg) | ![](https://gitee.com/wwxw/image/raw/master/document/NO*KadZQyD*8.png) | ![](https://gitee.com/wwxw/image/raw/master/document/wgJ33vTPLixY.png) |
+| ![https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg](https://gitee.com/wwxw/image/raw/master/wechat/FDekBM1FXHpH.jpg) | ![](https://gitee.com/wwxw/image/raw/master/document/cH*QjOR6J2je.png) | ![](https://gitee.com/wwxw/image/raw/master/document/ffdEwLm*zsfd.png) |
 
 
 
