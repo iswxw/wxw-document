@@ -1576,9 +1576,54 @@ minimum_should_match为2，意思是should中的三个词，至少要满足2个�
 
 ##### 5. 权重
 
+有些时候，我们可能需要对某些词增加权重来影响该条数据的得分。如下：
 
+搜索关键字为“游泳篮球”，如果结果中包含了“音乐”权重为10，包含了“跑步”权重为2。
 
+```json
+POST /itcast/person/_search
+{
+    "query":{
+        "bool":{
+            "must":{
+                "match":{
+                    "hobby":{
+                        "query":"游泳篮球",
+                        "operator":"and"
+                    }
+                }
+            },
+            "should":[
+                {
+                    "match":{
+                        "hobby":{
+                            "query":"音乐",
+                            "boost":10
+                        }
+                    }
+                },
+                {
+                    "match":{
+                        "hobby":{
+                            "query":"跑步",
+                            "boost":2
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "highlight":{
+        "fields":{
+            "hobby":{
 
+            }
+        }
+    }
+}
+```
+
+## ElasticSearch 集群
 
 
 
