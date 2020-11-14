@@ -1,4 +1,4 @@
-### [MySQL 深入浅出](https://dev.mysql.com/doc/refman/8.0/en/)   
+### [MySQL 深入浅出](https://dev.mysql.com/doc/refman/8.0/en/)  <!-- {docsify-ignore} -->   
 
 ---
 
