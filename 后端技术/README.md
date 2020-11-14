@@ -27,9 +27,8 @@
 2. [JUC并发编程](/后端技术/Java基础知识/JUC并发编程/readme.md) 
 3. [JVM虚拟机](/后端技术/Java基础知识/JVM虚拟机/readme.md)  
 4. 操作系统
-- 计算机网络
-- 设计模式及使用场景集合
-
+5. 计算机网络
+6. 设计模式及使用场景集合
 ### 并发与多线程
 
 - 线程的状态转换和通信机制
@@ -39,19 +38,21 @@
 
 ### 数据库
 
-- MySQL
-- PostgreSQL
+- [MySQL](/后端技术/数据库\1_MySQL/README.md) 
+- [PostgreSQL](/后端技术/数据库/2_PostgreSQL/readme.md) 
+- [SQL Server](/后端技术/数据库/3_SQL Server/readme.md) 
+- [MyBatis](/后端技术/数据库/4_My Batis/readme.md) 
 
 ### 分布式中间件
 
 - 消息队列
-  - RocketMQ
-  - RabbitMQ
-  - Kafka
-- 缓存
-  - [Redis基础](/后端技术/分布式中间件/缓存/Redis基础.md) 
-  - [MongoDB基础](/后端技术/分布式中间件/缓存/MongoDB基础.md) 
-  - [Memcached基础](/后端技术/分布式中间件/缓存/Memcached基础.md) 
+  - [RocketMQ](/后端技术/分布式中间件/消息队列/RocketMQ/README.md) 
+  - [RabbitMQ](/后端技术/分布式中间件/消息队列/RabbitMQ/README.md) 
+  - [Kafka](/后端技术/分布式中间件/消息队列/Kafka/README.md) 
+- 缓存  
+  - [Redis基础](/后端技术/分布式中间件/缓存/1_Redis/Redis基础/README.md) 
+  - [MongoDB基础](/后端技术/分布式中间件/缓存/3_MongoDB/MongoDB基础/READNE.md) 
+  - [Memcached基础](/后端技术/分布式中间件/缓存/2_Memcached/Memcachedj基础/README.md)  
 - 搜索引擎
   - [ElasticStack](/后端技术/分布式中间件/搜索引擎/README.md) 
 
@@ -65,8 +66,8 @@
 
 ### Spring 系列
 
-- [Spring Boot](/后端技术/Spring系列/1_SpringBoot/SpringBoot.md) 
-- [SpringCloud](/后端技术/Spring系列/2_SpringCloud/springcloud.md)  
+- [Spring Boot](/后端技术/Spring系列/1_SpringBoot/README.md)  
+- [SpringCloud](/后端技术/Spring系列/2_SpringCloud/README.md)  
 
 ### spring cloud alibaba
 
