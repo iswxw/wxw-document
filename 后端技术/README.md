@@ -31,10 +31,10 @@
 6. [设计模式](/后端技术/Java基础知识/设计模式/)  
 ### 数据库
 
-- [MySQL](/后端技术/数据库\1_MySQL/README.md) 
-- [PostgreSQL](/后端技术/数据库/2_PostgreSQL/readme.md) 
-- [SQL Server](/后端技术/数据库/3_SQL Server/readme.md) 
-- [MyBatis](/后端技术/数据库/4_My Batis/readme.md) 
+- [MySQL](/后端技术/数据库\1_MySQL/) 
+- [PostgreSQL](/后端技术/数据库/2_PostgreSQL/) 
+- [SQL Server](/后端技术/数据库/3_SQLServer/) 
+- [MyBatis](/后端技术/数据库/4_My Batis/) 
 
 ### 分布式中间件
 
@@ -43,19 +43,19 @@
   - [RabbitMQ](/后端技术/分布式中间件/消息队列/RabbitMQ/README.md) 
   - [Kafka](/后端技术/分布式中间件/消息队列/Kafka/README.md) 
 - 缓存  
-  - [Redis基础](/后端技术/分布式中间件/缓存/1_Redis/Redis基础/README.md) 
-  - [MongoDB基础](/后端技术/分布式中间件/缓存/3_MongoDB/MongoDB基础/READNE.md) 
-  - [Memcached基础](/后端技术/分布式中间件/缓存/2_Memcached/Memcachedj基础/README.md)  
+  - [Redis基础](/后端技术/分布式中间件/缓存/1_Redis/Redis基础/) 
+  - [MongoDB基础](/后端技术/分布式中间件/缓存/3_MongoDB/MongoDB基础/) 
+  - [Memcached基础](/后端技术/分布式中间件/缓存/2_Memcached/Memcachedj基础/)  
 - 搜索引擎
   - [ElasticStack](/后端技术/分布式中间件/搜索引擎/README.md) 
 
 
 - **Zookeeper** 
-  - [zookeeper 入门](/后端技术/分布式中间件/Zookeeper/readme.md)  
+  - [zookeeper 入门](/后端技术/分布式中间件/Zookeeper/)  
 
 
 - Dubbo
-  - [Dubbo 入门](/后端技术/分布式中间件/Dubbo/readme.md) 
+  - [Dubbo 入门](/后端技术/分布式中间件/Dubbo/) 
 
 ### Spring 系列
 
@@ -92,6 +92,7 @@
 
 - Spring系列及源码分析
 - 高性能NIO—Netty
+  - [Netty入门](/后端技术/必会框架/Netty/) 
 - RPC
 - MyBatis源码解析
 
