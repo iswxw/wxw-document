@@ -23,19 +23,12 @@
 
 ### Java核心基础
 
-1. [Java基础](/后端技术/Java基础知识/Java基础/readme.md) 
-2. [JUC并发编程](/后端技术/Java基础知识/JUC并发编程/readme.md) 
-3. [JVM虚拟机](/后端技术/Java基础知识/JVM虚拟机/readme.md)  
+1. [Java基础](/后端技术/Java基础知识/Java基础/) 
+2. [JUC并发编程](/后端技术/Java基础知识/JUC并发编程/) 
+3. [JVM虚拟机](/后端技术/Java基础知识/JVM虚拟机/)  
 4. 操作系统
 5. 计算机网络
-6. 设计模式及使用场景集合
-### 并发与多线程
-
-- 线程的状态转换和通信机制
-- 线程同步和互斥
-- 线程池
-- 常见JUC工具类
-
+6. [设计模式](/后端技术/Java基础知识/设计模式/)  
 ### 数据库
 
 - [MySQL](/后端技术/数据库\1_MySQL/README.md) 
@@ -72,11 +65,11 @@
 ### spring cloud alibaba
 
 - **nacos** 
-  - [nacos 入门](/后端技术/SpringCloudAlibaba/nacos/nacos入门.md) 
+  - [nacos 入门](/后端技术/SpringCloudAlibaba/nacos/) 
 - **seata** 
-  - [seata 入门](/后端技术/SpringCloudAlibaba/seata/seata入门.md) 
+  - [seata 入门](/后端技术/SpringCloudAlibaba/seata/) 
 - **sentinel** 
-  - [sentinel 入门](/后端技术/SpringCloudAlibaba/sentinel/sentinel入门.md) 
+  - [sentinel 入门](/后端技术/SpringCloudAlibaba/sentinel/) 
 
 ### DevOps
 
