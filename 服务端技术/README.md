@@ -14,8 +14,8 @@
 
 ### GoLang
 
-- [GO 语言入门](/服务端技术/GoLang/1.Go语言入门.md)  
-- [Go 语言进阶](/服务端技术/GoLang/1.Go语言入门.md) 
+- [GO 语言入门](/服务端技术/GoLang/Go语言入门基础/)  
+- [Go 语言进阶](/服务端技术/GoLang/Go语言进阶/) 
 
 ### Python
 
