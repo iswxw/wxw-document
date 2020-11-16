@@ -136,7 +136,29 @@ f(100)
 
 > 类型和接口
 
+#### 1.3 Go 语言编译与工具
 
+Go 语言的工具链非常丰富，从获取源码、编译、文档、测试、性能分析，到源码格式化、源码提示、重构工具等应有尽有。
+
+在 Go 语言中可以使用测试框架编写单元测试，使用统一的命令行即可测试及输出测试报告的工作。基准测试提供可自定义的计时器和一套基准测试算法，能方便快速地分析一段代码可能存在的 CPU 耗用和内存分配问题。性能分析工具可以将程序的 CPU 耗用、内存分配、竞态问题以图形化方式展现出来。  
+
+1. [go build命令（go语言编译并打包命令）完全攻略](http://c.biancheng.net/view/120.html) 
+
+2. [go clean命令——清除编译文件](http://c.biancheng.net/view/4440.html) 
+
+3. [go run命令——编译并运行](http://c.biancheng.net/view/121.html) 
+
+4. [go fmt命令——格式化代码文件](http://c.biancheng.net/view/4441.html) 
+
+5. [go install命令——编译并安装](http://c.biancheng.net/view/122.html) 
+
+6. [go get命令——一键获取代码、编译并安装](http://c.biancheng.net/view/123.html) 
+
+7. [go generate命令——在编译前自动化生成某类代码](http://c.biancheng.net/view/4442.html) 
+
+8. [go test命令（Go语言测试命令）完全攻略](http://c.biancheng.net/view/124.html) 
+
+9. [go pprof命令（Go语言性能分析命令）完全攻略](http://c.biancheng.net/view/125.html) 
 
 ### Go语言基本语法
 
@@ -149,4 +171,64 @@ f(100)
 - 复数
 - bool型
 - 字符串
+
+### Go语言文件处理
+
+### Go语言并发
+
+并发指在同一时间内可以执行多个任务。并发编程含义比较广泛，包含多线程编程、多进程编程及分布式程序等。本章讲解的并发含义属于多线程编程。
+
+Go 语言通过编译器运行时（runtime），从语言上支持了并发的特性。Go 语言的并发通过 **goroutine** 特性完成。goroutine 类似于线程，但是可以根据需要创建多个 goroutine 并发工作。goroutine 是由 Go 语言的运行时调度完成，而线程是由操作系统调度完成。
+
+Go 语言还提供 **channel** 在多个 goroutine 间进行通信。goroutine 和 channel 是 Go 语言秉承的 CSP（Communicating Sequential Process）并发模式的重要实现基础。本章中，将详细为大家讲解 goroutine 和 channel 及相关特性。  
+
+#### 4.1 Go语言并发概述
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
