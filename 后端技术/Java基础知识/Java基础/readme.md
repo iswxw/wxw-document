@@ -2,6 +2,11 @@
 
 ---
 
+## Java基础知识
+
+- [final 关键字](https://www.cnblogs.com/dolphin0520/p/3736238.html) 
+- [static 关键字](https://www.cnblogs.com/dolphin0520/p/10651845.html) 
+
 ## Java 泛型
 
 ## Java 反射
