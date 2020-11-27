@@ -4,7 +4,7 @@
 
 ​        Apache Dubbo是一个基于Java的高性能开源RPC框架
 
-​       [![Build Status](https://travis-ci.org/apache/dubbo.svg?branch=master)](https://travis-ci.org/apache/dubbo)[![codecov](https://codecov.io/gh/apache/dubbo/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo)[![Gitter](https://badges.gitter.im/alibaba/dubbo.svg)](https://gitter.im/alibaba/dubbo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+​       [![Build Status](https://travis-ci.org/apache/dubbo.svg?branch=master)](https://travis-ci.org/apache/dubbo)[ ](https://codecov.io/gh/apache/dubbo)[![Gitter](https://badges.gitter.im/alibaba/dubbo.svg)](https://gitter.im/alibaba/dubbo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ![](./img/dubbo.png)
 
