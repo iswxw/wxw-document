@@ -144,6 +144,17 @@
 
 > [设计模式—开闭原则](http://c.biancheng.net/view/1322.html) 
 
+#### 6. 迪米特法则
+
+> **最少知道原则** ：个实体应当尽量少地与其他实体之间发生相互作用，使得系统功能模块相对独立
+
+**广义的迪米特法则在类的设计上的体现** 
+
+1. 优先考虑将一个类设置成不变类
+2. 尽量降低一个类的访问权限。
+3. 谨慎使用Serializable。
+4. 尽量降低成员的访问权限
+
 ### 创建型模式
 
 #### 1. 单例模式
@@ -293,8 +304,6 @@
 > **注意事项：**在行为受状态约束的时候使用状态模式，而且状态不超过 5 个。
 
 > 来源：[设计模式—状态模式](http://c.biancheng.net/view/1388.html) ||   [源码](https://github.com/GitHubWxw/wxw-java/tree/master/java-designpattern/src/main/java/com/wxw/state) 
-
-
 
 
 
