@@ -1339,3 +1339,71 @@ lockInterruptibly()：当尝试获取锁失败后，就进行**阻塞可中断**
 
 #### 2.1 AtomicInteger
 
+##### 前言
+
+AtomicInteger 是一个 ` java.util.concurrent.atomic` 包提供的一个原子类。
+
+- **AtomicInteger 原理**：AtomicInteger 类利用 `CAS (Compare and Swap) + volatile + native` 方法来保证原子操作，从而避免 synchronized 的高开销，执行效率大为提升。
+- **CAS 的原理：** 是拿期望值和原本的值作比较，如果相同，则更新成新的值。UnSafe 类的 objectFieldOffset() 方法是个native本地方法，这个方法是用来拿“原值”的内存地址，返回值是 valueOffset；另外，**value 是一个 volatile** 变量，因此 JVM 总是可以保证任意时刻的任何线程总能拿到该变量的最新值
+- **Unsafe 类：** 可以直接操控内存和线程，是一个比较危险的类。在 Java 里我们是无法直接使用这个类的，得通过反射机制获取
+
+> 为什么要有原子类？
+
+对多线程访问同一变量，我们需要加锁，而锁是比较消耗性能的，jdk1.5之后，新增的原子操作类提供了一种简单、性能高效、线程安全地更新一个变量的方式，这些类同样位于juc包下的atomic包下，发展到jdk1.8，该报共有17个类，囊括了原子更新基本类型、原子更新数组、原子更新新属性、原子更新引用。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
