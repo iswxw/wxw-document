@@ -80,7 +80,16 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 
 ​    windows下：使用 zkServer.cmd  // zkCli.cmd的启动
 
-（）
+#### （7）Zookeeper 典型应用场景
+
+1. 数据发布订阅（配置中心）
+2. 命名服务
+3. Master选举
+4. 集群管理
+5. 分布式队列
+6. 分布式锁
+
+
 
 
 
