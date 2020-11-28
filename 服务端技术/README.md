@@ -27,7 +27,7 @@
 
 ### Linux
 
-- [Linux 入门](/服务端技术/Linux/Linux入门.md) 
+- [Linux 入门](/服务端技术/Linux/)  
 
 ### Curl 
 

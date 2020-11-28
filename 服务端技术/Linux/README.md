@@ -1260,9 +1260,48 @@ SWAP（交换）分区是一种通过在硬盘中预先划分一定的空间，�
 
 
 
-### Linux 常见问题
+### Linux 常用案例
 
 1. [Linux 忘记密码解决方法](https://www.runoob.com/linux/linux-forget-password.html)  [重启系统 3秒内按回车] 
+
+
+#### 7.1 创建可访问指定目录的子账号
+
+> 创建/home/wxw/ 为wxw用户可编辑
+
+（1）创建账号 ：` useradd   wxw  ` 
+
+（2）设置密码：` passwd xxxxx ` 
+
+（3）配置develop这个用户目录，为sftp指向目录，即/home/
+
+```powershell
+vim /etc/ssh/sshd_config
+```
+
+修改配置
+
+```c
+//这个记得要在原有的配置文件注释掉
+#Subsystem      sftp    /usr/libexec/openssh/sftp-server
+ 
+Subsystem sftp internal-sftp 
+Match User develop //develop 是我们要配置的用户
+ChrootDirectory /home/  // /home  是我们要指定的目录
+X11Forwarding no
+AllowTcpForwarding no
+ForceCommand internal-sftp
+```
+
+重启sshd服务
+
+```powershell
+service sshd restart
+chown root:root /home
+chown -R wxw:wxw /home/wxw
+chmod 760 /home/wxw
+```
+
 
 
 
@@ -1288,7 +1327,6 @@ SWAP（交换）分区是一种通过在硬盘中预先划分一定的空间，�
   scp -P 4588 -r wxw@10.1.1.76:/usr/local/sin.sh  /home/test
   ```
 
-  
 
 
 
