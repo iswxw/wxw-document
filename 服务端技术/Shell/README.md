@@ -409,15 +409,153 @@ awk '{s+=$1} ENG {printf "%.0f", s}' /path/to/file
 
 **sed**是一种流编辑器，它是文本处理中非常好的工具，能够完美的配合正则表达式使用，功能不同凡响。处理时，把当前处理的行存储在临时缓冲区中，称为“模式空间”（pattern space），接着用sed[命令](https://www.linuxcool.com/)处理缓冲区中的内容，处理完成后，把缓冲区的内容送往屏幕。接着处理下一行，这样不断重复，直到文件末尾。文件内容并没有改变，除非你使用重定向存储输出。Sed主要用来自动编辑一个或多个文件，可以将数据行进行替换、删除、新增、选取等特定工作，简化对文件的反复操作，编写转换程序等。
 
- **语法** 
+ **命令格式** 
+
+```bash
+sed的命令格式：sed [options] 'command' file(s);
+
+sed的脚本格式：sed [options] -f scriptfile file(s);
+
+动作说明：
+a ：新增， a 的后面可以接字串，而这些字串会在新的一行出现(目前的下一行)～
+c ：取代， c 的后面可以接字串，这些字串可以取代 n1,n2 之间的行！
+d ：删除，因为是删除啊，所以 d 后面通常不接任何咚咚；
+i ：插入， i 的后面可以接字串，而这些字串会在新的一行出现(目前的上一行)；
+p ：打印，亦即将某个选择的数据印出。通常 p 会与参数 sed -n 一起运行～
+s ：取代，可以直接进行取代的工作哩！通常这个 s 的动作可以搭配正规表示法！例如 1,20s/old/new/g 就是啦！
+```
+
+选项
+
+- -e ：直接在命令行模式上进行sed动作编辑，此为默认选项;
+- -f ：将sed的动作写在一个文件内，用–f filename 执行filename内的sed动作;
+- -i ：直接修改文件内容;
+- -n ：只打印模式匹配的行；
+- -r ：支持扩展表达式;
+- -h或--help：显示帮助；
+- -V或--version：显示版本信息。
+
+##### 使用实例
+
+准备testfile文件
+
+```txt
+HELLO LINUX!  
+Linux is a free unix-type opterating system.  
+This is a linux testfile!  
+Linux test 
+```
+
+**使用sed 在第四行后添加新字符串，并将结果输出到标准输出**
+
+```bash
+sed -e 4a\newLine testfile 
+sed -e '4 a newline\nnewline2\n' testfile  # 4 行之后追加 3 行(2 行文字和 1 行空行)
+```
+
+输出结果：
+
+![60654687558](assets/1606546875583.png) 
+
+**以行为单位的新增/删除** 
+
+将 /home/wxw/study_test/shell/sed 目录下内容列出并且列印行号，同时，请将第 4 行删除！
+
+```bash
+nl /home/wxw/study_test//shell/sed/testfile |sed '4d' #删除第4行
+nl /home/wxw/study_test//shell/sed/testfile |sed '4,$d' #删除第4行到最后一行
+```
+
+输出结果
+
+![60654716817](assets/1606547168176.png) 
+
+**在第二行后(亦即是加在第三行)加上『drink tea?』字样！** 
+
+```bash
+nl /home/wxw/study_test//shell/sed/testfile | sed '2a drink tea'
+nl /home/wxw/study_test//shell/sed/testfile | sed '2i drink tea'  # 第二行前加一行
+
+# 如果是要增加两行以上，在第二行后面加入两行字，例如 Drink tea or ..... 与 drink beer?
+nl /home/wxw/study_test//shell/sed/testfile | sed '2a Drink tea or ...... \ drink beer ?'
+```
+
+> 每一行之间都必须要以反斜杠『 \ 』来进行新行的添加喔！所以，上面的例子中，我们可以发现在第一行的最后面就有 \ 存在
+
+**以行为单位的替换与显示** 
+
+```bash
+nl /etc/passwd | sed '2,5c No 2-5 number'  # 将第2-5行的内容取代成为『No 2-5 number』
+nl /etc/passwd | sed -n '5,7p'             # 仅列出 /etc/passwd 文件内的第 5-7 行
+```
+
+可以透过这个 sed 的以行为单位的显示功能， 就能够将某一个文件内的某些行号选择出来显示
+
+**数据的搜寻并显示**
+
+```bash
+nl /etc/passwd | sed '/root/p'           # 搜索 /etc/passwd有root关键字的行
+nl /etc/passwd | sed -n '/root/p'        # 使用-n的时候将只打印包含模板的行
+```
+
+**数据的搜寻并删除** 
+
+```bash
+nl /etc/passwd | sed  '/root/d' #删除/etc/passwd所有包含root的行，其他行输出
+```
+
+**数据的搜寻并执行命令**
+
+搜索/etc/passwd,找到root对应的行，执行后面花括号中的一组命令，每个命令之间用分号分隔，这里把bash替换为blueshell，再输出这行：
+
+```bash
+nl /etc/passwd | sed -n '/root/{s/bash/blueshell/;p;q}'    
+```
+
+**数据的搜寻并替换** 
+
+除了整行的处理模式之外， sed 还可以用行为单位进行部分数据的搜寻并取代。基本上 sed 的搜寻与替代的与 vi 相当的类似！他有点像这样：
+
+```bash
+sed 's/要被取代的字串/新的字串/g'
+```
+
+先观察原始信息，利用 /sbin/ifconfig 查询 IP
+
+```txt
+[root@www ~]# /sbin/ifconfig eth0
+eth0 Link encap:Ethernet HWaddr 00:90:CC:A6:34:84
+inet addr:192.168.1.100 Bcast:192.168.1.255 Mask:255.255.255.0
+inet6 addr: fe80::290:ccff:fea6:3484/64 Scope:Link
+UP BROADCAST RUNNING MULTICAST MTU:1500 Metric:1
+```
+
+本机的ip是192.168.1.100。
+
+将 IP 前面的部分予以删除
+
+```bash
+[root@www ~]# /sbin/ifconfig eth0 | grep 'inet addr' | sed 's/^.*addr://g'
+192.168.1.100 Bcast:192.168.1.255 Mask:255.255.255.0
+```
+
+**多点编** 
+
+一条sed命令，删除/etc/passwd第三行到末尾的数据，并把bash替换为blueshell
+
+```bash
+nl /etc/passwd | sed -e '3,$d' -e 's/bash/blueshell/'
+```
+
+-e表示多点编辑，第一个编辑命令删除/etc/passwd第三行到末尾的数据，第二条命令搜索bash替换为blueshell。
+
+
 
 
 
 **相关文章** 
 
-- [Linux之sed命令详解](https://www.linuxprobe.com/linux-sed-command.html) 
-
-
+- [sed命令编辑](https://www.runoob.com/linux/linux-comm-sed.html) 
 
 
 

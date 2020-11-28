@@ -80,7 +80,7 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 
 ​    windows下：使用 zkServer.cmd  // zkCli.cmd的启动
 
-
+（）
 
 
 
