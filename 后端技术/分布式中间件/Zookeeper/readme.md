@@ -146,6 +146,35 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 
 #### （8）Zookeeper 监听机制
 
+> Zookeeper的监听机制很多人都踩过坑，感觉实现了watcher 接口，后面节点的变化都会一一推送过来，然而并非如此。
+
+**Watch机制官方声明**：一个Watch事件是一个一次性的触发器，当被设置了Watch的数据发生了改变的时候，则服务器将这个改变发送给设置了Watch的客户端，以便通知它们。
+
+zookeeper 的 watcher 机制，可以分为四个过程：
+
+- 客户端注册 watcher。
+- 服务端处理 watcher。
+- 服务端触发 watcher 事件。
+- 客户端回调 watcher。
+
+##### **Zookeeper机制的特点**：
+
+**相关文章** 
+
+1. [zookeeper-watcher](https://www.runoob.com/w3cnote/zookeeper-watcher.html) 
+
+#### （9）Zookeeper 选举机制
+
+##### Leader选举
+
+> Leader选举概述
+
+Leader选举是保证分布式数据一致性的关键所在。当Zookeeper集群中的一台服务器出现以下两种情况之一时，需要进入Leader选举。
+
+
+
+
+
 
 
 
