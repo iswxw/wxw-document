@@ -18,6 +18,7 @@
 ### JVM
 
 - JVM垃圾回收机制，何时触发MinorGC等操作
+- Eden和Sur[vivo](https://www.nowcoder.com/jump/super-jump/word?word=vivo)r的比例分配等【Eden区和Survivor区的比例是8：1：1】
 
 ### Spring
 
@@ -33,8 +34,6 @@
 
 2. 索引树是如何维护的？
 
-   ​
-
 3. 数据库自增主键可能的问题 
 
    (1) 自增id用完之后插入数据会报主键冲突。[mysql 自增id作为主键 策略](https://www.jianshu.com/p/f20ad8c34595)  
@@ -42,6 +41,10 @@
    (2) 在一张表分布到多个数据库的情况下，使用表自增将会出现id重复的问题 
 
    - [小总结](https://blog.csdn.net/riemann_/article/details/94321174)   
+
+4. 为什么Mysql用B+树做索引而不用B-树或红黑树？【[阅读1](http://www.coder55.com/question/139)】
+
+   ​
 
 ### MyBatis
 
@@ -61,7 +64,8 @@
 
 ### Dubbo/Zookpeer
 
-1. Dubbo的底层实现原理和机制 
+1. RPC底层原理
+2. Dubbo的底层实现原理和机制 
 
 
 
@@ -73,7 +77,10 @@
 ### Maven
 
 1. Maven出现版本冲突如何解决 ？
-   - 一样长就近原则，不一样长最短原则
+   - **第一声明者优先原则：**在pom文件定义依赖，先声明的依赖为准。
+   - **路径近者优先原则：** 
+   - **排除原则** 
+   - **版本锁定** 
 
 ### 分布式
 
@@ -82,6 +89,8 @@
 ### 服务治理
 
 1. 接口幂等性
+2. 负载均衡
+   - [Nginx 负载均衡](https://www.cnblogs.com/lcword/p/12513155.html) 
 
 ### 微服务
 
