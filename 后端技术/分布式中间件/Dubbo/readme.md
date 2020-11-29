@@ -1,4 +1,4 @@
-### Dubbo 源码解析
+### Dubbo 技术
 
 ----
 
@@ -6,13 +6,51 @@
 
 ​       [![Build Status](https://travis-ci.org/apache/dubbo.svg?branch=master)](https://travis-ci.org/apache/dubbo)[ ](https://codecov.io/gh/apache/dubbo)[![Gitter](https://badges.gitter.im/alibaba/dubbo.svg)](https://gitter.im/alibaba/dubbo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-![](./img/dubbo.png)
+![](./assets/dubbo.png)
 
 - Dubbo源码解析  [入口1](https://segmentfault.com/a/1190000016741532)   
 
-### （一）Hello Dubbo 
+### Hello Dubbo 
 
 #### 1、Dubbo 是什么？
+
+##### **临阵磨刀** 
+
+在单体架构拆分成分布式架构之后，远程通信的需求还是很有必要的：
+
+![60662014491](assets/1606620144913.png) 
+
+> 建立在远程通信的基础上进一步思考的问题——RPC(Remote Procedure call) 远程过程调用 ，比如Dubbo、Thrift、gRPC、OPenfegin等等
+
+1. 数据传输方式：Socket、Http、Netty（高性能IIO通信框架）等
+
+2. 序列化和反序列化的方式：Java、xml、json等(Netty自带编码和解码器——>Netty帮你实现（反）序列化)
+
+3. 服务名称和URL地址之间的关系该如何优雅的保存：ServiceName和urls——>注册到注册中心
+
+   **注册中心：zookeeper、redis、nacos、eureka、consul、**
+
+   每个服务在启动的时候，需要将自己的服务名称和Url地址注册到注册中心上
+
+4. 客户端需要进行服务发现，根据服务名称获取urls
+
+5. 负载均衡，从很多urls中选择一个进行调用
+
+6. 服务端要监听在某个端口：Netty（8080）
+
+7. 客户端进行调用服务端：Netty.connect(ip,port);
+
+8. 客户端把序列化后的数据传输给服务端  new Request() ——序列化
+
+9. 服务端收到数据后，要进行反序列化——>通过request
+
+10. request.getClassName()、method ——>通过反射完成调用——>返回给客户端
+
+11. 客户端调用服务端内容失败时该怎么处理？——>**失败之后的机制（策略）（重试）**
+
+12. 服务想注册中心已注册了ServiceName和url之后，**为了感知到服务没有挂掉，不断向注册中心发送心跳——>XXX （心跳机制）**
+
+13. 监听Monitor[AOP、动态代理的方式]——>记录服务调用记录——>以便后续排查问题
 
 先给出一套官方的说法：Apache Dubbo是一款高性能、轻量级基于Java的RPC开源框架。  
 
@@ -47,7 +85,7 @@
 
 - **dubbo-registry** 下目录结构如下：
 
-  ![](.\img\register.png)
+  ![](.\assets\register.png)
 
    dubbo的注册中心实现有Multicast注册中心、Zookeeper注册中心、Redis注册中心、Simple注册中心等
 
@@ -87,7 +125,7 @@
 
 config的目录
 
-![](./img/config.png)
+![](./assets/config.png)
 
 1. dubbo-config-api：实现了API配置和属性配置的功能。
 2. dubbo-config-spring：实现了XML配置和注解配置的功能。
@@ -102,14 +140,14 @@ config的目录
 
 看看rpc的目录：
 
-![](./img/rpc.png)
+![](./assets/rpc.png)
 
 ##### （6）**dubbo-remoting—远程通信**
 
 - 提供了多种客户端和服务端通信功能，比如基于Grizzly、Netty、Tomcat等等，RPC用除了RMI的协议都要用到此模块。
 - remoting的目录
 
-![](./img/remote.png)
+![](./assets/remote.png)
 
 1. dubbo-remoting-api：定义了客户端和服务端的接口。
 2. dubbo-remoting-grizzly：基于Grizzly实现的Client和Server。
@@ -173,7 +211,7 @@ config的目录
 
 - 封装了各类序列化框架的支持实现
 
-  ![](./img/setialize.png)
+  ![](./assets/setialize.png)
 
 1. dubbo-serialization-api：定义了Serialization的接口以及数据输入输出的接口。
 2. 其他的包都是实现了对应的序列化框架的方法。dubbo内置的就是这几类的序列化框架，序列化也支持扩展。
@@ -211,7 +249,7 @@ config的目录
 - all/pow.xml：定义了dubbo的打包脚本，使用dubbo库的时候，需要引入改pom文件。
 - dubbo-parent：是dubbo的父pom，dubbo的maven模块都会引入该pom文件。
 
-### （二）Dubbo前言
+### Dubbo前言
 
 #### （1）什么是SPI ？
 
@@ -228,8 +266,6 @@ config的目录
 ##### 1、 背景
 
    随着Internet的快速发展，Web应用程序的规模不断扩大，最后我们发现传统的垂直体系结构（单片式）已无法解决。分布式服务体系结构和流计算体系结构势在必行，迫切需要一个治理系统来确保体系结构的有序发展。
-
-![图片](http://dubbo.apache.org/docs/en-us/user/sources/images/dubbo-architecture-roadmap.jpg)
 
 - 整体架构
 

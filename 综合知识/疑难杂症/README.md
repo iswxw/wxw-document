@@ -28,9 +28,14 @@
 
 ### MySQL
 
-1. MySQL InnoDB存储的文件结构
+1. MySQL InnoDB存储的文件结构 
+   - [MYSQL INNODB数据存储结构](https://blog.csdn.net/bohu83/article/details/81086474) 
 2. 索引树是如何维护的？
 3. 数据库自增主键可能的问题
+
+### MyBatis
+
+
 
 ### Redis
 
@@ -62,9 +67,25 @@
 
 ### 微服务
 
-
+1. [服务描述](https://blog.csdn.net/haponchang/article/details/93488503#%E6%9C%8D%E5%8A%A1%E6%8F%8F%E8%BF%B0)   <https://blog.csdn.net/haponchang/article/details/90746408> 
+2. [注册中心](https://blog.csdn.net/haponchang/article/details/93488503#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83)   <https://blog.csdn.net/haponchang/article/details/93467008> 
+3. [服务框架](https://blog.csdn.net/haponchang/article/details/93488503#%E6%9C%8D%E5%8A%A1%E6%A1%86%E6%9E%B6)   <https://blog.csdn.net/haponchang/article/details/93468031>  
+4. [服务监控](https://blog.csdn.net/haponchang/article/details/93488503#%E6%9C%8D%E5%8A%A1%E7%9B%91%E6%8E%A7)   <https://blog.csdn.net/haponchang/article/details/93469050  
+5. [服务追踪](https://blog.csdn.net/haponchang/article/details/93488503#%E6%9C%8D%E5%8A%A1%E8%BF%BD%E8%B8%AA)   <https://blog.csdn.net/haponchang/article/details/93486963> 
+6. [服务治理](https://blog.csdn.net/haponchang/article/details/93488503#%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86)   <https://blog.csdn.net/haponchang/article/details/93488503> 
 
 ### 算法
 
 - 找出数组中不重复的元素  [O(n) hashset 丢弃、位运算异或] 
 - ​
+
+
+
+### 经典题目
+
+1. [JAVA 面试题 合辑（一）https://blog.csdn.net/haponchang/article/details/92741553](https://blog.csdn.net/haponchang/article/details/92741553) 
+2. [JAVA 面试题 合辑（二）](https://blog.csdn.net/haponchang/article/details/92829739)<https://blog.csdn.net/haponchang/article/details/92829739> 
+3. [JAVA 面试题 合辑（三）https://blog.csdn.net/haponchang/article/details/92833016](https://blog.csdn.net/haponchang/article/details/92833016) 
+
+
+
