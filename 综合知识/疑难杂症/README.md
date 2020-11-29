@@ -32,6 +32,7 @@
    - [MYSQL INNODB数据存储结构](https://blog.csdn.net/bohu83/article/details/81086474) 
 2. 索引树是如何维护的？
 3. 数据库自增主键可能的问题
+   - [参考一](https://blog.csdn.net/riemann_/article/details/94321174) 
 
 ### MyBatis
 
@@ -76,8 +77,15 @@
 
 ### 算法
 
-- 找出数组中不重复的元素  [O(n) hashset 丢弃、位运算异或] 
+- 找出数组中不重复的元素  [O(n) hashset 丢弃、位运算异或]
 - ​
+
+
+### 经验题
+
+
+
+### 客观题
 
 
 
