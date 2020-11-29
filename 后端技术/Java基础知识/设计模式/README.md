@@ -305,43 +305,174 @@
 
 > 来源：[设计模式—状态模式](http://c.biancheng.net/view/1388.html) ||   [源码](https://github.com/GitHubWxw/wxw-java/tree/master/java-designpattern/src/main/java/com/wxw/state) 
 
+#### 4. 观察者模式
 
+当对象间存在一对多关系时，则使用观察者模式（Observer Pattern）。比如，当一个对象被修改时，则会自动通知依赖它的对象。观察者模式属于行为型模式。
 
+##### 4.1 基本介绍
 
+- **意图：**定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都得到通知并被自动更新。
+- **主要解决：**一个对象状态改变给其他对象通知的问题，而且要考虑到易用和低耦合，保证高度的协作。
+- **何时使用：**一个对象（目标对象）的状态发生改变，所有的依赖对象（观察者对象）都将得到通知，进行广播通知。
 
+##### 4.2 优缺点
 
+- **优点：** 1、观察者和被观察者是抽象耦合的。 2、建立一套触发机制。
 
+- **缺点：** 
 
+   1、如果一个被观察者对象有很多的直接和间接的观察者的话，将所有的观察者都通知到会花费很多时间。
 
+   2、如果在观察者和观察目标之间有循环依赖的话，观察目标会触发它们之间进行循环调用，可能导致系统崩溃。
 
+   3、观察者模式没有相应的机制让观察者知道所观察的目标对象是怎么发生变化的，而仅仅只是知道观察目标发生了变化。
 
+##### 4.3 使用场景
 
+- 一个对象的改变将导致其他一个或多个对象也发生改变，而不知道具体有多少对象将发生改变，可以降低对象之间的耦合度。
+- 一个对象必须通知其他对象，而并不知道这些对象是谁。
+- 需要在系统中创建一个触发链，A对象的行为将影响B对象，B对象的行为将影响C对象……，可以使用观察者模式创建一种链式触发机制
 
+##### 4.3 模式结构与实现
 
+实现观察者模式时要注意具体目标对象和具体观察者对象之间不能直接调用，否则将使两者之间紧密耦合起来，这违反了面向对象的设计原则。
 
+> 模式的结构
 
+观察者模式的主要角色如下。
 
+1. 抽象主题（Subject）角色：也叫抽象目标类，它提供了一个用于保存观察者对象的聚集类和增加、删除观察者对象的方法，以及通知所有观察者的抽象方法。
+2. 具体主题（Concrete Subject）角色：也叫具体目标类，它实现抽象目标中的通知方法，当具体主题的内部状态发生改变时，通知所有注册过的观察者对象。
+3. 抽象观察者（Observer）角色：它是一个抽象类或接口，它包含了一个更新自己的抽象方法，当接到具体主题的更改通知时被调用。
+4. 具体观察者（Concrete Observer）角色：实现抽象观察者中定义的抽象方法，以便在得到目标的更改通知时更新自身的状态。
 
+**观察者模式的结构图** 
 
+![è§å¯èæ¨¡å¼çç»æå¾](assets/3-1Q1161A6221S.gif) 
 
+> 代码示例 
 
+```java
 
+import java.util.*;
 
+public class ObserverPattern {
+    public static void main(String[] args) {
+        Subject subject = new ConcreteSubject();
+        Observer obs1 = new ConcreteObserver1();
+        Observer obs2 = new ConcreteObserver2();
+        subject.add(obs1);
+        subject.add(obs2);
+        subject.notifyObserver();
+    }
+}
 
+//抽象目标
+abstract class Subject {
+    protected List<Observer> observers = new ArrayList<Observer>();
 
+    //增加观察者方法
+    public void add(Observer observer) {
+        observers.add(observer);
+    }
 
+    //删除观察者方法
+    public void remove(Observer observer) {
+        observers.remove(observer);
+    }
 
+    public abstract void notifyObserver(); //通知观察者方法
+}
 
+//具体目标
+class ConcreteSubject extends Subject {
+    public void notifyObserver() {
+        System.out.println("具体目标发生改变...");
+        System.out.println("--------------");
 
+        for (Object obs : observers) {
+            ((Observer) obs).response();
+        }
 
+    }
+}
 
+//抽象观察者
+interface Observer {
+    void response(); //反应
+}
 
+//具体观察者1
+class ConcreteObserver1 implements Observer {
+    public void response() {
+        System.out.println("具体观察者1作出反应！");
+    }
+}
 
+//具体观察者2
+class ConcreteObserver2 implements Observer {
+    public void response() {
+        System.out.println("具体观察者2作出反应！");
+    }
+}
+```
 
+> 模式的扩展
 
+在 Java中，通过 java.util.Observable 类和 java.util.Observer 接口定义了观察者模式，只要实现它们的子类就可以编写观察者模式实例。
 
+**1. Observable类**
 
+Observable 类是抽象目标类，它有一个 Vector 向量，用于保存所有要通知的观察者对象，下面来介绍它最重要的 3 个方法。
 
+1. void addObserver(Observer o) 方法：用于将新的观察者对象添加到向量中。
+2. void notifyObservers(Object arg) 方法：调用向量中的所有观察者对象的 update() 方法，通知它们数据发生改变。通常越晚加入向量的观察者越先得到通知。
+3. void setChange() 方法：用来设置一个 boolean 类型的内部标志位，注明目标对象发生了变化。当它为真时，notifyObservers() 才会通知观察者。
 
+**2. Observer 接口** 
 
+Observer 接口是抽象观察者，它监视目标对象的变化，当目标对象发生变化时，观察者得到通知，并调用 void update(Observable o,Object arg) 方法，进行相应的工作。
 
+示例代码：
+
+```java
+public class ZkWatcherDemo {
+    public static void main(String[] args) {
+        zNode zNode = new zNode();
+        Watcher1 watcher1 = new Watcher1();
+        Watcher2 watcher2 = new Watcher2();
+        zNode.addObserver(watcher1);
+        zNode.addObserver(watcher2);
+        zNode.submit("监听方法");
+
+    }
+}
+    // 具体目标类
+    class zNode extends Observable{
+        // 添加
+        // 通知
+        public void submit(String state){
+            System.out.println("监听submit 事件触发广播");
+            this.setChanged();
+            this.notifyObservers(state);
+        }
+    }
+
+    // 具体观察者 节点更新
+    class Watcher1 implements Observer {
+        @Override
+        public void update(Observable observable, Object o) {
+            System.out.println("Watcher1: 节点1被更新了");
+        }
+    }
+
+    // 具体观察者 节点更新
+    class Watcher2 implements Observer {
+        @Override
+        public void update(Observable observable, Object o) {
+            System.out.println("Watcher2: 节点2被更新了");
+        }
+    }
+```
+
+> 来源： [观察者模式](http://c.biancheng.net/view/1390.html)  || [源码](https://github.com/GitHubWxw/wxw-java/tree/master/java-designpattern/src/main/java/com/wxw/observe) 

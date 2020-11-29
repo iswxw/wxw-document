@@ -30,9 +30,18 @@
 
 1. MySQL InnoDB存储的文件结构 
    - [MYSQL INNODB数据存储结构](https://blog.csdn.net/bohu83/article/details/81086474) 
+
 2. 索引树是如何维护的？
-3. 数据库自增主键可能的问题
-   - [参考一](https://blog.csdn.net/riemann_/article/details/94321174) 
+
+   ​
+
+3. 数据库自增主键可能的问题 
+
+   (1) 自增id用完之后插入数据会报主键冲突。[mysql 自增id作为主键 策略](https://www.jianshu.com/p/f20ad8c34595)  
+
+   (2) 在一张表分布到多个数据库的情况下，使用表自增将会出现id重复的问题 
+
+   - [小总结](https://blog.csdn.net/riemann_/article/details/94321174)   
 
 ### MyBatis
 
@@ -40,11 +49,19 @@
 
 ### Redis
 
-1. Redis的主键争用问题如何解决了解Redis事务的CAS操作吗
+1. 如何解决redis的并发竞争key问题   [cblogs](https://www.cnblogs.com/2019wxw/p/11700562.html) 
+
+2. **如何应对缓存穿透 【不存在的key】和缓存雪崩问题**  
+
+3. **redis和数据库双写一致性问题** 
+
+   > 采取正确更新策略，先更新数据库，再删缓存。其次，因为可能存在删除缓存失败的问题，提供一个补偿措施即可，例如利用消息队列。
+
+4. ​
 
 ### Dubbo/Zookpeer
 
-1. Dubbo的底层实现原理和机制
+1. Dubbo的底层实现原理和机制 
 
 
 

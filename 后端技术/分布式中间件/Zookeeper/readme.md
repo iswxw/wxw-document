@@ -144,6 +144,10 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 6. 分布式锁
 
 
+#### （8）Zookeeper 监听机制
+
+
+
 
 
 
