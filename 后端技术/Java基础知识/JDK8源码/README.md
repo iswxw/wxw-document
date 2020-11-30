@@ -1335,6 +1335,10 @@ lockInterruptibly()：当尝试获取锁失败后，就进行**阻塞可中断**
 3. [不可不说的Java“锁”事](https://tech.meituan.com/2018/11/15/java-lock.html) —美团技术团队
 4. [ReentrantLock](https://zhuanlan.zhihu.com/p/65727594)  
 
+#### 1.3 synchronized
+
+
+
 ### 2. atomic
 
 #### 2.1 AtomicInteger
@@ -1655,21 +1659,863 @@ addWorker 代码比较长，主要分为两部分：
 **相关文章** 
 
 1. [ThreadPoolExecutor 源码阅读](https://www.cnblogs.com/FJH1994/p/10362452.html) 
+2. [深入了解线程池](https://blog.51cto.com/janephp/2416396) 
 
+### 4. HashMap
 
-### 4. ConcurrentHashMap
+#### 4.1 前言
 
-
-
-
-
-
-
+- [hashmap面试题](https://juejin.cn/post/6899339640730632206#heading-1) 
 
 
 
+### 5. ConcurrentHashMap
 
+相信大家在日常开发中都用过 HashMap，HashMap 在并发扩容过程中，在 jdk7 中的实现可能会形成环形链表从而引发死循环，在jdk8中的实现又可能造成数据覆盖的问题。因此不论是 jdk7 还是 jdk8，HashMap 都是线程不安全的，为了解决线程安全问题，对Java 发展影响深远的 **Doug Lea** 编写了 ConcurrentHashMap 供开发者使用。
 
+本文就 ConcurrentHashMap 的实现原理做初步探讨。
+
+#### 4.1 HashMap 存在的问题
+
+1. Jdk7 在多线程并发的情况下，会产生死循环
+2. Jdk8 中的数据覆盖问题
+
+任何技术的诞生都是有其独特的诞生背景的，HashMap 诞生于分治思想，而 ConcurrentHashMap 则是为了解决 HashMap 中的线程安全问题而生，接下来我们就一起看一下 HashMap 中存在的线程安全问题。
+
+> 先看下 jdk7 中扩容方法的实现
+
+```java
+void resize(int newCapacity) {
+    Entry[] oldTable = table;
+    int oldCapacity = oldTable.length;
+    if (oldCapacity == MAXIMUM_CAPACITY) {
+        threshold = Integer.MAX_VALUE;
+        return;
+    }
+    Entry[] newTable = new Entry[newCapacity];
+    // 最终会进入transfer方法
+    transfer(newTable, initHashSeedAsNeeded(newCapacity));
+    table = newTable;
+	threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);
+}
+```
+
+- `resize` 方法会调用 `transfer`方法
+
+```java
+void transfer(Entry[] newTable, boolean rehash) {
+        int newCapacity = newTable.length;//新数组的长度
+        for (Entry<K,V> e : table) {//遍历旧数组
+            while(null != e) {//遍历旧数组中的每个链表结点
+                Entry<K,V> next = e.next;//next指向当前遍历结点e的下一个结点
+                if (rehash) {//再hash
+                    e.hash = null == e.key ? 0 : hash(e.key);
+                }
+                int i = indexFor(e.hash, newCapacity);//重新计算当前元素在新数组中的位置
+                /*********关键的 3行代码（头插法移动元素）*********/
+                e.next = newTable[i];
+                newTable[i] = e;
+                e = next;
+            }
+        }
+    }
+```
+
+如图所示，该map在插入第四个元素时会触发扩容
+
+> 来源： [HashMap JDK7 扩容和扩容死锁过程分析](https://www.freesion.com/article/20211001233/) 
+
+> jdk8中的数据覆盖问题
+
+```java
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+        Node<K,V>[] tab; Node<K,V> p; int n, i;
+        if ((tab = table) == null || (n = tab.length) == 0)
+            n = (tab = resize()).length;
+        if ((p = tab[i = (n - 1) & hash]) == null)
+             // 如果没有hash碰撞则直接插入元素
+            tab[i] = newNode(hash, key, value, null);
+        else {
+           //...
+        }
+        ++modCount;
+        if (++size > threshold)
+            resize();
+        afterNodeInsertion(evict);
+        return null;
+    }
+```
+
+1. 假设两个线程1、2都在进行 put 操作，并且hash函数计算出的插入下标是相同的。
+
+2. 当线程1执行完第六行代码后由于时间片耗尽导致被挂起，而线程2得到时间片后在该下标处插入了元素，完成了正常的插入。
+
+3. 然后线程1获得时间片，由于之前已经进行了 hash 碰撞的判断，所以此时不会再进行判断，而是直接进行插入。
+
+4. 这就导致了线程2插入的数据被线程1覆盖了，从而线程不安全。
+
+#### 4.2 ConcurrrentHashMap 实现原理
+
+ConcurrentHashMap 在 jdk7 升级j到 dk8之 后有较大的改动，jdk7 中主要采用 `Segment` 分段锁的思想，`Segment` 继承自`ReentrantLock` 类，依次来保证线程安全。限于篇幅原因，本文只讨论 jdk8 中的 ConcurrentHashMap 实现原理。有兴趣的同学可以自行研究 jdk7 中的实现。
+
+jdk8 中的 ConcurrentHashMap 数据结构同 jdk8 中的 HashMap 数据结构一样，都是 **数组+链表+红黑树**。摒弃了 jdk7 中的分段锁设计，使用了 `Node` + `CAS` + `Synchronized` 来保证线程安全。
+
+**重要成员变量** 
+
+```java
+    /**
+     * 控制table的初始化和扩容.
+     *  0  : 初始默认值
+     * -1 : 有线程正在进行table的初始化
+     * >0 : table初始化时使用的容量，或初始化/扩容完成后的threshold
+     * -(1 + nThreads) : 记录正在执行扩容任务的线程数
+     */
+    private transient volatile int sizeCtl;
+    // 扩容后的新Node数组，只有在扩容时才非空.
+    private transient volatile Node<K,V>[] nextTable;
+    // table：默认为 null，初始化发生在第一次插入操作，默认大小为16的数组，用来存储Node节点数据，扩容时大小总是2的幂次方。
+    transient volatile Node<K,V>[] table;
+    static final int MOVED     = -1; // hash值是-1，表示这是一个forwardNode节点
+    static final int TREEBIN   = -2; // hash值是-2  表示这时一个TreeBin节点
+```
+
+##### （1）**重要的类节点** 
+
+> ##### Node
+
+**Node**节点一共有5中类型
+
+1. Node节点，是所有节点的父类，可以单独放入桶内，也可以作为链表的头放入桶内。
+2. TreeNode节点，继承自Node，是红黑树的节点，此节点不能直接放入桶内，只能是作为红黑树的节点。
+3. TreeBin节点，TreeNode的代理节点，可以放入桶内，这个节点下面可以连接红黑树的根节点，所以叫做TreeNode的代理节点。
+4. ForwardingNode节点，扩容节点，只是在扩容阶段使用的节点，当前桶扩容完毕后，桶内会放入这个节点，此时查询会跳转到查询扩容后的table，不存储实际数据
+5. ReservationNode节点，内部方法使用，暂时可以忽略。
+
+Node是最核心的内部类，它包装了key-value键值对，所有插入ConcurrentHashMap的数据都包装在这里面。它与HashMap中的定义很相似，但是但是有一些差别它对**value和next属性设置了volatile同步锁(与JDK7的Segment相同)，保证并发的可见性**，它不允许调用setValue方法直接改变Node的value域，它增加了find方法辅助map.get()方法。
+
+```java
+ static class Node<K,V> implements Map.Entry<K,V> {
+        final int hash;
+        final K key;
+        volatile V val;           // volatile 保证并发可见性 禁止重排序
+        volatile Node<K,V> next;  // volatile 保证并发可见性
+
+        Node(int hash, K key, V val, Node<K,V> next) {
+            this.hash = hash;
+            this.key = key;
+            this.val = val;
+            this.next = next;
+        }
+
+        public final K getKey()       { return key; }
+        public final V getValue()     { return val; }
+        public final int hashCode()   { return key.hashCode() ^ val.hashCode(); }
+        public final String toString(){ return key + "=" + val; }
+        // 它不允许调用setValue方法直接改变Node的value域，它增加了find方法辅助map.get()方法
+        public final V setValue(V value) {
+            throw new UnsupportedOperationException();
+        }
+     
+        public final boolean equals(Object o) {
+            Object k, v, u; Map.Entry<?,?> e;
+            return ((o instanceof Map.Entry) &&
+                    (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
+                    (v = e.getValue()) != null &&
+                    (k == key || k.equals(key)) &&
+                    (v == (u = val) || v.equals(u)));
+        }
+
+        /**
+         * 用于map中的get（）方法，子类重写
+         * Virtualized support for map.get(); overridden in subclasses.
+         */
+        Node<K,V> find(int h, Object k) {
+            Node<K,V> e = this;
+            if (k != null) {
+                do {
+                    K ek;
+                    if (e.hash == h &&
+                        ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                        return e;
+                } while ((e = e.next) != null);
+            }
+            return null;
+        }
+     .... 省略一万行代码
+ }
+```
+
+> ####  ForwardingNode
+
+1. ForwardingNode是一种临时结点，在扩容进行中才会出现，hash值固定为-1，且不存储实际数据。
+2. 如果旧table数组的一个hash桶中全部的结点都迁移到了新table中，则在这个桶中放置一个ForwardingNode。
+3. 读操作碰到ForwardingNode时，将操作转发到扩容后的新table数组上去执行；写操作碰见它时，则尝试帮助扩容，扩容是支持多线程一起扩容的。
+4. 提供了在新的数组nextTable上进行查找的方法find
+
+```java
+   /**
+     * 插入一个节点时 扩容操作  ForwardingNode：一个特殊的 Node 节点，hash 值为-1，其中存储 nextTable 的引用。只有 table 发生扩容的      * 时候，ForwardingNode 才会发挥作用，作为一个占位符放在 table 中表示当前节点为 null 或则已经被移动。
+     * A node inserted at head of bins during transfer operations.
+     */
+    static final class ForwardingNode<K,V> extends Node<K,V> {
+        final Node<K,V>[] nextTable;
+        ForwardingNode(Node<K,V>[] tab) {
+            super(MOVED, null, null, null);
+            this.nextTable = tab;
+        }
+       // find的方法是从nextTable里进行查询节点，而不是以自身为头节点进行查找
+        Node<K,V> find(int h, Object k) {
+            // loop to avoid arbitrarily deep recursion on forwarding nodes
+            outer: for (Node<K,V>[] tab = nextTable;;) {
+                Node<K,V> e; int n;
+                if (k == null || tab == null || (n = tab.length) == 0 ||
+                    (e = tabAt(tab, (n - 1) & h)) == null)
+                    return null;
+                for (;;) {
+                    int eh; K ek;
+                    if ((eh = e.hash) == h &&
+                        ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                        return e;
+                    if (eh < 0) {
+                        if (e instanceof ForwardingNode) {
+                            tab = ((ForwardingNode<K,V>)e).nextTable;
+                            continue outer;
+                        }
+                        else
+                            return e.find(h, k);
+                    }
+                    if ((e = e.next) == null)
+                        return null;
+                }
+            }
+        }
+    }
+```
+
+> #### ReservationNode节点
+
+1、保留结点.
+2、hash值固定为-3， 不保存实际数据
+3、只在computeIfAbsent和compute这两个函数式API中充当占位符加锁使用
+
+> Unsafe和CAS
+
+在ConcurrentHashMap中，随处可以看到U, 大量使用了U.compareAndSwapXXX的方法，这个方法是利用一个CAS算法实现无锁化的修改值的操作，他可以大大降低锁代理的性能消耗。这个算法的基本思想就是不断地去比较当前内存中的变量值与你指定的一个变量值是否相等，如果相等，则接受你指定的修改的值，否则拒绝你的操作。因为当前线程中的值已经不是最新的值，你的修改很可能会覆盖掉其他线程修改的结果。这一点与乐观锁，SVN的思想是比较类似的。
+
+- Unsafe
+
+Unsafe 是 jdk 提供的一个直接访问操作系统资源的工具类（底层c++实现），它可以直接分配内存，内存复制，copy，提供 cpu 级别的 CAS 乐观锁等操作。它的目的是为了增强java语言直接操作底层资源的能力。**使用Unsafe类最主要的原因是避免使用高速缓冲区中的过期数据** 。
+
+为了方便理解，举个栗子。类 User 有一个成员变量 name。我们new了一个对象 User 后，就知道了它在内存中的起始值 ,而成员变量 name 在对象中的位置偏移是固定的。这样通过这个起始值和这个偏移量就能够定位到 name 在内存中的具体位置。
+Unsafe 提供了相应的方法获取静态成员变量，成员变量偏移量的方法，所以我们可以使用 Unsafe 直接更新内存中 name 的值。
+
+**unsafe静态块** 
+
+unsafe代码块控制了一些属性的修改工作，比如最常用的SIZECTL 。在这一版本的concurrentHashMap中，大量应用来的CAS方法进行变量、属性的修改工作。利用CAS进行无锁操作，可以大大提高性能。
+
+```java
+private static final sun.misc.Unsafe U;
+    private static final long SIZECTL;
+    private static final long TRANSFERINDEX;
+    private static final long BASECOUNT;
+    private static final long CELLSBUSY;
+    private static final long CELLVALUE;
+    private static final long ABASE;
+    private static final int ASHIFT;
+
+    static {
+        try {
+            U = sun.misc.Unsafe.getUnsafe();
+            Class<?> k = ConcurrentHashMap.class;
+            SIZECTL = U.objectFieldOffset
+                (k.getDeclaredField("sizeCtl"));
+            TRANSFERINDEX = U.objectFieldOffset
+                (k.getDeclaredField("transferIndex"));
+            BASECOUNT = U.objectFieldOffset
+                (k.getDeclaredField("baseCount"));
+            CELLSBUSY = U.objectFieldOffset
+                (k.getDeclaredField("cellsBusy"));
+            Class<?> ck = CounterCell.class;
+            CELLVALUE = U.objectFieldOffset
+                (ck.getDeclaredField("value"));
+            Class<?> ak = Node[].class;
+            ABASE = U.arrayBaseOffset(ak);
+            int scale = U.arrayIndexScale(ak);
+            if ((scale & (scale - 1)) != 0)
+                throw new Error("data type scale not a power of two");
+            ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+```
+
+- CAS
+
+CAS 译为 Compare And Swap，它是乐观锁的一种实现。假设内存值为 v，预期值为 e，想要更新成得值为 u，当且仅当内存值v等于预期值e时，才将v更新为u。CAS 操作不需要加锁，所以比起加锁的方式 CAS 效率更高。【但是有ABA问题：可以加版本号】
+
+**三个核心方法** 
+
+ConcurrentHashMap定义了三个原子操作，用于对指定位置的节点进行操作。正是这些原子操作保证了ConcurrentHashMap的线程安全。
+
+```java
+  //获得在i位置上的Node节点
+    static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
+        return (Node<K,V>)U.getObjectVolatile(tab, ((long)i << ASHIFT) + ABASE);
+    }
+  //利用CAS算法设置i位置上的Node节点。之所以能实现并发是因为他指定了原来这个节点的值是多少
+  //在CAS算法中，会比较内存中的值与你指定的这个值是否相等，如果相等才接受你的修改，否则拒绝你的修改
+  //因此当前线程中的值并不是最新的值，这种修改可能会覆盖掉其他线程的修改结果  有点类似于SVN
+    static final <K,V> boolean casTabAt(Node<K,V>[] tab, int i,
+                                        Node<K,V> c, Node<K,V> v) {
+        return U.compareAndSwapObject(tab, ((long)i << ASHIFT) + ABASE, c, v);
+    }
+  //利用volatile方法设置节点位置的值
+    static final <K,V> void setTabAt(Node<K,V>[] tab, int i, Node<K,V> v) {
+        U.putObjectVolatile(tab, ((long)i << ASHIFT) + ABASE, v);
+    }
+
+```
+
+##### （2）**类和方法分析** 
+
+> ### put() 方法
+
+```java
+    /**
+     * 插入键值对，<K,V>均不能为null.
+     */
+    public V put(K key, V value) {
+        return putVal(key, value, false);
+    }
+
+     // 实际插入操作
+     // @param onlyIfAbsent true:仅当key不存在时,才插入
+	 final V putVal(K key, V value, boolean onlyIfAbsent) {
+        if (key == null || value == null) throw new NullPointerException();
+        int hash = spread(key.hashCode()); // 再次计算hash
+       /**
+         * 使用链表保存时，binCount记录table[i]这个桶中所保存的节点数；
+         * 使用红黑树保存时，binCount==2，保证put后更改计数值时能够进行扩容检查，同时不触发红黑树化操作
+         */
+        int binCount = 0;
+        // 自旋插入节点，直到成功
+        for (Node<K,V>[] tab = table;;) {
+            Node<K,V> f; int n, i, fh;
+             // CASE1: 首次初始化table —— 懒加载 tab = initTable();
+            if (tab == null || (n = tab.length) == 0)
+                tab = initTable();
+            // CASE2: table[i]对应的桶为null
+            else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+            // 注意下上面table[i]的索引i的计算方式：[ key的hash值 & (table.length-1) ]
+            // 这也是table容量必须为2的幂次的原因，读者可以自己看下当table.length为2的幂次时，(table.length-1)的二进制形式的特点全是1
+            // 配合这种索引计算方式可以实现key的均匀分布，减少hash冲突
+                if (casTabAt(tab, i, null,new Node<K,V>(hash, key, value, null)))  // 插入一个链表结点
+                    break;                   // no lock when adding to empty bin
+            }
+            // CASE3: 发现ForwardingNode结点，说明此时table正在扩容，则尝试协助数据迁移
+            else if ((fh = f.hash) == MOVED)  
+                tab = helpTransfer(tab, f); // // 迁移数据方法
+            // CASE4: 出现hash冲突,也就是table[i]桶中已经有了结点
+            else {
+                V oldVal = null;
+                synchronized (f) {  // 锁住table[i]结点
+                    if (tabAt(tab, i) == f) {  // 再判断一下table[i]是不是第一个结点, 防止其它线程的写修改
+                        // CASE4.1: table[i]是链表结点
+                        if (fh >= 0) {
+                            binCount = 1;
+                            for (Node<K,V> e = f;; ++binCount) {
+                                K ek;
+                                 // 找到“相等”的结点，判断是否需要更新value值
+                                if (e.hash == hash && ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
+                                    oldVal = e.val;
+                                    if (!onlyIfAbsent)
+                                        e.val = value;
+                                    break;
+                                }
+                                Node<K,V> pred = e;
+                                if ((e = e.next) == null) {  // “尾插法”插入新结点
+                                    pred.next = new Node<K,V>(hash, key,value, null);
+                                    break;
+                                }
+                            }
+                        }
+                        // CASE4.2: table[i]是红黑树结点
+                        else if (f instanceof TreeBin) {
+                            Node<K,V> p;
+                            binCount = 2;
+                            if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key, value)) != null) {
+                                oldVal = p.val;
+                                if (!onlyIfAbsent)
+                                    p.val = value;
+                            }
+                        }
+                    }
+                }
+                if (binCount != 0) {
+                    // TREEIFY_THRESHOLD = 8
+                    if (binCount >= TREEIFY_THRESHOLD)
+                        treeifyBin(tab, i); // 链表 -> 红黑树 转换
+                    if (oldVal != null)     // 表明本次put操作只是替换了旧值，不用更改计数值
+                        return oldVal;
+                    break;
+                }
+            }
+        }
+        addCount(1L, binCount); // 计数值加1
+        return null;
+    }
+```
+
+**梳理思路** 
+
+- putVal一共有4种情况
+
+(1) 首次插入第一个值，初始化 table
+
+```java
+private final Node<K,V>[] initTable() {
+        Node<K,V>[] tab; int sc;
+        // 自旋直到初始化成功
+        while ((tab = table) == null || tab.length == 0) {
+            // sizeCtl< -1 说明table已经正在初始化  /   扩容(sizeCtl = -1)
+            if ((sc = sizeCtl) < 0) 
+                Thread.yield(); // lost initialization race; just spin
+            
+            // 将sizeCtl更新成-1,表示正在初始化中
+            else if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) {
+                try {
+                    if ((tab = table) == null || tab.length == 0) {
+                        int n = (sc > 0) ? sc : DEFAULT_CAPACITY;
+                        @SuppressWarnings("unchecked")
+                        Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
+                        table = tab = nt;
+                        sc = n - (n >>> 2); //  0.75n，负载因子
+                    }
+                } finally {
+                    sizeCtl = sc; // 设置threshold = 0.75 * table.length
+                }
+                break;
+            }
+        }
+        return tab;
+    }
+```
+
+(2)  table[i]对应的桶为空，直接占用table[i]
+
+(3)  ForwardingNode结点，说明此时table正在扩容，则尝试协助进行数据迁移
+
+(4)  table[i]桶中已经有了结点，hash冲突了，有2种情况
+
+ 4.1 当table[i]的结点类型为Node——链表结点时，就会将新结点以“尾插法”的形式插入链表的尾部。
+
+ 4.2 当table[i]的结点类型为TreeBin——红黑树代理结点时，就会将新结点通过红黑树的插入方式插入。
+
+- treeifyBin 尝试 链表转红黑树
+
+```java
+/**
+ * 尝试进行 链表 -> 红黑树 的转换.
+ */
+private final void treeifyBin(Node<K, V>[] tab, int index) {
+    Node<K, V> b;
+    int n, sc;
+    if (tab != null) {
+
+        // CASE 1: table的容量 < MIN_TREEIFY_CAPACITY(64)时，直接进行table扩容，不进行红黑树转换
+        if ((n = tab.length) < MIN_TREEIFY_CAPACITY)
+            tryPresize(n << 1);
+
+            // CASE 2: table的容量 ≥ MIN_TREEIFY_CAPACITY(64)时，进行链表 -> 红黑树的转换
+        else if ((b = tabAt(tab, index)) != null && b.hash >= 0) {
+            synchronized (b) {
+                if (tabAt(tab, index) == b) {
+                    TreeNode<K, V> hd = null, tl = null;
+
+                    // 遍历链表，建立红黑树
+                    for (Node<K, V> e = b; e != null; e = e.next) {
+                        TreeNode<K, V> p = new TreeNode<K, V>(e.hash, e.key, e.val, null, null);
+                        if ((p.prev = tl) == null)
+                            hd = p;
+                        else
+                            tl.next = p;
+                        tl = p;
+                    }
+                    // 以TreeBin类型包装，并链接到table[index]中
+                    setTabAt(tab, index, new TreeBin<K, V>(hd));
+                }
+            }
+        }
+    }
+}
+```
+
+> ### get方法
+
+```java
+/**
+ * 根据key查找对应的value值
+ *
+ * @return 查找不到则返回null
+ */
+public V get(Object key) {
+    Node<K, V>[] tab;
+    Node<K, V> e, p;
+    int n, eh;
+    K ek;
+    int h = spread(key.hashCode());     // 重新计算key的hash值
+    if ((tab = table) != null && (n = tab.length) > 0 && (e = tabAt(tab, (n - 1) & h)) != null) {
+        if ((eh = e.hash) == h) {       // CASE1、table[i]就是待查找的项，直接返回
+            if ((ek = e.key) == key || (ek != null && key.equals(ek)))
+                return e.val;
+        } else if (eh < 0)              //CASE2、hash值<0, 说明遇到非链表结点, 调用对应节点的find方法查找
+            return (p = e.find(h, key)) != null ? p.val : null;
+        while ((e = e.next) != null) {  //始终可以按照链表方式查找
+            if (e.hash == h &&((ek = e.key) == key || (ek != null && key.equals(ek))))
+                return e.val;
+        }
+    }
+    return null;
+}
+```
+
+对于CASE2，重点看一下TreeBin结点的查找
+
+1、TreeBin的查找
+
+ConcurrentHashMap采用了一种类似读写锁的方式：当线程持有写锁（修改红黑树）时，如果读线程需要查找，不会像传统的读写锁那样阻塞等待，而是转而以链表的形式进行查找（TreeBin本身时Node类型的子类，所有拥有Node的所有字段）
+
+```java
+/**
+ * 从根结点开始遍历查找，找到“相等”的结点就返回它，没找到就返回null
+ * 当存在写锁时，以链表方式进行查找
+ */
+final Node<K, V> find(int h, Object k) {
+    if (k != null) {
+        for (Node<K, V> e = first; e != null; ) {
+            int s;
+            K ek;
+            /**
+             * 两种特殊情况下以链表的方式进行查找:
+             * 1. 有线程正持有写锁，这样做能够不阻塞读线程
+             * 2. 有线程等待获取写锁，不再继续加读锁，相当于“写优先”模式
+             */
+            if (((s = lockState) & (WAITER | WRITER)) != 0) {
+                if (e.hash == h &&
+                    ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                    return e;
+                e = e.next;     // 链表形式
+            }
+
+            // 读线程数量加1，读状态进行累加
+            else if (U.compareAndSwapInt(this, LOCKSTATE, s, s + READER)) {
+                TreeNode<K, V> r, p;
+                try {
+                    p = ((r = root) == null ? null :
+                        r.findTreeNode(h, k, null));
+                } finally {
+                    Thread w;
+                    // 如果当前线程是最后一个读线程，且有写线程因为读锁而阻塞，则唤醒写线程，尝试获取写锁
+                    if (U.getAndAddInt(this, LOCKSTATE, -READER) == (READER | WAITER) && (w = waiter) != null)
+                        LockSupport.unpark(w);
+                }
+                return p;
+            }
+        }
+    }
+    return null;
+}
+```
+
+**阅读** 
+
+1. [concurrentHashMap类和方法分析](https://blog.51cto.com/janephp/2413512) 
+
+##### （4）扩容原理分析
+
+> 扩容一般分为2个步骤
+
+1. table数组的扩容，一般是2倍的扩容，这个是单线程操作的。
+
+2. 数据的迁移，把旧table中的各个槽中的结点重新分配到新table中。
+
+```scss
+ConcurrentHashMap在处理rehash的时候，并不会重新计算每个key的hash值，而是利用了一种很巧妙的方法。
+
+1、ConcurrentHashMap内部的table数组的大小必须为2的幂次，原因是让key均匀分布，减少冲突
+2、当table数组的大小为2的幂次时，通过key.hash & table.length-1这种方式计算出的索引i，当table扩容后（2倍），新的索引要么在原来的位置i，要么是i+n，n为扩容之前的容量。
+3、这种处理方式非常利于扩容时多个线程同时进行的数据迁移操作，因为旧table的各个桶中的结点迁移不会互相影响，将整个table数组划分为很多部分，每一部分包含一定区间的桶，每个数据迁移线程处理各自区间中的结点
+```
+
+> 什么时候扩容？
+
+链表的结点数目超过一定阈值，就会触发链表 -> 红黑树的转换，执行treeifyBin方法。
+
+```java
+/**
+ *  链表 -> 红黑树 的转换.
+ */
+private final void treeifyBin(Node<K, V>[] tab, int index) {
+    Node<K, V> b;
+    int n, sc;
+    if (tab != null) {
+
+        // CASE 1: table的容量 < MIN_TREEIFY_CAPACITY(64)时，直接table扩容，不红黑树转换
+        if ((n = tab.length) < MIN_TREEIFY_CAPACITY)
+            tryPresize(n << 1); //左移一位，就是*2，扩容2倍
+        
+            // CASE 2: table的容量 ≥ MIN_TREEIFY_CAPACITY(64)时，链表 -> 红黑树的转换
+        else if ((b = tabAt(tab, index)) != null && b.hash >= 0) {
+            synchronized (b) {
+                if (tabAt(tab, index) == b) {
+                    TreeNode<K, V> hd = null, tl = null;
+
+                    // 遍历链表，建立红黑树
+                    for (Node<K, V> e = b; e != null; e = e.next) {
+                        TreeNode<K, V> p = new TreeNode<K, V>(e.hash, e.key, e.val, null, null);
+                        if ((p.prev = tl) == null)
+                            hd = p;
+                        else
+                            tl.next = p;
+                        tl = p;
+                    }
+                    // 封装TreeBin，并链接到table[index]中
+                    setTabAt(tab, index, new TreeBin<K, V>(hd));
+                }
+            }
+        }
+    }
+}
+```
+
+- 扩容函数
+
+```java
+private final void tryPresize(int size) {
+        //动态调整扩容的大小
+        int c = (size >= (MAXIMUM_CAPACITY >>> 1)) ? MAXIMUM_CAPACITY :
+                tableSizeFor(size + (size >>> 1) + 1);
+        int sc;
+        while ((sc = sizeCtl) >= 0) { //大于等于0代表，初始化或者扩容后的（table*负载因子）的桶数量
+            Node<K,V>[] tab = table; int n;
+            //Case1，table没有初始化，先初始化
+            if (tab == null || (n = tab.length) == 0) {
+                n = (sc > c) ? sc : c;
+                //设置SIZECTL为-1代表，初始化或者扩容进行中
+                if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) {
+                    try {
+                        if (table == tab) {
+                            Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];//生成新的table
+                            table = nt;
+                            sc = n - (n >>> 2); //n-(n/4) = 0.75n,也就是负载因子
+                        }
+                    } finally {
+                        sizeCtl = sc; //设置sizeCtl为扩容后的桶*负载因子
+                    }
+                }
+            }
+            //Case2, c<sc说明已经扩容了；n>=MAXIMUM_CAPACITY,说明桶超限了。
+            else if (c <= sc || n >= MAXIMUM_CAPACITY)
+                break;
+            //Case3,开始扩容
+            else if (tab == table) {
+                int rs = resizeStamp(n);//根据容量n生成一个随机数，唯一标识本次扩容操作
+                if (sc < 0) { //sc<0,说明sizeCtl<0,代表有别的线程正在进行扩容
+                    Node<K,V>[] nt;
+                    //不能协助扩容，退出
+                    if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
+                            sc == rs + MAX_RESIZERS || (nt = nextTable) == null ||
+                            transferIndex <= 0)
+                        break;
+                    //加入扩容的队伍，同时sizeCtl+1，此时sizeCtl代表扩容的线程数量
+                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1))
+                        transfer(tab, nt);
+                }
+                //设置sizeCtl为负数，代表自己是第一个扩容的线程，CAS操作保证只有一个线程安全
+                else if (U.compareAndSwapInt(this, SIZECTL, sc,
+                        (rs << RESIZE_STAMP_SHIFT) + 2))
+                    transfer(tab, null); //null代表首次扩容
+            }
+        }
+    }
+```
+
+- 数据迁移的方法
+
+```java
+/**
+     * tab,    旧table
+     * nextTAB 扩容后的table
+     */
+    private final void transfer(Node<K,V>[] tab, Node<K,V>[] nextTab) {
+        int n = tab.length, stride;
+        //每个线程负责迁移table一个区间段的桶的个数，最少是16个
+        if ((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE)
+            stride = MIN_TRANSFER_STRIDE; // subdivide range
+        //首次扩容
+        if (nextTab == null) {            // initiating
+            try {
+                //创建新的table,默认n*2
+                Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n << 1];
+                nextTab = nt;
+            } catch (Throwable ex) {      // try to cope with OOME
+                sizeCtl = Integer.MAX_VALUE;
+                return;
+            }
+            nextTable = nextTab;
+            transferIndex = n; //要迁移的桶的个数
+        }
+        int nextn = nextTab.length;
+        //创建扩容节点，当某个桶迁移完成后，放入table[i],标记桶扩容完成
+        ForwardingNode<K,V> fwd = new ForwardingNode<K,V>(nextTab);
+        boolean advance = true; //为true,表示当前桶迁移完成，可以继续处理下一个桶
+        boolean finishing = false; // 最后一个数据迁移的线程将该值置为true，进行扩容的收尾工作
+        //i桶索引，bound就是线程要处理的另一个区间边界
+        for (int i = 0, bound = 0;;) {
+            Node<K,V> f; int fh;
+            //定位本轮处理区间【transferIndex-1，transferIndex-stride】
+            while (advance) {
+                int nextIndex, nextBound;
+                if (--i >= bound || finishing)
+                    advance = false;
+                else if ((nextIndex = transferIndex) <= 0) {
+                    i = -1;
+                    advance = false;
+                }
+                else if (U.compareAndSwapInt
+                        (this, TRANSFERINDEX, nextIndex,
+                                nextBound = (nextIndex > stride ?
+                                        nextIndex - stride : 0))) {
+                    bound = nextBound;
+                    i = nextIndex - 1;
+                    advance = false;
+                }
+            }
+            //Case1,最后一个迁移线程或者是线程出现了冲突，导致了i<0
+            if (i < 0 || i >= n || i + n >= nextn) {
+                int sc;
+                if (finishing) { //迁移完成
+                    nextTable = null;
+                    table = nextTab;
+                    sizeCtl = (n << 1) - (n >>> 1);
+                    return;
+                }
+                //扩容线程数减1,当前线程任务已执行完成
+                if (U.compareAndSwapInt(this, SIZECTL, sc = sizeCtl, sc - 1)) {
+                    //判断是否最后一个迁移线程，不是则退出
+                    if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
+                        return;
+                    finishing = advance = true;
+                    //最后一个线程，还原i值，重新进行检查，是否全部迁移完成，应该所有桶都是ForwardingNode
+                    i = n; // recheck before commit
+                }
+            }
+            // CASE2：旧桶本身为null，不用迁移，放一个ForwardingNode
+            else if ((f = tabAt(tab, i)) == null)
+                advance = casTabAt(tab, i, null, fwd);
+            //CASE3：该旧桶已经迁移完成，直接跳过，hash==moved 代表ForwardingNode
+            else if ((fh = f.hash) == MOVED)
+                advance = true; // already processed
+            else {
+                // CASE4：该旧桶未迁移完成，进行数据迁移，加锁
+                synchronized (f) {
+                    if (tabAt(tab, i) == f) {
+                        Node<K,V> ln, hn;
+                        if (fh >= 0) { //桶是链表，迁移链表
+
+                            /**
+                             * 下面的过程会将旧桶中的链表分成两部分：ln链和hn链
+                             * ln链会插入到新table的槽i中，hn链会插入到新table的槽i+n中
+                             */
+                            int runBit = fh & n;
+                            Node<K,V> lastRun = f;
+                            for (Node<K,V> p = f.next; p != null; p = p.next) {
+                                int b = p.hash & n;
+                                if (b != runBit) {
+                                    runBit = b;
+                                    lastRun = p;
+                                }
+                            }
+                            if (runBit == 0) {
+                                ln = lastRun;
+                                hn = null;
+                            }
+                            else {
+                                hn = lastRun;
+                                ln = null;
+                            }
+                            for (Node<K,V> p = f; p != lastRun; p = p.next) {
+                                int ph = p.hash; K pk = p.key; V pv = p.val;
+                                if ((ph & n) == 0)
+                                    ln = new Node<K,V>(ph, pk, pv, ln);
+                                else
+                                    hn = new Node<K,V>(ph, pk, pv, hn);
+                            }
+                            setTabAt(nextTab, i, ln);  // ln链表存入新桶的索引i位置
+                            setTabAt(nextTab, i + n, hn); // hn链表存入新桶的索引i+n位置
+                            setTabAt(tab, i, fwd); // 设置ForwardingNode占位
+                            advance = true; // 表示当前旧桶的结点已迁移完毕
+                        }
+                        else if (f instanceof TreeBin) { //红黑树迁移
+                            TreeBin<K,V> t = (TreeBin<K,V>)f;
+                            TreeNode<K,V> lo = null, loTail = null;
+                            TreeNode<K,V> hi = null, hiTail = null;
+                            /**
+                             * 先以链表方式遍历，复制所有结点，然后根据高低位组装成两个链表；
+                             * 然后看下是否需要进行红黑树转换，最后放到新table对应的桶中
+                             */
+                            int lc = 0, hc = 0;
+                            for (Node<K,V> e = t.first; e != null; e = e.next) {
+                                int h = e.hash;
+                                TreeNode<K,V> p = new TreeNode<K,V>
+                                        (h, e.key, e.val, null, null);
+                                if ((h & n) == 0) {
+                                    if ((p.prev = loTail) == null)
+                                        lo = p;
+                                    else
+                                        loTail.next = p;
+                                    loTail = p;
+                                    ++lc;
+                                }
+                                else {
+                                    if ((p.prev = hiTail) == null)
+                                        hi = p;
+                                    else
+                                        hiTail.next = p;
+                                    hiTail = p;
+                                    ++hc;
+                                }
+                            }
+                            // 判断是否需要进行 红黑树 <-> 链表 的转换
+                            ln = (lc <= UNTREEIFY_THRESHOLD) ? untreeify(lo) :
+                                    (hc != 0) ? new TreeBin<K,V>(lo) : t;
+                            hn = (hc <= UNTREEIFY_THRESHOLD) ? untreeify(hi) :
+                                    (lc != 0) ? new TreeBin<K,V>(hi) : t;
+                            setTabAt(nextTab, i, ln);
+                            setTabAt(nextTab, i + n, hn);
+                            setTabAt(tab, i, fwd);// 设置ForwardingNode占位
+                            advance = true; // 表示当前旧桶的结点已迁移完毕
+                        }
+                    }
+                }
+            }
+        }
+    }
+```
+
+**相关文章** 
+
+1. [超详细的Java集合总结](https://juejin.cn/post/6900061460236500999#heading-10) 
+2. [jdk8 中的 ConcurrentHashMap](https://juejin.cn/post/6896387191828643847) 
+3. [多线程ConcurrentHashMap](https://blog.51cto.com/janephp/2412917) —51CTO
+
+#### 4.3 小结
+
+通过以上对 ConcurrentHashMap 的初步探讨，相信读者也会和笔者一样惊叹于 **Doug Lea** 大师的编程水平和技巧。ConcurrentHashMap  类在 jdk8 中源码多达6300 行，其中运用了大量的多线程与高并发的编程技术，如 volatile、synchronized、CAS、Unsafe、Thread 类相关 API，以及许多精巧的算法，如 ConcurrentHashMap 底层数组的长度是2的幂次方以便用位运算计算元素下标 ，同时也方便计算扩容后的元素下标，还有令笔者惊叹的高低链表迁移操作，诸如此类、不再赘述。
+
+感谢 **Doug Lea** 对于 Java 发展做出的贡献，也希望我们可以向大师学习，磨炼自己的编程水平。借用笔者很喜欢的一个程序员大佬的一句话，学习是一条令人时而欣喜若狂、时而郁郁寡欢的道路。共勉！
 
 
 
