@@ -30,6 +30,10 @@
 
 ![1606879847533](assets/1606879847533.png) 
 
+**相关文章** 
+
+1. [redis环境搭建-主从模式](https://www.cnblogs.com/CSunShine/p/11475152.html) 
+
 #### 1.2 Redis 主存复制
 
 > 来源：[csdn](https://blog.csdn.net/qq_41893274/article/details/109121045) 
