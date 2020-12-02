@@ -38,9 +38,14 @@
 
 > 来源：[csdn](https://blog.csdn.net/qq_41893274/article/details/109121045) 
 
-
-
 ### Redis 哨兵模式工作原理
+
+
+
+**相关文章** 
+
+- [Redis Sentinel文档](https://github.com/redis/redis-doc/blob/master/topics/sentinel.md) 
+- [sentinet-clients](https://github.com/redis/redis-doc/blob/master/topics/sentinel-clients.md) 
 
 ### Redis 集群模式工作原理
 
