@@ -1337,7 +1337,160 @@ lockInterruptibly()：当尝试获取锁失败后，就进行**阻塞可中断**
 
 #### 1.3 synchronized
 
+##### 基本使用
 
+`synchronized`关键字是Java并发编程中线程同步的常用手段之一，其作用有三个:
+
+- **互斥性**：确保线程互斥的访问相同资源，锁自动释放，多个线程操作同个代码块或函数必须排队获得锁；
+- **可见性** ：保证共享变量的修改能够及时可见，获得锁的线程操作完毕后会将所数据刷新到共享内存区[1]；
+- **有序性**：有效解决重排序问题；
+
+`synchronized`用法有三个:
+
+1. 修饰实例方法
+2. 修饰静态方法
+3. 修饰代码块
+
+（1）修饰实例方法
+
+`synchronized`关键词作用在方法的前面，用来锁定方法，其实默认锁定的是`this`对象。
+
+```java
+public class SynchronizeInstanceMethod implements Runnable {
+
+    public static void main(String[] args) throws InterruptedException {
+        SynchronizeInstanceMethod t = new SynchronizeInstanceMethod();
+        Thread t1 = new Thread(t);
+        Thread t2 = new Thread(t);
+        t1.start();
+        t2.start();
+        t1.join();//主线程等待t1执行完毕
+        t2.join();//主线程等待t2执行完毕
+        System.out.println(i);
+    }
+
+    @Override
+    public void run() {
+        for (int j = 0; j < 10000; j++) {
+            increase();
+        }
+    }
+
+    //共享资源(临界资源)  volatile 只能保证可见性，不能保证原子性
+    static int i = 0;
+
+    //如果没有synchronized关键字，输出小于20000
+    public synchronized void increase() {
+        i++;
+    }
+
+//    public /*synchronized*/ void increase() {
+//        i++;
+//    }
+}
+```
+
+（2）修饰静态方法
+
+`synchronized`还是修饰在方法上，不过修饰的是静态方法，等价于锁定的是`Class`对象，
+
+```java
+public class SynchronizeStaticMethod {
+    //共享资源(临界资源)
+    static int i = 0;
+
+    //如果没有synchronized关键字，输出小于20000
+    public static synchronized void increase() {
+        i++;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread t1 = new Thread(new Runnable() {
+            public void run() {
+                for (int j = 0; j < 10000; j++) {
+                    increase();
+                }
+            }
+        });
+        Thread t2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int j = 0; j < 10000; j++) {
+                    increase();
+                }
+            }
+        });
+        t1.start();
+        t2.start();
+        t1.join();//主线程等待t1执行完毕
+        t2.join();//主线程等待t2执行完毕
+        System.out.println(i);
+    }
+}
+```
+
+（3）修饰同步块
+
+用法是在函数体内部对于要修改的参数区间用`synchronized`来修饰，相比与锁定函数这个范围更小，可以指定锁定什么对象。
+
+```java
+public class SynchronizeBlock implements Runnable {
+
+    //共享资源(临界资源)
+    static int i = 0;
+
+    @Override
+    public void run() {
+        for (int j = 0; j < 10000; j++) {
+            //获得了String的类锁
+            synchronized (String.class) {
+                i++;
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        SynchronizeBlock t = new SynchronizeBlock();
+        Thread t1 = new Thread(t);
+        Thread t2 = new Thread(t);
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+        System.out.println(i);
+    }
+}
+```
+
+使用概述：
+
+1. synchronized修饰的实例方法，多线程并发访问时，`只能有一个线程进入`，获得对象内置锁，其他线程阻塞等待，但在此期间线程仍然可以访问其他方法。
+2. synchronized修饰的静态方法，多线程并发访问时，只能有一个线程进入，获得类锁，其他线程阻塞等待，但在此期间线程仍然可以访问其他方法。
+3. synchronized修饰的代码块，多线程并发访问时，只能有一个线程进入，根据括号中的对象或者是类，获得相应的对象内置锁或者是类锁
+4. 每个类都有一个类锁，类的每个对象也有一个内置锁，它们是`互不干扰`的，也就是说一个线程可以同时获得类锁和该类实例化对象的内置锁，当线程访问非synchronzied修饰的方法时，并不需要获得锁，因此不会产生阻塞。
+
+##### 管程（监视器） 
+
+**管程[2]** (英语：Monitors，也称为监视器) 在操作系统中是很重要的概念，管程其实指的是`管理共享变量以及管理共享变量的操作过程`。有点扮演中介的意思，管程管理一堆对象，多个线程同一时候只能有一个线程来访问这些东西。
+
+- 管程可以看做一个软件模块，它是将共享的变量和对于这些共享变量的操作封装起来，形成一个具有一定接口的功能模块，进程可以调用`管程`来实现进程级别的并发控制。
+- 进程只能互斥的使用管程，即当一个进程使用管程时，另一个进程必须等待。当一个进程使用完管程后，它必须释放管程并唤醒等待管程的某一个进程。
+
+管程解决互斥问题相对简单，把共享变量以及共享变量的操作都封装在一个类中：
+
+![1606900569311](assets/1606900569311.png) 
+
+当线程A和线程B需要获取共享变量count时，就需要调用get和set方法，而get和set方法则保证互斥性，保证每次只能有一个线程访问。
+
+##### **synchronized 底层原理** 
+
+**对象头解析** 我们知道在Java的JVM内存区域[3]中一个对象在堆区创建，创建后的对象由三部分组成。
+
+
+
+**相关文章** 
+
+1. [逐步深入了解synchronized](https://zhuanlan.zhihu.com/p/325835746) 
 
 ### 2. atomic
 
