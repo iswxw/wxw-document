@@ -173,7 +173,7 @@ waitStatus有下面几个枚举值：
 | PROPAGATE | 为-3，当前线程处在SHARED情况下，该字段才会使用 |
 | SIGNAL    | 为-1，表示线程已经准备好了，就等资源释放了     |
 
-> #### 同步状态State
+> **同步状态State** 
 
 在了解数据结构后，接下来了解一下AQS的同步状态——State。AQS中维护了一个名为state的字段，意为同步状态，是由Volatile修饰的，用于展示当前临界资源的获锁情况。
 
@@ -1491,6 +1491,7 @@ public class SynchronizeBlock implements Runnable {
 **相关文章** 
 
 1. [逐步深入了解synchronized](https://zhuanlan.zhihu.com/p/325835746) 
+2. [不可不说的Java 锁](https://tech.meituan.com/2018/11/15/java-lock.html) 
 
 ### 2. atomic
 

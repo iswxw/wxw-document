@@ -19,6 +19,7 @@
 
 - JVM垃圾回收机制，何时触发MinorGC等操作
 - Eden和Sur[vivo](https://www.nowcoder.com/jump/super-jump/word?word=vivo)r的比例分配等【Eden区和Survivor区的比例是8：1：1】
+- JVM 对 final 关键字的编译优化
 
 ### Spring
 
