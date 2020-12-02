@@ -16,6 +16,26 @@
 
 ### Redis 主存复制工作原理
 
+#### 1.1 一主二从windows环境配置
+
+> 来源地址：[我的csdn](https://blog.csdn.net/qq_41893274/article/details/107372973) 
+
+![1606878053116](assets/1606878053116.png) 
+
+**主从复制测试：**
+
+![1606878603378](assets/1606878603378.png) 
+
+**主从同步过程简述** 
+
+![1606879847533](assets/1606879847533.png) 
+
+#### 1.2 Redis 主存复制
+
+> 来源：[csdn](https://blog.csdn.net/qq_41893274/article/details/109121045) 
+
+
+
 ### Redis 哨兵模式工作原理
 
 ### Redis 集群模式工作原理

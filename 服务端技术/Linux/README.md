@@ -1327,9 +1327,11 @@ chmod 760 /home/wxw
   scp -P 4588 -r wxw@10.1.1.76:/usr/local/sin.sh  /home/test
   ```
 
+##### （2）给指定目录添加软连接
 
+- 用法：` ln -s 源地址路径 新地址路径  ` 
 
-
+  ![1606871897509](assets/1606871897509.png) 
 
 
 
