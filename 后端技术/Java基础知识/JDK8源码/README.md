@@ -1693,7 +1693,7 @@ ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("dem
 3. DiscardOldestPolicy 放弃最早的任务, 即队列最前面的任务。
 4. DiscardPolicy 丢弃，不处理。
 
-**（4）addWorker 源码**
+**（4）addWorker 源码** 
 
 ```java
 public class ThreadPoolExecutor extends AbstractExecutorService {
