@@ -1,6 +1,15 @@
-### 数据持久化技术
+# MyBatis SQL Mapper Java框架
 
 ---
+
+![](./assets/mybatis.png)  
+
+MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结合使用变得更加容易。MyBatis使用XML描述符或注释将对象与存储过程或SQL语句耦合。与对象关系映射工具相比，简单性是MyBatis数据映射器的最大优势。
+
+- [官方文档](https://mybatis.org/mybatis-3/) || [源码](https://github.com/mybatis/mybatis-3) 
+- [Download Latest](https://github.com/mybatis/mybatis-3/releases) 
+- [Download Snapshot](https://oss.sonatype.org/content/repositories/snapshots/org/mybatis/mybatis/) 
+- [Mybatis 源码构建](https://github.com/tuguangquan/mybatis) 
 
 ### 一、MyBatis 的用法
 
