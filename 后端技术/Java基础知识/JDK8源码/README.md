@@ -1486,12 +1486,125 @@ public class SynchronizeBlock implements Runnable {
 
 **对象头解析** 我们知道在Java的JVM内存区域[3]中一个对象在堆区创建，创建后的对象由三部分组成。
 
+![1606956763509](assets/1606956763509.png) 
 
+这三部分功能如下：
+
+1. `填充数据`：由于虚拟机要求对象起始地址必须是8字节的整数倍。填充数据不是必须存在的，仅仅是为了`字节对齐`。
+2. `实例变量`：存放类的`属性数据`信息，包括`父类`的属性信息，这部分内存按4字节对齐。
+3. `对象头`：主要包括两部分 `Klass Point`跟 `Mark Word` 
+
+**`Klass Point`(类型指针)**：是对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。
+**`Mark Word`(标记字段)**：这一部分用于储存对象自身的运行时数据，如`哈希码`，`GC`分代年龄，`锁状态标志`，`锁指针`等，这部分数据在32bit和64bit的虚拟机中大小分别为32bit和64bit，考虑到虚拟机的空间效率，Mark Word被设计成一个`非固定`的数据结构以便在极小的空间中存储尽量多的信息，它会根据对象的状态复用自己的存储空间(跟[ConcurrentHashMap](https://link.zhihu.com/?target=https%3A//mp.weixin.qq.com/s%3F__biz%3DMzI4NjI1OTI4Nw%3D%3D%26mid%3D2247487563%26idx%3D1%26sn%3D0a223ae2bba963e3ac40b7ce6d9ecd56%26scene%3D21%23wechat_redirect)里的标志位类似)，详细情况如下图：
+
+`Mark Word`状态表示位如下：
+
+![img](assets/v2-42f0ff9358a93a958da6d62785fbd9ce_720w-1606956920457.jpg) 
+
+`synchronized`不论是修饰方法还是代码块，都是通过持有修饰对象的`锁`来实现同步，`synchronized`锁对象是存在对象头`Mark Word`。其中轻量级锁和偏向锁是`Java6`对`synchronized`锁进行优化后新增加的，这里我们主要分析一下重量级锁也就是通常说synchronized的对象锁，锁标识位为10，其中指针指向的是`monitor`对象（也称为管程或监视器锁）的起始地址。每个对象都存在着一个 monitor[4] 与之关联。
+
+![img](https://pic3.zhimg.com/80/v2-97fd6fac86606118a43cf85f30dfa04a_720w.jpg) 
+
+##### 反汇编分析
+
+分析对象的`monitor`前我们先通过反汇编看下同步方法跟同步方法块在汇编语言级别是什么样的指令。
+
+```java
+public class SynchronizedTest {
+    public synchronized void doSth(){
+        System.out.println("Hello World");
+    }
+    public void doSth1(){
+        synchronized (SynchronizedTest.class){
+            System.out.println("Hello World");
+        }
+    }
+}
+```
+
+`javac SynchronizedTest .java` 然后`javap -c SynchronizedTest`反编译后看汇编指令如下：
+
+```java
+public synchronized void doSth();
+    descriptor: ()V
+    flags: ACC_PUBLIC, ACC_SYNCHRONIZED //  这是重点 方法锁
+    Code:
+      stack=2, locals=1, args_size=1
+         0: getstatic     #2                  
+         3: ldc           #3    
+         5: invokevirtual #4                  
+         8: return
+
+  public void doSth1();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=3, args_size=1
+         0: ldc           #5                 
+         2: dup
+         3: astore_1
+         4: monitorenter  //   进入同步方法
+         5: getstatic     #2                  
+         8: ldc           #3                  
+        10: invokevirtual #4                
+        13: aload_1
+        14: monitorexit  //正常时 退出同步方法
+        15: goto          23
+        18: astore_2
+        19: aload_1
+        20: monitorexit  // 异常时 退出同步方法
+        21: aload_2
+        22: athrow
+        23: return
+```
+
+我们可以看到Java编译器为我们生成的字节码。在对于doSth和doSth1的处理上稍有不同。也就是说。JVM对于同步方法和同步代码块的处理方式不同。
+
+- 对于同步方法，JVM采用`ACC_SYNCHRONIZED`标记符来实现同步。
+- 对于同步代码块。JVM采用`monitorenter`、`monitorexit`两个指令来实现同步。
+
+**ACC_SYNCHRONIZED** 
+
+方法级的同步是`隐式`的。同步方法的常量池中会有一个`ACC_SYNCHRONIZED`标志。当某个线程要访问某个方法的时候，会检查是否有`ACC_SYNCHRONIZED`，如果有设置，则需要先获得`监视器锁`，然后开始执行方法，方法执行之后再释放监视器锁。这时如果其他线程来请求执行方法，会因为无法获得监视器锁而被阻断住。值得注意的是，如果在方法执行过程中，发生了异常，并且方法内部并没有处理该异常，那么在异常被抛到方法外面之前监视器锁会被自动释放。
+
+**monitorenter跟monitorexit** 
+
+可以把执行`monitorenter`指令理解为加锁，执行`monitorexit`理解为释放锁。每个对象维护着一个记录着被锁次数的计数器。未被锁定的对象的该计数器为0，当一个线程获得锁（执行`monitorenter`）后，该计数器自增变为 1 ，当同一个线程再次获得该对象的锁的时候，计数器再次自增。当同一个线程释放锁（执行`monitorexit`指令）的时候，计数器再自减。当计数器为0的时候。锁将被释放，其他线程便可以获得锁。
+
+**结论**：同步方法和同步代码块底层都是通过`monitor`来实现同步的。两者区别：同步方式是通过方法中的`access_flags`中设置`ACC_SYNCHRONIZED`标志来实现，同步代码块是通过`monitorenter`和`monitorexit`来实现。
+
+##### **monitor解析** 
+
+每个对象都与一个`monitor`相关联，而`monitor`可以被线程拥有或释放，在Java虚拟机(HotSpot)中，`monitor`是由`ObjectMonitor`实现的，其主要数据结构如下（位于HotSpot虚拟机源码ObjectMonitor.hpp文件，C++实现的）。
+
+```java
+ObjectMonitor() {
+    _count        = 0;      //记录数
+    _recursions   = 0;      //锁的重入次数
+    _owner        = NULL;   //指向持有ObjectMonitor对象的线程 
+    _WaitSet      = NULL;   //调用wait后，线程会被加入到_WaitSet
+    _EntryList    = NULL ;  //等待获取锁的线程，会被加入到该列表
+}
+```
+
+monitor运行图如下：
+
+![img](assets/v2-5617cbdcaded8fed6007a2628b47dd6c_720w.jpg) 
+
+对于一个synchronized修饰的方法(代码块)来说：
+
+1. 当多个线程同时访问该方法，那么这些线程会先被放进`_EntryLis`t队列，此时线程处于`blocked`状态
+2. 当一个线程获取到了对象的`monitor`后，那么就可以进入`running`状态，执行方法块，此时，`ObjectMonitor`对象的`_owner`指向当前线程，`_count`加1表示当前对象锁被一个线程获取。
+3. 当`running`状态的线程调用`wait()`方法，那么当前线程释放`monitor`对象，进入`waiting`状态，`ObjectMonitor`对象的`_owner变为`null，`_count`减1，同时线程进入`_WaitSet`队列，直到有线程调用`notify()`方法唤醒该线程，则该线程进入`_EntryList`队列，竞争到锁再进入`_owner`区。
+4. 如果当前线程执行完毕，那么也释放`monitor`对象，`ObjectMonitor`对象的`_owner`变为null，`_count`减1。
+
+因为监视器锁（monitor）是依赖于底层的操作系统的`Mutex Lock`来实现的，而操作系统实现线程之间的切换时需要从`用户态转换到核心态`(具体可看CXUAN写的OS哦)，这个状态之间的转换需要相对比较长的时间，时间成本相对较高，这也是早期的`synchronized`效率低的原因。庆幸在Java 6之后Java官方对从JVM层面对`synchronized`较大优化最终提升显著，Java 6之后，为了减少获得锁和释放锁所带来的性能消耗，引入了锁升级的概念。
 
 **相关文章** 
 
 1. [逐步深入了解synchronized](https://zhuanlan.zhihu.com/p/325835746) 
-2. [不可不说的Java 锁](https://tech.meituan.com/2018/11/15/java-lock.html) 
+2. [synchronized 关键字](https://blog.csdn.net/qq_41893274/article/details/105641685) 
+3. [不可不说的Java 锁](https://tech.meituan.com/2018/11/15/java-lock.html) 
 
 ### 2. atomic
 
