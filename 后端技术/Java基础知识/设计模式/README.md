@@ -476,3 +476,36 @@ public class ZkWatcherDemo {
 ```
 
 > 来源： [观察者模式](http://c.biancheng.net/view/1390.html)  || [源码](https://github.com/GitHubWxw/wxw-java/tree/master/java-designpattern/src/main/java/com/wxw/observe) 
+
+#### 5. 模板方法模式
+
+在模板模式（Template Pattern）中，一个抽象类公开定义了执行它的方法的方式/模板。它的子类可以按需要重写方法实现，但调用将以抽象类中定义的方式进行。这种类型的设计模式属于行为型模式。模板方法模式就是利用了面向对象中的多态特性。
+
+**主要解决：**一些方法通用，却在每一个子类都重新写了这一方法。
+
+**优点：** 1、封装不变部分，扩展可变部分。 2、提取公共代码，便于维护。 3、行为由父类控制，子类实现。
+
+**缺点：**每一个不同的实现都需要一个子类来实现，导致类的个数增加，使得系统更加庞大。
+
+**注意事项：**为防止恶意操作，一般模板方法都加上 final 关键词。
+
+在模板方法模式中有两个重要的角色，一个是抽象模板类，另一个就是具体的实现类。
+
+##### 5.3 应用场景
+
+1. AQS 的实现
+
+> 来源：[模板方法模式](https://www.runoob.com/design-pattern/template-pattern.html) 
+
+
+
+
+
+
+
+
+
+
+
+
+
