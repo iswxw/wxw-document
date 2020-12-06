@@ -7,6 +7,17 @@
 - [final 关键字](https://www.cnblogs.com/dolphin0520/p/3736238.html) 
 - [static 关键字](https://www.cnblogs.com/dolphin0520/p/10651845.html) 
 
+### 深拷贝和浅拷贝
+
+- **浅拷贝**只复制指向某个对象的指针，而不复制对象本身，新旧对象还是共享同一块内存。
+- **深拷贝**会另外创造一个一模一样的对象，新对象跟原对象不共享内存，修改新对象不会改到原对象。
+
+![å¾çæè¿°](assets/3483357010-5cb447fba09cc_articlex.jpg)  
+
+相关文章
+
+1. [浅拷贝和深拷贝](https://blog.csdn.net/riemann_/article/details/87217229) 
+
 ## Java 泛型
 
 ## Java 反射
