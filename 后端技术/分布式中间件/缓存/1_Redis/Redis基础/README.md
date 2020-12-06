@@ -18,6 +18,133 @@
 
 ![img](assets/5f18507ee0b34d54dac3a8fb) 
 
+### Redis 五种基本数据类型
+
+#### 1.1 字符串—String
+
+Redis 中的字符串是一种 **动态字符串**，这意味着使用者可以修改，它的底层实现有点类似于 Java 中的 **ArrayList**，有一个字符数组，从源码的 **sds.h/sdshdr 文件** 中可以看到 Redis 底层对于字符串的定义 **SDS**，即 *Simple Dynamic String* 结构：
+
+#### 1.2 列表—list
+
+Redis 的列表相当于 Java 语言中的 **LinkedList**，注意它是链表而不是数组。这意味着 list 的插入和删除操作非常快，时间复杂度为 O(1)，但是索引定位很慢，时间复杂度为 O(n)。
+
+**链表的基本操作** 
+
+- `LPUSH` 和 `RPUSH` 分别可以向 list 的左边（头部）和右边（尾部）添加一个新元素；
+- `LRANGE` 命令可以从 list 中取出一定范围的元素；
+- `LINDEX` 命令可以从 list 中取出指定下表的元素，相当于 Java 链表操作中的 `get(int index)` 操作；
+
+**应用场景** 
+
+1. l**ist 实现队列**是先进先出的数据结构，常用于消息排队和异步逻辑处理，它会确保元素的访问顺序：
+2. **list 实现栈**是先进后出的数据结构，跟队列正好相反
+
+#### 1.3 字典—hash
+
+Redis 中的字典相当于 Java 中的 **HashMap**，内部实现也差不多类似，都是通过 **"数组 + 链表"** 的链地址法来解决部分 **哈希冲突**，同时这样的结构也吸收了两种不同数据结构的优点。
+
+**字典的基本操作** 
+
+hash 也有缺点，hash 结构的存储消耗要高于单个字符串，所以到底该使用 hash 还是字符串，需要根据实际情况再三权衡：
+
+```scss
+> HSET books java "think in java"    # 命令行的字符串如果包含空格则需要使用引号包裹
+(integer) 1
+> HSET books python "python cookbook"
+(integer) 1
+> HGETALL books    # key 和 value 间隔出现
+1) "java"
+2) "think in java"
+3) "python"
+4) "python cookbook"
+> HGET books java
+"think in java"
+> HSET books java "head first java"  
+(integer) 0        # 因为是更新操作，所以返回 0
+> HMSET books java "effetive  java" python "learning python"    # 批量操作
+OK
+```
+
+#### 1.4 集合—set
+
+Redis 的集合相当于 Java 语言中的 **HashSet**，它内部的键值对是无序、唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 value 都是一个值 NULL。
+
+**集合 set 的基本使用** 
+
+```scss
+> SADD books java
+(integer) 1
+> SADD books java    # 重复
+(integer) 0
+> SADD books python golang
+(integer) 2
+> SMEMBERS books    # 注意顺序，set 是无序的
+1) "java"
+2) "python"
+3) "golang"
+> SISMEMBER books java    # 查询某个 value 是否存在，相当于 contains
+(integer) 1
+> SCARD books    # 获取长度
+(integer) 3
+> SPOP books     # 弹出一个
+"java"
+```
+
+#### 1.5 有序列表—zset
+
+这可能使 Redis 最具特色的一个数据结构了，它类似于 Java 中 **SortedSet** 和 **HashMap** 的结合体，一方面它是一个 set，保证了内部 value 的唯一性，另一方面它可以为每个 value 赋予一个 score 值，用来代表排序的权重。
+
+它的内部实现用的是一种叫做 **「跳跃表」** 的数据结构。
+
+**有序列表 zset 基础操作** 
+
+```java
+> ZADD books 9.0 "think in java"
+> ZADD books 8.9 "java concurrency"
+> ZADD books 8.6 "java cookbook"
+
+> ZRANGE books 0 -1     # 按 score 排序列出，参数区间为排名范围
+1) "java cookbook"
+2) "java concurrency"
+3) "think in java"
+
+> ZREVRANGE books 0 -1  # 按 score 逆序列出，参数区间为排名范围
+1) "think in java"
+2) "java concurrency"
+3) "java cookbook"
+
+> ZCARD books           # 相当于 count()
+(integer) 3
+
+> ZSCORE books "java concurrency"   # 获取指定 value 的 score
+"8.9000000000000004"                # 内部 score 使用 double 类型进行存储，所以存在小数点精度问题
+
+> ZRANK books "java concurrency"    # 排名
+(integer) 1
+
+> ZRANGEBYSCORE books 0 8.91        # 根据分值区间遍历 zset
+1) "java cookbook"
+2) "java concurrency"
+
+> ZRANGEBYSCORE books -inf 8.91 withscores  # 根据分值区间 (-∞, 8.91] 遍历 zset，同时返回分值。inf 代表 infinite，无穷大的意思。
+1) "java cookbook"
+2) "8.5999999999999996"
+3) "java concurrency"
+4) "8.9000000000000004"
+
+> ZREM books "java concurrency"             # 删除 value
+(integer) 1
+> ZRANGE books 0 -1
+1) "java cookbook"
+2) "think in java"
+```
+
+
+
+
+
+> 来源：[Redis—5种基本数据结构](https://mp.weixin.qq.com/s/MT1tB2_7f5RuOxKhuEm1vQ) 
+
 ### Redis 主存复制工作原理
 
 #### 1.1 一主二从windows环境配置

@@ -57,6 +57,10 @@
 - S0C/S1C、S0U/S1U、EC/EU、OC/OUMC/MU分别代表两个Survivor区、Eden区、老年代、元数据区的容量和使用
 - YGC/YGT、FGC/FGCT、GCT则代表YoungGc、FullGc的耗时和次数以及总耗时
 
+> GC分析案例
+
+1. [排查YGC问题](https://mp.weixin.qq.com/s/LRx9tLtx1tficWPvUWUTuQ) 
+
 #### _上下文切换
 
 - **vmstat** - 内存，进程和分页等的简要信息。
