@@ -20,6 +20,7 @@
 - JVM垃圾回收机制，何时触发MinorGC等操作
 - Eden和Sur[vivo](https://www.nowcoder.com/jump/super-jump/word?word=vivo)r的比例分配等【Eden区和Survivor区的比例是8：1：1】
 - JVM 对 final 关键字的编译优化
+- [为了保证对象的内存分配过程中的线程安全性，HotSpot虚拟机提供了一种叫做TLAB(Thread Local Allocation Buffer)的技术](https://mp.weixin.qq.com/s/Wws24Fhg1nH4dHvtcFYi2g) 
 
 ### Spring
 
@@ -110,7 +111,7 @@
 
 ### 经验题
 
-
+- [怎么排查堆内存溢出啊？](https://mp.weixin.qq.com/s/7XGD-Z3wrThv5HyoK3B8AQ) 
 
 ### 客观题
 
