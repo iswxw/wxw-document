@@ -1606,6 +1606,236 @@ monitor运行图如下：
 2. [synchronized 关键字](https://blog.csdn.net/qq_41893274/article/details/105641685) 
 3. [不可不说的Java 锁](https://tech.meituan.com/2018/11/15/java-lock.html) 
 
+#### 1.4 LockSupport
+
+LockSupport是一个非常基础而重要的类，它为java并发包里的锁和同步类提供了线程阻塞原语。没有它也就没有AQS，更没有上层的各类锁实现（例如ReentrantLock），同步器(例如CountdownLatch)，阻塞队列等。
+
+LockSupport提供的都是静态方法，例如：
+
+```java
+public static void park(Object blocker); // 暂停当前线程
+public static void parkNanos(Object blocker, long nanos); // 暂停当前线程，不过有超时时间的限制
+public static void parkUntil(Object blocker, long deadline); // 暂停当前线程，直到某个时间
+public static void park(); // 无期限暂停当前线程
+public static void parkNanos(long nanos); // 暂停当前线程，不过有超时时间的限制
+public static void parkUntil(long deadline); // 暂停当前线程，直到某个时间
+public static void unpark(Thread thread); // 恢复当前线程
+public static Object getBlocker(Thread t); // blocker的作用是在dump线程的时候看到阻塞对象的信息
+```
+
+LockSupport中最重要的两个就是park和unpark方法，其它的基本上都是park方法的变种。就是这两个方法提供了加锁、解锁的能力。
+
+LockSupport为每个线程都都关联了一个**免阻塞许可证**(permit)，当某线程调用park方法时，如果有免阻塞许可，那么方法会消费掉这个许可证并立即返回；如果没有，那么该线程就会被阻塞。当对某个线程调用unpark方法时，会让许可证重新可用，如果线程阻塞然后会重新激活线程。
+
+**注意** ：的是这个免阻塞许可证只有一个，多次调用park并不会消耗多个免阻塞许可证。同样多次调用unpark也不会颁发多个免阻塞许可证。
+
+（1）**由于虚假唤醒的问题**，park可能会无缘无故的返回，因此类似于Object.wait()，park方法也必须置于循环当中。
+
+```java
+// 使用while 循环就是为了防止虚假唤醒
+while (条件不满足) {
+     LockSupport.park(this);
+}
+```
+
+关于虚假唤醒后面讲原理的时候会涉及。
+
+（2）**免阻塞许可证（permit）** 
+
+其实这个词是我意会出来的，许多文章把它翻译做许可，虽然没什么问题，但是总感觉词不达意。为什么好好的线程阻塞，激活还要附加一个免阻塞许可证呢？
+在原来的并发编程中，我们最常使用的是synchronized关键字配合wait、notify/notifyAll来实现同步。这样的编程有个约束，**wait、notify必须置于synchronize块或者synchronized方法中**。因为线程wait必须先于notify才行，在没有synchronized限定下，如果notify调用的时候线程还没有走到wait，等再到wait的调用的时候，已经错过了notify，就会导致wait的线程永远的错过了唤醒，这就是"lost-wake-up"问题。为了解决这个问题，就只有将wait、notify放入synchronized块或者synchronized方法中。而且由于存在多个线程同时wait的可能，因此一般都是调用notifyAll。
+
+但是现在我们有了免阻塞许可证，对于多次park，仅仅会消耗一张，多次unpark也仅仅会重发一张。对于unpark的先调用，由于发了一张免阻塞许可证，那么即使park在后面调用也不会导致线程阻塞无法唤醒，而仅仅是消耗掉这张免阻塞许可证就立即返回了！从此park、unpark的使用不用再像wait、notify那样被处处制肘。要激活哪个线程，unpark（thread）即可，也不用担心是用notify还是notifyAll。免阻塞许可证就像一个存储通知的容器，未来我们在需要的时候通过它就可以判断是否线程阻塞或者有人激活线程。
+
+（3）**park、unpark原理** 
+
+park、unpark是通过我们的老朋友Unsafe类实现的（可以参考之前的文章[AtomicBoolean原理](https://blog.csdn.net/GAMEloft9/article/details/89888721)）：
+
+```java
+public native void unpark(Object var1);
+public native void park(boolean var1, long var2);
+```
+
+一如既往的，这两个方法是native的并且没有任何注释。想要看底层实现，我们又需要去翻jvm源码（HotSopt-1.6里面Unsafe.cpp）：
+
+```cpp
+UNSAFE_ENTRY(void, Unsafe_Park(JNIEnv *env, jobject unsafe, jboolean isAbsolute, jlong time))
+  UnsafeWrapper("Unsafe_Park");
+#ifndef USDT2
+  HS_DTRACE_PROBE3(hotspot, thread__park__begin, thread->parker(), (int) isAbsolute, time);
+#else /* USDT2 */
+   HOTSPOT_THREAD_PARK_BEGIN(
+                             (uintptr_t) thread->parker(), (int) isAbsolute, time);
+#endif /* USDT2 */
+  JavaThreadParkedState jtps(thread, time != 0);
+  thread->parker()->park(isAbsolute != 0, time);
+#ifndef USDT2
+  HS_DTRACE_PROBE1(hotspot, thread__park__end, thread->parker());
+#else /* USDT2 */
+  HOTSPOT_THREAD_PARK_END(
+                          (uintptr_t) thread->parker());
+#endif /* USDT2 */
+UNSAFE_END
+```
+
+最关键的代码是这一行：
+
+```cpp
+thread->parker()->park(isAbsolute != 0, time);
+1
+```
+
+每个Java线程都有一个Parker的成员，Parker的定义如下（park.hpp、os_linux.hpp）：
+
+```cpp
+class Parker : public os::PlatformParker {
+private:
+  volatile int _counter ;
+  Parker * FreeNext ;
+  JavaThread * AssociatedWith ; // Current association
+  .....
+public:
+  Parker() : PlatformParker() {
+    _counter       = 0 ;
+    FreeNext       = NULL ;
+    AssociatedWith = NULL ;
+  }
+public:
+  // For simplicity of interface with Java, all forms of park (indefinite,
+  // relative, and absolute) are multiplexed into one call.
+  void park(bool isAbsolute, jlong time);
+  void unpark();
+  ......
+};
+
+lass PlatformParker : public CHeapObj {
+  protected:
+    pthread_mutex_t _mutex [1] ;
+    pthread_cond_t  _cond  [1] ;
+
+  public:       // TODO-FIXME: make dtor private
+    ~PlatformParker() { guarantee (0, "invariant") ; }
+
+  public:
+    PlatformParker() {
+      int status;
+      status = pthread_cond_init (_cond, NULL);
+      assert_status(status == 0, status, "cond_init");
+      status = pthread_mutex_init (_mutex, NULL);
+      assert_status(status == 0, status, "mutex_init");
+    }
+} ;
+ 
+```
+
+park方法的两个参数
+
+1. 第一个是bool类型，表示后面的时间是否是绝对时间
+2. 第二个参数就是阻塞的时长。如果是绝对时间，那么time取值就是1970年以来的毫秒数，如果不是那就是阻塞时长范围。
+
+_counter就是我们前面提到的免阻塞许可证，初始值为0。park、unpark对免阻塞许可证的消耗、颁发就落实到了对_counter的操作。
+此外Parker对象还继承了一个互斥变量pthread_mutex_t和条件变量pthread_cond_t，线程的阻塞激活就靠它们俩来完成。具体怎么实现我们来看park和unpark方法的实现：
+
+```cpp
+void Parker::park(bool isAbsolute, jlong time) {
+  
+  // 如果已经有免阻塞许可证，那么消耗之，直接返回。
+  if (_counter > 0) {
+      _counter = 0 ;
+      OrderAccess::fence();// 内存屏障
+      return ;
+  }
+
+  Thread* thread = Thread::current();
+  assert(thread->is_Java_thread(), "Must be JavaThread");
+  JavaThread *jt = (JavaThread *)thread;
+
+  // 如果线程被中断，直接返回
+  if (Thread::is_interrupted(thread, false)) {
+    return;
+  }
+
+ // 由于时间可能是相对时间和绝对时间，这里统一处理成绝对时间
+  timespec absTime;
+  if (time < 0 || (isAbsolute && time == 0) ) { // don't wait at all
+    return;
+  }
+  if (time > 0) {
+    unpackTime(&absTime, isAbsolute, time);
+  }
+
+
+  // 进入安全点，后续的操作必须在安全点执行。
+  ThreadBlockInVM tbivm(jt);
+
+  // 再次判断线程是否被中断，或者拿不到互斥锁，这时候也直接返回。
+  if (Thread::is_interrupted(thread, false) || pthread_mutex_trylock(_mutex) != 0) {
+    return;
+  }
+
+  int status ;
+  if (_counter > 0)  { // 有许可证了，那么没有必要进行阻塞，直接消耗许可证返回。
+    _counter = 0;
+    status = pthread_mutex_unlock(_mutex);// 释放互斥锁
+    assert (status == 0, "invariant") ;
+    OrderAccess::fence();
+    return;
+  }
+  ......
+
+  if (time == 0) { // 没有设置时间，直接阻塞线程
+    status = pthread_cond_wait (_cond, _mutex) ;
+  } else {// 阻塞线程直到超时
+    status = os::Linux::safe_cond_timedwait (_cond, _mutex, &absTime) ;
+   ......
+  }
+  ......
+  _counter = 0 ;
+  status = pthread_mutex_unlock(_mutex) ; // 释放互斥锁
+  ......
+
+  OrderAccess::fence();// 内存屏障
+}
+ 
+void Parker::unpark() {
+  int s, status ;
+  status = pthread_mutex_lock(_mutex); // 上锁
+  assert (status == 0, "invariant") ;
+  s = _counter;
+  _counter = 1; // 提供许可证
+  if (s < 1) { // 可能有线程阻塞，需要激活
+     if (WorkAroundNPTLTimedWaitHang) {
+        status = pthread_cond_signal (_cond) ; // 通知条件变量，激活线程
+        assert (status == 0, "invariant") ;
+        status = pthread_mutex_unlock(_mutex);
+        assert (status == 0, "invariant") ;
+     } else {
+        status = pthread_mutex_unlock(_mutex);
+        assert (status == 0, "invariant") ;
+        status = pthread_cond_signal (_cond) ;
+        assert (status == 0, "invariant") ;
+     }
+  } else {
+    pthread_mutex_unlock(_mutex); // 释放锁
+    assert (status == 0, "invariant") ;
+  }
+}
+```
+
+从源码中可以看到，线程的阻塞同步利用了linux系统API，pthread_cond_wait，它必须和一个互斥锁配合（pthread_mutex_lock），以防止多个线程同时请求pthread_cond_wait()。
+
+线程激活条件有两种形式:
+
+- pthread_cond_signal()激活一个等待该条件的线程，存在多个等待线程时按入队顺序激活其中一个；
+- 而pthread_cond_broadcast()则激活所有等待线程。关于pthread_cond_wait的更多知识可以参考后面的参考文章pthread_cond_wait笔记。
+  由于底层使用了pthread_con_wait，因此Linux的虚假唤醒问题也就同样"感染"到我们的LockSupport了，具体原理请参考参考文章4、5。
+
+在park中，直接将_counter=0，在unpark中直接将_counter=1，所以我们的免阻塞许可证只有一张。多次调用park，只会消耗唯一一个，多次调用unpark也只会生成唯一一个。
+
+**相关文章** 
+
+1. [LockSupport原理](https://blog.csdn.net/GAMEloft9/article/details/89956503) 
+
 ### 2. atomic
 
 #### 2.1 AtomicInteger
