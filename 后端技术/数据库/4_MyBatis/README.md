@@ -38,6 +38,40 @@ MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结
 
   3、Map类型     resultType =map
 
+##### （2）if 标签——关键字 In
+
+> 封装入参为map集合
+
+```java
+Map<String, Object> params = new HashMap<String, Object>();
+        params.put("otherNumber", otherNumber);
+        params.put("isPass", "0,1,2,3,4");
+List<SchoolCustomer> getSchoolCustomerByPhone(Map<String, Object> params);
+
+```
+
+> Mapper 封装返回Map集合
+
+```xml
+<select id="getSchoolCustomerByPhone" parameterType="java.util.Map" resultMap="BaseResultMap">
+  	SELECT
+  	<include refid="Base_Column_List" />
+  	from [B_SchoolCustomer]
+  	<where>
+      <trim prefix="(" prefixOverrides="AND" suffix=")">
+        <if test="otherNumber != null">
+          // 替换函数
+          and REPLACE(otherNumber,'-','') = #{otherNumber}
+        </if>
+        <if test="isPass != null">
+	  	  and isPass in ( ${isPass} )
+	  	</if>
+	  </trim>
+    </where>
+    order by addTime asc
+ </select>
+```
+
 
 
 
