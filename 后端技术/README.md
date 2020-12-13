@@ -21,21 +21,25 @@
 
 
 
-### Java核心基础
+### Java
 
-1. [Java基础](/后端技术/Java基础知识/Java基础/) 
-2. [Java 8源码](/后端技术/Java基础知识/JDK8源码/)
-3. [JUC并发编程](/后端技术/Java基础知识/JUC并发编程/) 
-4. [JVM虚拟机](/后端技术/Java基础知识/JVM虚拟机/)  
-5. 操作系统
-6. 计算机网络
-7. [设计模式](/后端技术/Java基础知识/设计模式/)  
+- [Java基础](/后端技术/Java基础知识/Java基础/) 
+- [Java 8源码](/后端技术/Java基础知识/JDK8源码/)
+- [Java 并发编程](/后端技术/Java基础知识/JUC并发编程/) 
+- [Java 虚拟机](/后端技术/Java基础知识/Java虚拟机/)  
+
+### 计算机基础
+
+- 操作系统
+- 计算机网络
+
 ### 数据库
 
 - [MySQL](/后端技术/数据库\1_MySQL/) 
 - [PostgreSQL](/后端技术/数据库/2_PostgreSQL/) 
 - [SQL Server](/后端技术/数据库/3_SQLServer/) 
 - [MyBatis](/后端技术/数据库/4_My Batis/) 
+- [NoSql]() 
 
 ### 分布式中间件
 
@@ -78,23 +82,16 @@
 - [Docker容器化](/后端技术/DevOps/Docker容器化/readme.md) 
 - [K8S容器编排](/后端技术/DevOps/k8s容器编排/readme.md) 
 
-### 深入浅出JVM
-
-- JVM内存模型
-- 性能调优与线上问题排查
-- 垃圾回收机制
-- 垃圾收集器和垃圾回收算法
-
 ### 数据结构与算法
 
-- [数据结构与算法入门](/后端技术/数据结构与算法/数据结构与算法入门/readme.md) 
-- [leetcode](/后端技术/数据结构与算法/leetcode/readme.md) 
+- [数据结构与算法基础](/后端技术/数据结构与算法/数据结构与算法入门/readme.md) 
+- [leetcode 题解](/后端技术/数据结构与算法/leetcode/readme.md) 
+- [剑指Offer 题解](/后端技术/必会框架/Netty/) 
 
 ### 必会框架
 
 - Spring系列及源码分析
-- 高性能NIO—Netty
-  - [Netty入门](/后端技术/必会框架/Netty/) 
+- [高性能NIO—Netty](/后端技术/必会框架/Netty/) 
 - RPC
 - MyBatis源码解析
 
@@ -102,9 +99,9 @@
 
 - [Oauth 2.0](/后端技术/安全框架/Oauth2.0/README.md)  
 
-### 技术核心
+### 面向对象
 
-- [设计模式](/后端技术/技术核心/设计模式.md) 
+- [设计模式](/后端技术/Java基础知识/设计模式/)  
 
 ### 开源框架
 
