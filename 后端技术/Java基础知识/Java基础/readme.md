@@ -1,10 +1,48 @@
-基础知识
-
----
-
 ## Java基础知识
 
+### 夯实基础
+
+#### Java 基本数据类型
+
+- 在线文档：https://www.runoob.com/java/java-basic-datatypes.html
+
+Java语言提供了八种基本类型。六种数字类型（四个整数型，两个浮点型），一种字符类型，还有一种布尔型。
+
+
+
+#### Java String类
+
+- 在线文档：https://www.runoob.com/java/java-string.html
+
+String 创建的字符串存储在公共池（常量池）中，而 new 创建的字符串对象在堆上：
+
+```java
+String s1 = "Runoob";              // String 直接创建
+String s2 = "Runoob";              // String 直接创建
+String s3 = s1;                    // 相同引用
+String s4 = new String("Runoob");   // String 对象创建
+String s5 = new String("Runoob");   // String 对象创建
+```
+
+![img](assets/java-string-1-2020-12-01.png) 
+
+**常用方法** 
+
+- **compareTo()**  方法用于两种方式的比较，字符串与对象进行比较和按字典顺序比较两个字符串
+  - 如果参数字符串等于此字符串，则返回值 0；
+  - 如果此字符串小于字符串参数，则返回一个小于 0 的值；
+  - 如果此字符串大于字符串参数，则返回一个大于 0 的值。
+
+
+
+   
+
+#### Java Final 类
+
 - [final 关键字](https://www.cnblogs.com/dolphin0520/p/3736238.html) 
+
+#### Java Static 类
+
 - [static 关键字](https://www.cnblogs.com/dolphin0520/p/10651845.html) 
 
 ### 深拷贝和浅拷贝
