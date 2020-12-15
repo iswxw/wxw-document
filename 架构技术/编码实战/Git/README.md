@@ -2,6 +2,17 @@
 
 
 
+### 常用命令
+
+#### 1.1 git reset
+
+它有三种模式，soft,mixed,hard，具体的使用方法下面这张图，展示的很全面了.
+
+![img](assets/4428238-fcad08ebe26933a6.webp) 
+
+- **reset --hard** 会在重置 **HEAD** 和**branch**的同时，重置stage区和工作目录里的内容
+- **reset --soft** 会在重置 **HEAD** 和 **branch** 时，保留工作目录和暂存区中的内容，并把重置 **HEAD** 所带来的新的差异放进暂存区。
+
 ### 集中式与分布式
 
 Git 属于分布式版本控制系统，而 SVN 属于集中式。
@@ -102,6 +113,33 @@ HEAD is now at 049d078 added the index file (To restore them type "git stash app
 
 该功能可以用于 bug 分支的实现。如果当前正在 dev 分支上进行开发，但是此时 master 上有个 bug 需要修复，但是 dev 分支上的开发还未完成，不想立即提交。在新建 bug 分支并切换到 bug 分支之前就需要使用 git stash 将 dev 分支的未提交修改储藏起来。
 
+#### 7.1 常用命令
+
+- **git stash** save "save message"  : 执行存储时，添加备注，方便查找，只有git stash 也要可以的，但查找时不方便识别。
+- **git stash list**  ：查看stash了哪些存储
+- **git stash show** ：显示做了哪些改动，默认show第一个存储,如果要显示其他存贮，后面加stash@{$num}，比如第二个 git stash show stash@{1}
+- **git stash show -p** : 显示第一个存储的改动，如果想显示其他存存储，命令：git stash show  stash@{$num}  -p ，比如第二个：git stash show  stash@{1}  -p
+- **git stash apply** :应用某个存储,但不会把存储从存储列表中删除，默认使用第一个存储,即stash@{0}，如果要使用其他个，git stash apply stash@{$num} ， 比如第二个：git stash apply stash@{1} 
+- **git stash pop** ：命令恢复之前缓存的工作目录，将缓存堆栈中的对应stash删除，并将对应修改应用到当前的工作目录下,默认为第一个stash,即stash@{0}，如果要应用并删除其他stash，命令：git stash pop stash@{$num} ，比如应用并删除第二个：git stash pop stash@{1}
+- **git stash drop** stash@{$num} ：丢弃stash@{$num}存储，从列表中删除这个存储
+- `git stash clear ：`删除所有缓存的stash
+
+**说明:新增的文件，直接执行stash是不会被存储的，只存储改动的文件，也就是没有在git 版本控制中的文件，是不能被git stash 存起来的**    
+
+所以如果想stash新增的文件，可以先 ` git add .` 然后就可以stash 成功了
+
+**如果要应用这些stash，直接使用git stash apply或者git stash pop就可以再次导出来了** 
+
+**总结下**：
+
+（1）git add 只是把文件加到git 版本控制里，并不等于就被stash起来了，git add和git stash 没有必然的关系，但是执行git stash 能正确存储的前提是文件必须在git 版本控制中才行。
+
+（2）常规 git stash 的一个限制是它会一下暂存所有的文件。有时，只备份某些文件更为方便，让另外一些与代码库保持一致。一个非常有用的技巧，用来备份部分文件：
+
+1. add 那些你不想备份的文件（例如： git add file1.js, file2.js）
+2. 调用 git stash –keep-index。只会备份那些没有被add的文件。
+3. 调用 git reset 取消已经add的文件的备份，继续自己的工作。
+
 ### SSH 传输设置
 
 Git 仓库和 Github 中心仓库之间的传输是通过 SSH 加密。
@@ -129,8 +167,6 @@ $ ssh-keygen -t rsa -C "youremail@example.com"
 ![img](assets/7a29acce-f243-4914-9f00-f2988c528412.jpg) 
 
 比较详细的地址：http://www.cheat-sheets.org/saved-copy/git-cheat-sheet.pdf
-
-
 
 **相关文章** 
 
