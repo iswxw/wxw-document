@@ -2,6 +2,7 @@
 
 线上故障主要会包括cpu、磁盘、内存以及网络问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如jstack、jmap等工具也是不囿于一个方面的问题的，基本上出问题就是df、free、top 三连，然后依次jstack、jmap伺候，具体问题具体分析即可。
 
+- oracle官网文档：https://docs.oracle.com/en/
 - 官网工具地址：<https://docs.oracle.com/javase/8/docs/technotes/tools/> 
 - **故障排除指南** ：https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/index.html 
 
@@ -379,11 +380,14 @@ gccause和gcutil非常相识，只不过多了下面两列：
 
 #### :three: Jstatd:jstat的守护进程监控
 
-jstatd，即JVM jstat守护程序-启动RMI服务器应用程序，该应用程序监视已检测到的HotSpot Java虚拟机的创建和终止，并提供一个接口，以允许远程监视工具连接到在本地系统上运行的Java虚拟机。
+一些监控工具支持远程计算机的控制（如jps,jstat）,为了开启远程监控，则需要配合使用jstatd工具。
+命令jstatd则是一个RMI服务端程序，它的作用相当于对代理服务器，建立本地计算机与远程监控工具的通信。jstatd服务器将本机的java应用程序传递到远程计算机。如图：
 
 - 在线手册：https://docs.oracle.com/javase/8/docs/technotes/tools/windows/jstatd.html
 
 该`jstatd`命令是一个RMI服务器应用程序，它监视已检测的Java HotSpot VM的创建和终止，并提供一个接口，以使远程监视工具能够附加到在本地主机上运行的JVM。
+
+![这里写图片描述](assets/20180628135927890.png) 
 
 该`jstatd`服务器需要本地主机上的RMI注册表。该`jstatd`服务器尝试连接到RMI注册表中的默认端口，或者该端口上您使用指定`-p` `port`的选项。如果未找到RMI注册表，则会在`jstatd`应用程序中创建一个绑定到该`-p` `port`选项指示的端口或`-p` `port`省略该选项时的默认RMI注册表端口的应用程序。您可以通过指定`-nr`选项来停止内部RMI注册表的创建。
 
@@ -406,6 +410,28 @@ jstatd，即JVM jstat守护程序-启动RMI服务器应用程序，该应用程�
 - -J options
 
   传递`option`给JVM，其中option是`options`Java应用程序启动器的参考页上描述的选项之一。例如，`-J-Xms48m`将启动内存设置为48 MB
+
+##### （1）直接运行jstatd命令会报错
+
+> 因为没有足够的权限所致。可以使用java的安全策略，为其分配相应的权限，并命名为all.policy
+
+```java
+grant codebase "file:${JAVA_HOME}\lib\tools.jar" {
+    permission java.security.AllPermission;
+};
+```
+
+##### （2）使用jsp.jstat命令即可访问远程服务器的信息。
+
+> 使用命令：`jstatd -J-Djava.security.policy=all.policy` 服务即开启,默认端口1099。[jstatd更为详尽的配置](https://docs.oracle.com/javase/1.5.0/docs/tooldocs/share/jstatd.html)  
+
+```java
+jps localhost:1099;
+
+jstat -gcutil 460@localhost:1099 //----460为进程号
+```
+
+
 
 **相关文章** 
 
@@ -509,7 +535,13 @@ JDK1.6之后，jinfo在Windows和Linux平台都有提供，并且加入了运行
 
 上图的finalizer队列长度为0。
 
-#### :six:Jhat:堆分析工具
+#### :six:Jhat:Java堆分析工具
+
+> **注意**  
+
+jhat从JDK9 的时候已经删除了（JEP 241: Remove the jhat Tool）。现在Oracle官方推荐的分析工具是Eclipse Memory Analyzer Tool (MAT) 和 VisualVM。 这两款工具后面有时间再详细讲解。
+
+> **使用** 
 
 Sun JDK提供jhat（JVM heap Analysis Tool）命令与jmap搭配使用，来分析jmap生成的堆转储快照。jhat内置了一个微型的HTTP/HTML服务器，生成dump文件的分析结果后，可以在浏览器中查看。
 
@@ -531,15 +563,323 @@ Sun JDK提供jhat（JVM heap Analysis Tool）命令与jmap搭配使用，来分�
 
 ![这里写图片描述](assets/20180628110854371.png) 
 
-#### :seven:Jstack:堆栈跟踪工具
+  分析结果默认是以包为单位进行分组显示，分析内存泄漏问题主要会使用到其中的“Heap Histogram”（与jmap -histo功能一样）与OQL页签的功能，前者可以找到内存中总容量最大的对象，后者是标准的对象查询语言，使用类似SQL的语法对内存中的对象进行查询统计。
+
+#### :seven:Jstack:Java堆栈跟踪工具
+
+ jstack（Stack Trace for Java）命令用于生成虚拟机当前时刻的线程快照（一般称为threaddump或者javacore文件）。线程快照就是当前虚拟机内每一条线程正在执行的方法堆栈的集合。
+
+- **生成线程快照的主要目的** 是定位线程出现长时间停顿的原因，如线程间死锁、死循环、请求外部资源导致的长时间等待都是导致线程长时间停顿的常见原因。
+
+线程出现停顿的时候使用jstack来查看各个线程的调用堆栈，就可以知道没有响应的线程在后台做些什么事情，或者等待着什么资源。
+
+- 在线手册：https://docs.oracle.com/en/java/javase/14/docs/specs/man/jstack.html
+
+**jstack用法** ` jstack [-l][-e] <pid>` 
+
+**参数说明：** 
+
+| 选项 | 作用（jstack工具主要选项）                                   |
+| ---- | ------------------------------------------------------------ |
+| -F   | 当正常输出的请求不被响应时，强制输出线程堆栈                 |
+| -l   | 除堆栈外，显示关于锁的附加信息                               |
+| -e   | extended listing. Prints additional information about threads |
+
+##### （1）通过jstack分析一个Java死锁程序
+
+```java
+public class JStackDeadLockDemo{
+    public static void main(String[] args) {
+        /**
+         * 死锁是两个或两个以上的进程在执行过程中，因为抢夺资源导致相互等待的现象
+         * 若无外力干预，它们将无法推进下去
+         */
+        String lockA = "lockA";
+        String lockB = "lockB";
+        new Thread(new HoldLock(lockA,lockB),"Thread-A").start();
+        new Thread(new HoldLock(lockB,lockA),"Thread-B").start();
+        System.out.println();
+        /**
+         * 怎么定位死锁问题
+         * linux         ps -ef|grep xxx  / ls-l
+         * windows下Java程序运行，可以模拟ps命令
+         *   1、jps =java ps      jps -l 查看进程号
+         *   2、jstack 进程号
+         */
+    }
+}
+class HoldLock implements Runnable{
+    private String lockA;
+    private String lockB;
+
+    public HoldLock(String lockA,String lockB){
+        this.lockA = lockA;
+        this.lockB = lockB;
+    }
+    @Override
+    public void run() {
+        synchronized (lockA){
+            System.out.println(Thread.currentThread().getName() + "\t 自己持有：" + lockA + "\t 尝试获取：" + lockB);
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            synchronized (lockB){
+                System.out.println(Thread.currentThread().getName() + "\t 自己持有：" + lockB + "\t 尝试获取：" + lockA);
+            }
+        }
+    }
+}
+```
+
+##### （2）怎么定位死锁问题
+
+**1.1 查看正在运行的进程号**
+
+> 使用命令：` jps -l 或者 利用 top 分析` 
+
+```scss
+linux         ps -ef|grep xxx  / ls-
+windows下Java程序运行，可以模拟ps命令
+  1、jps =java ps      jps -l 查看进程号
+  2、jstack 进程号
+```
+
+![1608173042084](assets/1608173042084.png) 
+
+**1.2 查看死锁的堆栈信息** 
+
+> 使用命令：` jstack 16668` 
+
+打印结果中会有如下部分死锁异常：
+
+```bash
+$ jstack 16668
+2020-12-17 10:46:36
+Full thread dump Java HotSpot(TM) Client VM (25.251-b08 mixed mode):
+
+"DestroyJavaVM" #11 prio=5 os_prio=0 tid=0x0317dc00 nid=0x2e6c waiting on condition [0x00000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Thread-B" #10 prio=5 os_prio=0 tid=0x15b75800 nid=0x3c84 waiting for monitor entry [0x1621f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.wxw.jvm.monitoring.HoldLock.run(JStackDeadLockDemo.java:49)
+        - waiting to lock <0x05769a10> (a java.lang.String)
+        - locked <0x05769a38> (a java.lang.String)
+        at java.lang.Thread.run(Thread.java:748)
+
+"Thread-A" #9 prio=5 os_prio=0 tid=0x15b75400 nid=0x41a0 waiting for monitor entry [0x1618f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.wxw.jvm.monitoring.HoldLock.run(JStackDeadLockDemo.java:49)
+        - waiting to lock <0x05769a38> (a java.lang.String)
+        - locked <0x05769a10> (a java.lang.String)
+        at java.lang.Thread.run(Thread.java:748)
+
+"Service Thread" #8 daemon prio=9 os_prio=0 tid=0x15b2d000 nid=0x41a8 runnable [0x00000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C1 CompilerThread0" #7 daemon prio=9 os_prio=2 tid=0x15b04c00 nid=0x1d64 waiting on condition [0x00000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Monitor Ctrl-Break" #6 daemon prio=5 os_prio=0 tid=0x15b0b400 nid=0x1330 runnable [0x15f4f000]
+   java.lang.Thread.State: RUNNABLE
+        at java.net.SocketInputStream.socketRead0(Native Method)
+        at java.net.SocketInputStream.socketRead(SocketInputStream.java:116)
+        at java.net.SocketInputStream.read(SocketInputStream.java:171)
+        at java.net.SocketInputStream.read(SocketInputStream.java:141)
+        at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:284)
+        at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:326)
+        at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:178)
+        - locked <0x057ce458> (a java.io.InputStreamReader)
+        at java.io.InputStreamReader.read(InputStreamReader.java:184)
+        at java.io.BufferedReader.fill(BufferedReader.java:161)
+        at java.io.BufferedReader.readLine(BufferedReader.java:324)
+        - locked <0x057ce458> (a java.io.InputStreamReader)
+        at java.io.BufferedReader.readLine(BufferedReader.java:389)
+        at com.intellij.rt.execution.application.AppMainV2$1.run(AppMainV2.java:61)
+
+"Attach Listener" #5 daemon prio=5 os_prio=2 tid=0x15ac3800 nid=0x36ac waiting on condition [0x00000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=2 tid=0x15a98800 nid=0x1874 runnable [0x00000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Finalizer" #3 daemon prio=8 os_prio=1 tid=0x15a7b000 nid=0x2268 in Object.wait() [0x15d3f000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        - waiting on <0x05607f00> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:144)
+        - locked <0x05607f00> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:165)
+        at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:216)
+
+"Reference Handler" #2 daemon prio=10 os_prio=2 tid=0x15a75000 nid=0x2ea0 in Object.wait() [0x15caf000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        - waiting on <0x05605ff8> (a java.lang.ref.Reference$Lock)
+        at java.lang.Object.wait(Object.java:502)
+        at java.lang.ref.Reference.tryHandlePending(Reference.java:191)
+        - locked <0x05605ff8> (a java.lang.ref.Reference$Lock)
+        at java.lang.ref.Reference$ReferenceHandler.run(Reference.java:153)
+
+"VM Thread" os_prio=2 tid=0x0342e000 nid=0x2248 runnable
+
+"VM Periodic Task Thread" os_prio=2 tid=0x15b68400 nid=0x3f18 waiting on condition
+
+JNI global references: 12
+
+## 发现一个Java级别的死锁
+Found one Java-level deadlock:
+=============================
+"Thread-B":
+  waiting to lock monitor 0x15a77cfc (object 0x05769a10, a java.lang.String),
+  which is held by "Thread-A"
+"Thread-A":
+  waiting to lock monitor 0x15a7981c (object 0x05769a38, a java.lang.String),
+  which is held by "Thread-B"
+## 以上是监听线程信息
+Java stack information for the threads listed above:
+=================================================== 
+"Thread-B":
+        at com.wxw.jvm.monitoring.HoldLock.run(JStackDeadLockDemo.java:49)
+        - waiting to lock <0x05769a10> (a java.lang.String)
+        - locked <0x05769a38> (a java.lang.String)
+        at java.lang.Thread.run(Thread.java:748)
+"Thread-A":
+        at com.wxw.jvm.monitoring.HoldLock.run(JStackDeadLockDemo.java:49)
+        - waiting to lock <0x05769a38> (a java.lang.String)
+        - locked <0x05769a10> (a java.lang.String)
+        at java.lang.Thread.run(Thread.java:748)
+
+Found 1 deadlock.
+
+```
+
+### JDK 可视化工具
+
+ JDK中除了提供大量的命令行工具外，还有两个功能强大的可视化工具：JConsole和VisualVM，这两个工具是JDK的正式成员，没有被贴上“unsupported and experimental”的标签。
+
+#### :one:JConsole:监控和管理控制台
+
+- 在线手册：https://docs.oracle.com/en/java/javase/14/docs/specs/man/jconsole.html
+
+ JConsole（Java Monitoring and Management Console）是一种基于JMX的可视化监视、管理工具。它管理部分的功能是针对JMX MBean进行管理，由于MBean可以使用代码、中间服务器的管理控制台或者所有符合JMX规范的软件进行访问。
+
+> 主要作用
+
+1. **内存监控**：“内存”页签相当于可视化的jstat命令，用于监视受收集管理的虚拟机内存（Java堆和永久代）的变化趋势。
+2. **线程监控：** “线程”页签的功能相当于可视化的jstack命令，遇到线程停顿时可以使用这个页签进行监控分析。前面讲解jstack命令的时候提到过线程长时间停顿的主要原因主要有：等待外部资源（数据库连接、网络资源、设备资源等）、死循环、锁等待（活锁和死锁）。
+
+##### （2）启动 jconsole
+
+- **图形化启动**： 通过JDK/bin目录下的“jconsole.exe”启动JConsole后，将自动搜索出本机运行的所有虚拟机进程，不需要用户再使用jps来查询了。如下图所示：双击选择其中一个进程即可进行监控，也可以使用下面的“远程进程”功能来连接远程服务器，对远程虚拟机进行监控。
+- **命令行启动**：`jconsole`[ `-interval=`*n* ] [ `-notile`] [`-plugin` *路径*] [ `-version`] [*连接*...] [ `-J`*input_arguments* ]  [详细参数配置](https://docs.oracle.com/en/java/javase/14/docs/specs/man/jconsole.html) 
+
+ ![1608175690215](assets/1608175690215.png) 
+
+##### （3）案例：线程死锁监控
+
+- **概览**:以折线图的形式展示了堆内存，线程，类，CPU的使用情况。
+- **内存**：不仅展示了堆内存的整体信息，更细化到Eden,Survivor,老年代的使用情况。同事也包括非堆区,Perm的使用情况。还提供了一个“执行GC”按钮，可以强制应用程序执行Full GC.
+- **线程**:监视应用程序中线程信息，选中线程还可以跟踪线程的堆栈信息，同时还提供了“检测死锁”功能按钮
+- **类**：显示应用程序已加载和已卸载的类信息。
+- **VM概述**：展示当前应用程序的运行环境，包括虚拟机类型，版本，虚拟机参数，堆信息等。
+
+具体如下图所示：
+
+![1608176115732](assets/1608176115732.png)  
+
+##### （4）案例：OOM监控
+
+> 代码程序
+
+```java
+public class JConsoleMonitorOOMDemo {
+
+    public static void main(String[] args)throws Exception {
+        fillHeap(1000);
+    }
+
+    static class OOMObject{
+        public byte[] placeholder = new byte[64 * 1024];
+    }
+
+    public static void fillHeap(int num)throws InterruptedException{
+        List<OOMObject> list = new ArrayList<OOMObject>();
+        for(int i = 0; i < num; i++){
+            //稍作延迟，令监视曲线的变化更加明显
+            Thread.sleep(50);
+            list.add(new OOMObject());
+        }
+        System.gc();
+    }
+}
+```
+
+**运行情况监控** 
+
+![1608176899384](assets/1608176899384.png) 
+
+但是监视范围扩大至整个堆后，会发现曲线是一条向上增长的平滑曲线。并且从柱状图可以看出，在1000次循环执行结束，运行了System.gc()后；虽然整个新生代Eden和Survivor区基本都被清空了，但是代表老年代的柱状图仍然保持巅峰值状态，说明被填充进堆中的数据在System.gc()方法执行之后仍然存活。但是有两个问题：
+
+1. 虚拟机启动参数只限制了Java堆为100MB，没有指定-Xmn参数，能否从监控图中估计出新生代有多大？
+
+   上图显示Eden空间为69952KB，因为没有设置-XX：SurvivorRadio参数，所以Eden与Survivor空间比例默认值为8:1，整个新生代空间大约为69952KB*125%=34160KB
+
+2. 为何执行了System.gc()之后，上面的图老年代依然显示巅峰值状态，代码需要做何调整才能让System.gc()回收掉填充到堆中的对象？
+
+   执行完System.gc()之后，空间未能回收是因为List<OOMObject> list对象仍然存活，fillHeap()方法仍然没有退出，因此list对象在System.gc()执行时仍然处于作用域之内，如果把System.gc()移动到fillHeap()方法之外调用就可以回收掉全部内存。
+
+**相关文章** 
+
+1. [可视化工具——JConsole](https://blog.csdn.net/u013132035/article/details/78312226) 
+
+#### :two:JVisualVM:性能监控工具
+
+visual vm是一个功能强大的多合一的故障诊断和性能监控的可视化工具，使用visual vm可以代替jstat,jmap,jhat,jstack甚至替代jconsole
+
+- **使用命令**：`jvisualvm`启动Visual VM. 或者在bin目录下双击
+
+> 通过插件扩展支持，VisualVM可以做到
+
+![img](assets/20171024222148017.png) 
+
+> **生成、浏览堆转储快照** 
+
+![img](assets/20171024222407920.png) 
+
+> 分析程序性能：在profiler 标签，提供了程序运行期间方法级的CPU执行时间分析及内存分析，对程序性能有一定的影响，不建议在生产环境使用
+
+> BTrace 动态日志跟踪：打印调用堆栈、参数、返回值、性能监视、定位连接泄漏、解决多线程竞争问题等
+
+##### （1）连接程序
+
+Visual VM支持多种方式连接应用程序：
+
+- 本地连接： 在本地计算机正在运行的java程序。
+- 远程连接： 支持jmx和jstatd方式操作远程连接。具体的配置方式前文都已介绍到。
+
+**（2）监控应用程序** 
+
+选中了应用程序之后，即可看到监控的页面如下图：
+
+![1608177558744](assets/1608177558744.png) 
+
+- **概览**:主要包含了进程ID,MainClass,启动参数;JVM参数和系统属性等信息。
+- **监视**：主要包含了CPU,内存（堆，Perm）,类，线程的使用情况折线图。还提供了“执行垃圾回收”和“堆Dump”按钮来强制执行Full GC和生成堆快照文件。
+- **线程**：提供线程的详细信息，还可以**检测到死锁**，提供“线程Dump”按钮，相当于执行jstack，导出当前线程的信息
+
+- **抽样器**:它有CPU和内存两个**性能采样器**，用于实时的监控程序信息。根据这个功能可以简单的定位到系统中最消耗资源的函数。
+- **profiler** 
+
+> **Visual VM 的 BTrace插件** 
+
+BTrace是一款非常有意思的工具，它可以在不停机的情况下，通过字节码注入动态的监控系统的运行情况，它可以跟踪方法的调用，构造函数调用和系统内存等信息。
 
 
 
-
-
-
-
-## 故障排除工具
+## 调优案例分析与实战
 
 ### 堆内存分析工具
 

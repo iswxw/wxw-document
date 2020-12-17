@@ -13,6 +13,23 @@
 - **reset --hard** 会在重置 **HEAD** 和**branch**的同时，重置stage区和工作目录里的内容
 - **reset --soft** 会在重置 **HEAD** 和 **branch** 时，保留工作目录和暂存区中的内容，并把重置 **HEAD** 所带来的新的差异放进暂存区。
 
+#### 1.2 git config
+
+（1）**配置git信息** 
+
+```bash
+git config --global user.name "bryan sun"
+git config --global user.email "hitsjt@gmail.com"
+```
+
+（2）查看git配置信息
+
+```bash
+git config -l
+```
+
+
+
 ### 集中式与分布式
 
 Git 属于分布式版本控制系统，而 SVN 属于集中式。
