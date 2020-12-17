@@ -756,6 +756,245 @@ Found 1 deadlock.
 
 ```
 
+#### :eight:Jcmd:Java虚拟机诊断
+
+该`jcmd`实用程序用于将诊断命令请求发送到JVM。它必须在运行JVM的同一台计算机上使用，并且必须具有用于启动JVM的相同有效用户和组标识符。每个诊断命令都有其自己的参数集。要显示诊断命令的描述，语法和可用参数列表，请使用命令名称作为参
+
+- 在线手册：https://docs.oracle.com/en/java/javase/14/docs/specs/man/jcmd.html
+
+**命令** ：
+
+```bash
+$ jcmd -h
+Usage: jcmd <pid | main class> <command ...|PerfCounter.print|-f file>
+   or: jcmd -l
+   or: jcmd -h
+
+本command必须是一个有效jcmd的选择JVM命令。可jcmd通过运行help命令（jcmd pid help）获得可用命令的列表，其中：
+- pid是正在运行的Java进程的进程ID。如果pid为0，则命令将发送到所有Java进程。
+- main class参数将用于部分或完全匹配用于启动Java的类。如果未提供任何选项，它将列出正在运行的Java进程标识符，以及用于启动进程的主类和命令行   参数（与using相同-l）
+ 
+  # 打印指定的Java进程公开的性能计数器。
+  PerfCounter.print display the counters exposed by this process
+  -f  read and execute commands from the file # 从指定的文件filename读取并执行命令。
+  -l  list JVM processes on the local machine
+      # 显示不在单独的docker进程中运行的Java虚拟机进程标识符的列表，以及用于启动该进程的主类和命令行参数。
+      # 如果JVM在docker进程中，则必须使用诸如ps查找PID的工具
+      # jcmd不使用参数与使用相同jcmd -l。
+  -h  this help #显示jcmd实用程序的命令行帮助
+```
+
+**jcmd的常见用法：** 
+
+1. 堆直方图查看：查看系统中类统计信息GC.class_histogram，示例见《[Heap堆分析（堆转储、堆分析）](http://www.cnblogs.com/duanxz/p/8510623.html)》
+2. 堆转储：导出堆信息GC.heap_dump，示例见《[Heap堆分析（堆转储、堆分析）](http://www.cnblogs.com/duanxz/p/8510623.html)》
+3. 获取系统Properties内容VM.system_properties
+4. 获取启动参数VM.flags
+5. 获取所有性能相关数据PerfCounter.print
+6. 查看原生内存信息：jcmd process_id VM.native_memory summary，示例见《[原生内存（堆外内存）](http://www.cnblogs.com/duanxz/archive/2012/08/09/2630284.html)》
+7. 查看CompressedClassSpace大小：jcmd pid GC.heap_info
+
+#####  （1）查看进程中的性能计数器
+
+```powershell
+jcmd <pid> PerfCounter.print
+```
+
+##### （2）查看可用的诊断命令
+
+```bash
+jcmd <pid> help
+```
+
+> 案例分析
+
+```powershell
+Dell@κСΰ MINGW64 /d/Project
+$ jps -l   # 查看当前运行的java进程
+15424
+16468 jdk.jshell.execution.RemoteExecutionControl
+18292 sun.tools.jps.Jps
+16856 jdk.jshell/jdk.internal.jshell.tool.JShellToolProvider
+6792 com.wxw.jvm.monitoring.JStackDeadLockDemo
+8456 org.jetbrains.jps.cmdline.Launcher
+1948 org.jetbrains.idea.maven.server.RemoteMavenServer36
+
+Dell@κСΰ MINGW64 /d/Project
+$ jcmd 6792 help   #查看当前进程可用的诊断命令          
+6792:
+The following commands are available:
+JFR.stop
+JFR.start
+JFR.dump
+JFR.check
+VM.native_memory      # 打印本机内存使用情况
+VM.check_commercial_features
+VM.unlock_commercial_features
+ManagementAgent.stop
+ManagementAgent.start_local
+ManagementAgent.start
+VM.classloader_stats
+GC.rotate_log
+Thread.print
+GC.class_stats      # 供有关Java类元数据的统计信息：性能影响大，不建议使用---取决于Java堆的大小和内容
+GC.class_histogram  # 提供有关Java堆使用情况的统计信息
+GC.heap_dump        # 生成Java堆的HPROF格式转储。
+GC.finalizer_info   # 提供有关Java完成队列的信息
+GC.heap_info        # 提供通用的Java堆信息
+GC.run_finalization
+GC.run
+VM.uptime             # 打印虚拟机正常运行时间
+VM.dynlibs
+VM.flags              # 打印VM标志选项及其当前值
+VM.system_properties  # 打印系统属性
+VM.command_line
+VM.version
+help
+
+For more information about a specific command use 'help <command>'.
+
+Dell@κСΰ MINGW64 /d/Project
+$ jcmd 6792 VM.flags        # 查看虚拟机配置参数
+6792:
+-XX:InitialHeapSize=16777216 -XX:MaxHeapSize=268435456 -XX:MaxNewSize=89456640 -XX:MinHeapDeltaBytes=131072 -XX:NewSize=5570560 -XX:OldSize=11206656 -XX:+UseFastUnorderedTimeStamps -XX:-UseLargePagesIndividualAllocation
+```
+
+关于诊断命令含义可参考官网：https://docs.oracle.com/en/java/javase/14/docs/specs/man/jcmd.html
+
+#### :nine::JShell:交互式编程工具
+
+Java Shell工具是JDK1.9出现的工具， Java Shell工具（JShell）是一个用于学习Java编程语言和Java代码原型的交互式工具。JShell是一个Read-Evaluate-Print循环（REPL），它在输入时评估声明，语句和表达式，并立即显示结果。该工具从命令行运行。
+
+- 在线手册：https://docs.oracle.com/en/java/javase/14/docs/specs/man/jshell.html
+
+##### （1）为什么使用Jshell
+
+使用JShell，您可以一次输入一个程序元素，立即查看结果，并根据需要进行调整。
+Java程序开发通常涉及以下过程：
+
+- 写一个完整的程序。
+- 编译它并修复任何错误。
+- 运行程序。
+- 弄清楚它有什么问题。
+- 编辑它。
+- 重复这个过程。
+
+Shell可帮助您在开发程序时尝试代码并轻松探索选项。您可以测试单个语句，尝试不同的方法变体，并在JShell会话中试验不熟悉的API。JShell不替换IDE。在开发程序时，将代码粘贴到JShell中进行试用，然后将JShell中的工作代码粘贴到程序编辑器或IDE中。
+
+##### （2）JShell 使用
+
+使用JShell需要配置好java的环境变量、
+
+**启动和退出** 
+
+```powershell
+jshell              # 启动
+jshell -v           # 要以详细模式启动JShell，请使用以下-v选项
+/exit               # 退出
+```
+
+**运行代码片段** 
+
+使用详细选项启动JShell以获得最大可用反馈量
+
+```powershell
+jshell -v
+|  欢迎使用 JShell -- 版本 11.0.2
+|  要大致了解该版本, 请键入: /help intro
+```
+
+在提示符处输入以下示例语句，并查看显示的输出：
+
+```powershell
+jshell> int x = 45
+x ==> 45
+|  已创建 变量 x : int
+```
+
+首先，显示结果。将其读作：变量x的值为45.因为您处于详细模式，所以还会显示所发生情况的描述。
+
+注意：如果未输入分号，则会自动将终止分号添加到完整代码段的末尾。
+
+当输入的表达式没有命名变量时，会创建一个临时变量，以便稍后可以引用该值。以下示例显示表达式和方法结果的临时值。该示例还显示了…> 在代码段需要多行输入完成时使用的continuation prompt（）：
+
+```powershell
+jshell> String twice(String s) {
+   ...>   return s + s;
+   ...> }
+|  已创建 方法 twice(String)
+
+jshell> twice("Oecan")
+$4 ==> "OecanOecan"
+|  已创建暂存变量 $4 : String
+```
+
+**查看默认导入和使用自动补全功能** 
+
+默认情况下，JShell提供了一些常用包的导入，我们可以使用 **import** 语句导入必要的包或是从指定的路径的包，来运行我们的代码片段。我们可以输入以下命令列出所有导入的包：
+
+```powershell
+jshell> /imports 
+|    import java.io.*
+|    import java.math.*
+|    import java.net.*
+|    import java.nio.file.*
+|    import java.util.*
+|    import java.util.concurrent.*
+|    import java.util.function.*
+|    import java.util.prefs.*
+|    import java.util.regex.*
+|    import java.util.stream.*
+```
+
+**自动补全的功能** 
+
+当我们想输入System类时，根据前面说的自动补全，只需要输入Sys然后按下 Tab 键，则自动补全， 然后再输入“.o”，则会自动补全方法， 在补全“System.out.”后按下 Tab 键，接下来就会列出当前类的所有的 public 方法的列表：
+
+```powershell
+jshell> System
+签名:
+java.lang.System
+
+<再次按 Tab 可查看文档>
+
+jshell> System.out.
+append(        checkError()   close()        equals(        flush()        format(        getClass()     
+hashCode()     notify()       notifyAll()    print(         printf(        println(       toString()     
+wait(          write(    
+```
+
+**列出到目前为止当前 session 里所有有效的代码片段** 
+
+```powershell
+jshell> /list 
+
+   2 : 2+2
+   4 : twice("Oecan")
+   5 : String twice(String s) {
+         return "Twice: " + s;
+       }
+   6 : twice("thing")
+   8 : String x;
+
+```
+
+**列出到目前为止当前 session 里所有方法** 
+
+```powershell
+jshell> /methods 
+|    String twice(String)
+```
+
+**使用外部代码编辑器来编写 Java 代码**   
+
+现在，我想对twice方法做一些改动，如果这时有外部代码编辑器的话，做起来会很容易。在 JShell 中可以启用JShell Edit Pad 编辑器，需要输入如下命令，来修改上面的方法：
+
+代码修改完成以后，先点击“Accept”按钮，再点击“Exit”按钮，则退出编辑器，在 JShell 命令行中提示方法已经修改。
+
+**相关文章** 
+
+1. [JShell 工具](https://blog.csdn.net/u010562966/article/details/86693878) || [官网 jdk9](https://docs.oracle.com/javase/9/jshell/) 
+
 ### JDK 可视化工具
 
  JDK中除了提供大量的命令行工具外，还有两个功能强大的可视化工具：JConsole和VisualVM，这两个工具是JDK的正式成员，没有被贴上“unsupported and experimental”的标签。
@@ -876,8 +1115,6 @@ Visual VM支持多种方式连接应用程序：
 > **Visual VM 的 BTrace插件** 
 
 BTrace是一款非常有意思的工具，它可以在不停机的情况下，通过字节码注入动态的监控系统的运行情况，它可以跟踪方法的调用，构造函数调用和系统内存等信息。
-
-
 
 ## 调优案例分析与实战
 
