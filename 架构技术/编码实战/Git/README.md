@@ -2,6 +2,12 @@
 
 
 
+### 前言
+
+- GitHub下克隆加速地址：将` github.com` 替换为`  github.com.cnpmjs.org`  
+
+  
+
 ### 常用命令
 
 #### 1.1 git reset
