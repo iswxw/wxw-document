@@ -1,4 +1,4 @@
-### MyBatis SQL Mapper Java框架
+## MyBatis SQL Mapper Java框架
 
 ---
 
@@ -11,9 +11,15 @@ MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结
 - [Download Snapshot](https://oss.sonatype.org/content/repositories/snapshots/org/mybatis/mybatis/) 
 - [Mybatis 源码构建](https://github.com/tuguangquan/mybatis) 
 
+## MyBatis 基础知识
 
 
-### 一、MyBatis 的用法
+
+## MyBatis 缓存架构
+
+
+
+### 二、MyBatis 的用法
 
 #### （1）返回值设置
 
@@ -76,7 +82,9 @@ List<SchoolCustomer> getSchoolCustomerByPhone(Map<String, Object> params);
 
 
 
+**相关文章**
 
+1. [Mybatis 从0到1](https://my.oschina.net/u/4728925/blog/4783514) 
 
 
 
