@@ -808,6 +808,299 @@ redis 的单线程的。keys 指令会导致线 程阻塞一段时间，线上�
 
 降级一般是有损的操作，所以尽量减少降级对于业务的影响程度。
 
+## Redis 高级应用
+
+### 常用命令
+
+#### 1.  Redis scan
+
+Redis Scan 命令用于迭代数据库中的数据库键。[scan 指令文档](http://redisdoc.com/database/scan.html)  
+
+SCAN 命令是一个基于游标的迭代器，每次被调用之后， 都会向用户返回一个新的游标， 用户在下次迭代时需要使用这个新游标作为 SCAN 命令的游标参数， 以此来延续之前的迭代过程。
+
+SCAN 返回一个包含两个元素的数组
+
+- 第一个元素是用于进行下一次迭代的新游标
+- 第二个元素则是一个数组， 这个数组中包含了所有被迭代的元素。如果新游标返回 0 表示迭代已结束。
+
+相关命令：
+
+- [SSCAN](https://www.runoob.com/redis/sets-sscan.html) 命令用于迭代集合键中的元素。
+- [HSCAN](https://www.runoob.com/redis/hashes-hscan.html) 命令用于迭代哈希键中的键值对。
+- [ZSCAN](https://www.runoob.com/redis/sorted-sets-zscan.html) 命令用于迭代有序集合中的元素（包括元素成员和元素分值）。
+
+> **注意** 
+
+- 以上列出的四个命令都支持增量式迭代， 它们每次执行都只会返回少量元素， 所以这些命令可以用于生产环境， 而不会出现像 `KEYS` 命令、 `SMEMBERS` 命令带来的问题 —— 当 `KEYS` 命令被用于处理一个大的数据库时， 又或者 `SMEMBERS` 命令被用于处理一个大的集合键时， 它们可能会**阻塞服务器达数秒之久** 
+- 增量式迭代命令也不是没有缺点的： 举个例子， 使用 `SMEMBERS` 命令可以返回集合键当前包含的所有元素， 但是对于 `SCAN` 这类增量式迭代命令来说， 因为在对键进行增量式迭代的过程中， 键可能会被修改， 所以增量式迭代命令只能对被返回的元素提供有限的保证 （offer limited guarantees about the returned elements）
+
+**语法** 
+
+```bash
+SCAN cursor [MATCH pattern] [COUNT count]
+```
+
+- cursor - 游标。
+- pattern - 匹配的模式。
+- count - 指定从数据集里返回多少元素，默认值为 10 。
+
+使用案例：
+
+```bash
+ scan 176 MATCH *11* COUNT 1000
+```
+
+![1608619414450](assets/1608619414450.png) 
+
+### 高级数据结构
+
+#### 1. Redis HyperLogLog
+
+Redis HyperLogLog 是用来做基数统计的算法
+
+##### （1）**优点** 
+
+- 在输入元素的数量或者体积非常非常大时，计算基数所需的空间总是固定 的、并且是很小的。
+- 在 Redis 里面，每个 HyperLogLog 键只需要花费 12 KB 内存，就可以计算接近 2^64 个不同元素的基 数。这和计算基数时，元素越多耗费内存就越多的集合形成鲜明对比。
+
+但是，因为 HyperLogLog 只会根据输入元素来计算基数，而不会储存输入元素本身，所以 HyperLogLog 不能像集合那样，返回输入的各个元素。
+
+> **什么是基数？**
+
+比如数据集 {1, 3, 5, 7, 5, 7, 8}， 那么这个数据集的**基数集**为 {1, 3, 5 ,7, 8},  **基数**(不重复元素)为5。 基数估计就是在误差可接受的范围内，快速计算基数。
+
+##### （2）**应用场景** 
+
+- 统计网站每个网页每天的UV数据（因为需要去重，而且数据量很大）
+
+##### （3）实例 
+
+以下实例演示了 HyperLogLog 的工作过程：
+
+![1608620507730](assets/1608620507730.png) 
+
+**基本命令**  [命令参考文档](http://redisdoc.com/hyperloglog/pfmerge.html) 
+
+- [PFADD key element [element ...\]](https://www.runoob.com/redis/hyperloglog-pfadd.html) ：添加指定元素到 HyperLogLog 中
+- [PFCOUNT key [key ...\]](https://www.runoob.com/redis/hyperloglog-pfcount.html) 返回给定 HyperLogLog 的基数估算值
+- [PFMERGE destkey sourcekey [sourcekey ...\]](https://www.runoob.com/redis/hyperloglog-pfmerge.html) 将多个 HyperLogLog 合并为一个 HyperLogLog   （复杂度：O(n)）
+
+```powershell
+redis> PFADD  nosql  "Redis"  "MongoDB"  "Memcached"
+(integer) 1
+
+redis> PFADD  RDBMS  "MySQL" "MSSQL" "PostgreSQL"
+(integer) 1
+
+redis> PFMERGE  databases  nosql  RDBMS
+OK
+
+redis> PFCOUNT  databases
+(integer) 6
+```
+
+##### （5）HyperLogLog 实现原理
+
+给定一系列的随机整数，我们记录下低位连续零位的最大长度 k，通 过这个 k 值可以估算出随机数的数量。 首先不问为什么，我们编写代码做一个实验，观察 一下随机整数的数量和 k 值的关系。
+
+![1608621546677](assets/1608621546677.png) 
+
+通过这实验可以发现 K 和 N 的对数之间存在显著的线性相关性：
+
+```bash
+N=2^K # 约等于
+```
+
+如果 N 介于 2^K 和 2^(K+1) 之间，用这种方式估计的值都等于 2^K，这明显是不合 理的。这里可以采用多个 BitKeeper，然后进行加权估计，就可以得到一个比较准确的值。
+
+上面的这 个算法在随机次数很少的情况下会出现除零错误，因为 maxbits=0 是不可以求倒数的
+
+##### （6）常见问题
+
+- **pf 的内存占用为什么是12k?** 
+
+  在 Redis 的 HyperLogLog  实现中用到的是 16384 个桶，也就是 2^14，每个桶的 maxbits 需要 6 个 bits 来存储，最 
+
+  大可以表示 maxbits=63，于是总共占用内存就是 2^14 * 6 / 8 = 12k 字节
+
+#### 2. Redis **GeoHash** 
+
+##### （1）基本用法  
+
+Redis 提供的 Geo 指令只有 6 个，读者们瞬间就可以掌握。使用时，读者务必再次想 起，它只是一个普通的 zset 结构。
+
+- geoadd：根据key，坐标，名称来添加地理位置的坐标。
+- geopos：根据member名称，获取地理位置的坐标。
+- geodist：根据member名称，计算两个位置之间的距离。
+- georadius：根据用户给定的经纬度坐标来获取指定范围内的地理位置集合。
+- georadiusbymember：根据储存在位置集合里面的某个地点获取指定范围内的地理位置集合。
+- geohash：返回一个或多个位置对象的 geohash 值。
+
+[具体参见《菜鸟教程》](https://www.runoob.com/redis/redis-geo.html) 
+
+> **geoadd**：geoadd 用于存储指定的地理空间位置，可以将一个或多个经度(longitude)、纬度(latitude)、位置名称(member)添加到指定的 key 中
+
+**语法格式：** ` GEOADD key longitude(经度) latitude(纬度) member(名称) [longitude latitude member ...]` 
+
+以下实例中 key 为 Beijin、Gansu 为位置名称 ：
+
+```bash
+redis> GEOADD Sicily 13.361389 38.115556 "Palermo" 15.087269 37.502669 "Catania"
+(integer) 2
+
+redis> GEODIST Sicily Palermo Catania
+"166274.15156960039"
+
+redis> GEORADIUS Sicily 15 37 100 km
+1) "Catania"
+
+redis> GEORADIUS Sicily 15 37 200 km
+1) "Palermo"
+2) "Catania"
+```
+
+> **geopos** : 用于从给定的 key 里返回所有指定名称(member)的位置（经度和纬度），不存在的返回 nil。 
+
+**语法格式：** ` GEOPOS key member [member ...]` 
+
+```bash
+redis> GEOADD Sicily 13.361389 38.115556 "Palermo" 15.087269 37.502669 "Catania"
+(integer) 2
+redis> GEOPOS Sicily Palermo Catania NonExisting
+1) 1) "13.36138933897018433"
+   2) "38.11555639549629859"
+2) 1) "15.08726745843887329"
+   2) "37.50266842333162032"
+3) (nil)
+redis>
+```
+
+> **geodist** ：geodist 用于返回两个给定位置之间的距离。
+
+**语法格式：** ` GEODIST key member1 member2 [m|km|ft|mi]` 
+
+member1 member2 为两个地理位置。
+
+最后一个距离单位参数说明：
+
+- m ：米，默认单位。
+- km ：千米。
+- mi ：英里。
+- ft ：英尺。
+
+举例： 计算 Palermo 与 Catania 之间的距离：
+
+```bash
+redis> GEOADD Sicily 13.361389 38.115556 "Palermo" 15.087269 37.502669 "Catania"
+(integer) 2
+redis> GEODIST Sicily Palermo Catania
+"166274.1516"
+redis> GEODIST Sicily Palermo Catania km
+"166.2742"
+redis> GEODIST Sicily Palermo Catania mi
+"103.3182"
+redis> GEODIST Sicily Foo Bar
+(nil)
+redis>
+```
+
+> georadius、georadiusbymember
+
+- georadius 以给定的经纬度为中心， 返回键包含的位置元素当中， 与中心的距离不超过给定最大距离的所有位置元素
+- georadiusbymember 和 GEORADIUS 命令一样， 都可以找出位于指定范围内的元素， 但是 georadiusbymember 的中心点是由给定的位置元素决定的， 而不是使用经度和纬度来决定中心点。
+
+**语法格式：** 
+
+```c
+GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC] [STORE key] [STOREDIST key]
+GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC] [STORE key] [STOREDIST key]
+
+参数说明：
+
+m ：米，默认单位。
+km ：千米。
+mi ：英里。
+ft ：英尺。
+WITHDIST: 在返回位置元素的同时， 将位置元素与中心之间的距离也一并返回。
+WITHCOORD: 将位置元素的经度和维度也一并返回。
+WITHHASH: 以 52 位有符号整数的形式， 返回位置元素经过原始 geohash 编码的有序集合分值。 这个选项主要用于底层应用或者调试， 实际中的作用并不大。
+COUNT 限定返回的记录数。
+ASC: 查找结果根据距离从近到远排序。
+DESC: 查找结果根据从远到近排序。
+```
+
+georadius 实例：
+
+```c
+redis> GEOADD Sicily 13.361389 38.115556 "Palermo" 15.087269 37.502669 "Catania"
+(integer) 2
+redis> GEORADIUS Sicily 15 37 200 km WITHDIST
+1) 1) "Palermo"
+   2) "190.4424"
+2) 1) "Catania"
+   2) "56.4413"
+redis> GEORADIUS Sicily 15 37 200 km WITHCOORD
+1) 1) "Palermo"
+   2) 1) "13.36138933897018433"
+      2) "38.11555639549629859"
+2) 1) "Catania"
+   2) 1) "15.08726745843887329"
+      2) "37.50266842333162032"
+redis> GEORADIUS Sicily 15 37 200 km WITHDIST WITHCOORD
+1) 1) "Palermo"
+   2) "190.4424"
+   3) 1) "13.36138933897018433"
+      2) "38.11555639549629859"
+2) 1) "Catania"
+   2) "56.4413"
+   3) 1) "15.08726745843887329"
+      2) "37.50266842333162032"
+redis>
+```
+
+georadiusbymember 实例：
+
+```c
+redis> GEOADD Sicily 13.583333 37.316667 "Agrigento"
+(integer) 1
+redis> GEOADD Sicily 13.361389 38.115556 "Palermo" 15.087269 37.502669 "Catania"
+(integer) 2
+redis> GEORADIUSBYMEMBER Sicily Agrigento 100 km
+1) "Agrigento"
+2) "Palermo"
+redis>
+```
+
+##### （2）实践
+
+​    让我们打开地址 http://geohash.org/wx4g52e1ce0，观察地图指向的位置是否正确。
+
+- 在该平台可以在线测试坐标数据
+
+![1608623334355](assets/1608623334355.png) 
+
+很好，就是这个位置，非常准确。
+
+##### （3）应用场景
+
+- 附近的人
+
+##### （4）Geo Hash 算法
+
+> 业界比较通用的地理位置距离排序算法是 GeoHash 算法
+
+GeoHash 算法会继续对这个整数做一次 base32 编码 (0-9,a-z 去掉 a,i,l,o 四个字母) 变 成一个字符串。在 Redis 里面，经纬度使用 52 位的整数进行编码，放进了 zset 里面，zset  的 value 是元素的 key，score 是 GeoHash 的 52 位整数值。zset 的 score 虽然是浮点数， 
+
+但是对于 52 位的整数值，它可以无损存储。 
+
+在使用 Redis 进行 Geo 查询时，我们要时刻想到它的内部结构实际上只是一个 zset(skiplist)。通过 zset 的 score 排序就可以得到坐标附近的其它元素 (实际情况要复杂一 些，不过这样理解足够了)，通过将 score 还原成坐标值就可以得到元素的原始坐标。 （具体参见《Redis深度历险》）
+
+##### （5）小总结
+
+​			在一个地图应用中，车的数据、餐馆的数据、人的数据可能会有百万千万条，如果使用 Redis 的 Geo 数据结构，它们将全部放在一个 zset 集合中。在 Redis 的集群环境中，集合 可能会从一个节点迁移到另一个节点，如果单个 key 的数据过大，会对集群的迁移工作造成 较大的影响，在集群环境中单个 key 对应的数据量不宜超过 1M，否则会导致集群迁移出现 卡顿现象，影响线上服务的正常运行。 
+
+​			 所以，这里建议 Geo 的数据使用单独的 Redis 实例部署，不使用集群环境。 如果数据量过亿甚至更大，就需要对 Geo 数据进行拆分，按国家拆分、按省拆分，按 市拆分，在人口特大城市甚至可以按区拆分。这样就可以显著降低单个 zset 集合的大小。
+
 ## Redis 实践和应用
 
 ### Redis 客户端

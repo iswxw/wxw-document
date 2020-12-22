@@ -2,6 +2,14 @@
 
 
 
+### 个人成长
+
+
+
+#### 相关文章
+
+- [阿里10年：一个普通技术人的成长之路](https://developer.aliyun.com/article/779778?utm_content=g_1000217231&accounttraceid=7a38ca6b5469479db6b6e0f0d26dc70ezerc) 
+
 ### 经验总结
 
 #### 1、功能设计时需要注意什么？
