@@ -169,7 +169,29 @@ MongoDB的适合对大量或者无固定格式的数据进行存储，比如：�
 
   ![1608527989839](assets/1608527989839.png) 
 
+### 继承关系简述
 
+![1608603382395](assets/1608603382395.png) 
+
+### 主流的实现方法
+
+#### 1. MongoTemplate
+
+#### 2. MongoOperations 接口
+
+#### 3.  MongoRepository
+
+#### 4. @MogoId和@Document 注解
+
+### 应用案例
+
+#### 1. `aggregation` MongoDB聚合框架
+
+#### 2.  `gridfs` MongoDB使用gridFS
+
+#### 3. `geo-json`[GeoJSON](http://geojson.org/)与MongoDB结合使用
+
+#### 4 `querydsl`MongoDB反应式[Querydsl](https://github.com/querydsl/querydsl) 
 
 
 
