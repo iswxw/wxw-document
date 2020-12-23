@@ -6,9 +6,10 @@
 
 
 
-#### 相关文章
+#### 程序员吐槽软文
 
 - [阿里10年：一个普通技术人的成长之路](https://developer.aliyun.com/article/779778?utm_content=g_1000217231&accounttraceid=7a38ca6b5469479db6b6e0f0d26dc70ezerc) 
+- [我在阿里工作的这段时间里，都学到了哪些东西](https://blog.csdn.net/a724888/article/details/99709865) ——黄小斜
 
 ### 经验总结
 
