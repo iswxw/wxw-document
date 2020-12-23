@@ -725,11 +725,215 @@ f = （1 - 0.5^t）^k   // 极限近似，k是hash函数的数量
 
 当实际元素和预计元素的倍数 t 增大时，错误率 f 也会跟着增大；
 
+### Redis Lua 脚本
+
+前言
+
+- KEYS[1] 用来表示在redis 中用作键值的参数占位，主要用來传递在redis 中用作keyz值的参数。
+
+- ARGV[1] 用来表示在redis 中用作参数的占位，主要用来传递在redis中用做 value值的参数。
+
+#### 1. Lua 基本用法
+
+（1）` EVAL script numkeys key [key ...] arg [arg ...] `  ,其中 numkeys 是key的个数，后边接着写key1 key2...  val1 val2....，举例
+
+```c
+127.0.0.1:6379> eval "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}" 2 key1 key2 val1 val2
+1) "key1"
+2) "key2"
+3) "val1"
+4) "val2"
+```
+
+（2）` SCRIPT LOAD script `  ， 其中把脚本加载到脚本缓存中，返回SHA1校验和。但不会立马执行，举例
+
+```c
+127.0.0.1:6379> SCRIPT LOAD "return 'hello world'"
+"5332031c6b470dc5a0dd9b4bf2030dea6d65de91"
+```
+
+（3）` EVALSHA sha1 numkeys key [key ...] arg [arg ...] ` , 其中 根据缓存码（SHA1校验和）执行脚本内容。举例
+
+```c
+127.0.0.1:6379> SCRIPT LOAD "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}" 
+"a42059b356c875f0717db19a51f6aaca9ae659ea"
+127.0.0.1:6379> EVALSHA "a42059b356c875f0717db19a51f6aaca9ae659ea" 2 key1 key2 val1 val2
+1) "key1"
+2) "key2"
+3) "val1"
+4) "val2"
+```
+
+（4）` SCRIPT EXISTS script [script ...] ` ，通过sha1校验和判断脚本是否在缓存中
+
+（5）` SCRIPT FLUSH ` , 清空缓存
+
+```c
+127.0.0.1:6379> SCRIPT LOAD "return 'hello jihite'"
+"3a43944275256411df941bdb76737e71412946fd"
+127.0.0.1:6379> SCRIPT EXISTS "3a43944275256411df941bdb76737e71412946fd"
+1) (integer) 1
+127.0.0.1:6379> SCRIPT FLUSH
+OK
+127.0.0.1:6379> SCRIPT EXISTS "3a43944275256411df941bdb76737e71412946fd"
+1) (integer) 0
+```
+
+（6）` SCRIPT KILL `  , 杀死目前正在执行的脚本
+
+#### 2. Lua主要优势
+
+- 减少网络开销：多个请求通过脚本一次发送，减少网络延迟
+
+- 原子操作：将脚本作为一个整体执行，中间不会插入其他命令，无需使用事务
+
+- 复用：客户端发送的脚本永久存在redis中，其他客户端可以复用脚本
+
+- 可嵌入性：可嵌入JAVA，C#等多种编程语言，支持不同操作系统跨平台交互
+
+#### 3. Lua实战
+
+直接在redis-cli中直接写lua脚本，这样非常不方便编辑，通常情况下我们都是把lua script放到一个lua文件中，然后执行这个lua脚本，
+
+- 第一步：编写脚本
+
+  ```c
+  local key = KEYS[1]
+  local val = redis.call("GET", key);
+  
+  if val == ARGV[1]
+  then
+          redis.call('SET', KEYS[1], ARGV[2])
+          return 1
+  else
+          return 0
+  end
+  ```
+
+- 第二步：执行lua脚本
+
+  ```bash
+  执行命令： redis-cli -a 密码 --eval Lua脚本路径 key [key …] ,  arg [arg …] 
+  如：redis-cli -a 123456 --eval ./Redis_CompareAndSet.lua userName , zhangsan lisi 
+  ```
+
+> 注意："--eval"而不是命令模式中的"eval"，一定要有前端的两个 - 脚本路径后紧跟key [key …]，相比命令行模式，少了numkeys这个key数量值
+> key [key …] 和 arg [arg …] 之间的“ , ”，英文逗号前后必须有空格，否则死活都报错
+
+```c
+## Redis客户端执行
+127.0.0.1:6379> set userName zhangsan 
+OK
+127.0.0.1:6379> get userName
+"zhangsan"
+
+## linux服务器执行
+## 第一次执行：compareAndSet成功，返回1
+## 第二次执行：compareAndSet失败，返回0
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_CompareAndSet.lua userName , zhangsan lisi
+(integer) 1
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_CompareAndSet.lua userName , zhangsan lisi
+(integer) 0
+```
+
+##### （1）**示例1：** **活跃用户判断** 
+
+**活跃用户判断：** 判断一个游戏用户是否属于活跃用户，如果符合标准，则活跃用户人数+1
+
+- Lua 脚本存储位置：/Users/jihite/activeuser.lua 
+
+```c
+   if redis.call("EXISTS",KEYS[1]) == 1 then
+     return redis.call("INCRBY",KEYS[1],ARGV[1])
+   else
+     return nil
+   end
+```
+
+- 如何执行
+
+```c
+$ redis-cli --eval /Users/jihite/activeuser.lua user , 1
+(integer) 1
+
+127.0.0.1:6379> get user
+"1"
+127.0.0.1:6379> exit
+$ redis-cli --eval /Users/jihite/activeuser.lua user , 1
+(integer) 2
+$ redis-cli 
+127.0.0.1:6379> get user
+"2"
+127.0.0.1:6379> exit
+$ redis-cli --eval /Users/jihite/activeuser.lua user , 4
+(integer) 6
+```
+
+##### （2）使用Lua控制IP访问频率
+
+> 需求
+
+实现一个访问频率控制，某个IP在短时间内频繁访问页面，需要记录并检测出来，就可以通过Lua脚本高效的实现。
+**小声说明**：本实例针对固定窗口的访问频率，而动态的非滑动窗口。即：如果规定一分钟内访问10次，记为超限。在本实例中前一分钟的最后一秒访问9次，下一分钟的第1秒又访问9次，不计为超限。
+
+> 脚本如下
+
+```c
+local visitNum = redis.call('incr', KEYS[1])
+
+if visitNum == 1 then
+        redis.call('expire', KEYS[1], ARGV[1])
+end
+
+if visitNum > tonumber(ARGV[2]) then
+        return 0
+end
+
+return 1;
+```
+
+> 演示如下
+
+```bash
+## LimitIP:127.0.0.1为key， 10 3表示：同一IP在10秒内最多访问三次
+## 前三次返回1，代表未被限制；第四、五次返回0，代表127.0.0.1这个ip已被拦截
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_LimitIpVisit.lua LimitIP:127.0.0.1 , 10 3
+ (integer) 1
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_LimitIpVisit.lua LimitIP:127.0.0.1 , 10 3
+ (integer) 1
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_LimitIpVisit.lua LimitIP:127.0.0.1 , 10 3
+ (integer) 1
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_LimitIpVisit.lua LimitIP:127.0.0.1 , 10 3
+ (integer) 0
+[root@vm01 learn_lua]# redis-cli -a 123456 --eval Redis_LimitIpVisit.lua LimitIP:127.0.0.1 , 10 3
+ (integer) 0
+```
+
+
+
+#### 4. Lua 脚本的安全性
+
+- 如生成随机数这一命令，如果在master上执行完后，再在slave上执行会不一样，这就破坏了主从节点的一致性
+
+为了解决这个问题， Redis 对 Lua 环境所能执行的脚本做了一个严格的限制 —— 所有脚本都必须是无副作用的纯函数（pure function）。所以刚才说的那种情况压根不存在。Redis 对 Lua 环境做了一些列相应的措施：
+
+- 不提供访问系统状态状态的库（比如系统时间库）
+- 禁止使用 loadfile 函数
+- 如果脚本在执行带有随机性质的命令（比如 RANDOMKEY ），或者带有副作用的命令（比如 TIME ）之后，试图执行一个写入命令（比如 SET ），那么 Redis 将阻止这个脚本继续运行，并返回一个错误。
+- 如果脚本执行了带有随机性质的读命令（比如 SMEMBERS ），那么在脚本的输出返回给 Redis 之前，会先被执行一个自动的字典序排序，从而确保输出结果是有序的。
+- 用 Redis 自己定义的随机生成函数，替换 Lua 环境中 `math` 表原有的 math.random 函数和 math.randomseed 函数，新的函数具有这样的性质：每次执行 Lua 脚本时，除非显式地调用 `math.randomseed` ，否则 `math.random` 生成的伪随机数序列总是相同的。
+
+#### 5. 小总结
+
+回头再思考文章开头提到的Redis使用Lua脚本的几个优点：**减少网络开销、原子性、复用** 
+
+**相关文章** 
+
+1. [Eval 脚本语法](https://zhuanlan.zhihu.com/p/77484377)  
+
 ### Redis 总结与思考
 
 - [Redis 之20问](https://mp.weixin.qq.com/s/GwjQalQ9ZkBbTBtEKpbkMw) ——中华石杉
-
-
 
 #### 1.1 经典问题
 
