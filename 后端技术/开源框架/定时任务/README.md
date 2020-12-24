@@ -1,6 +1,49 @@
+## 定时任务解密
+
+### Shell 定时任务
+
+#### 1. crontab 介绍
+
+linux内置的cron进程能帮我们实现这些需求，cron搭配shell脚本，非常复杂的指令也没有问题。
+
+我们经常使用的是crontab命令是cron table的简写，它是cron的配置文件，也可以叫它作业列表，我们可以在以下文件夹内找到相关配置文件。
+
+- /var/spool/cron/ 目录下存放的是每个用户包括root的crontab任务，每个任务以创建者的名字命名
+- /etc/crontab 这个文件负责调度各种管理和维护任务。
+- /etc/cron.d/ 这个目录用来存放任何要执行的crontab文件或脚本。
+
+我们还可以把脚本放在/etc/cron.hourly、/etc/cron.daily、/etc/cron.weekly、/etc/cron.monthly目录中，让它每小时/天/星期、月执行一次。
+
+#### 2. 案例分析
+
+在/root下建立一个hello.sh文件
+
+ ```scss
+#!/bin/sh
+echo ‘hello’
+ ```
+
+然后进入etc下
+
+```powershell
+#vi crontab
+*/1 * * * * /root/hello.sh >> /root/hello.txt(存入的名字和位置自选)(一定要绝对路径)
+#给.sh文件足够的权限
+```
+
+保存退出后执行 ` service cron restart` ，过一分钟后你就会在/root下看到Hello.txt文件。
+
+- cron表达式案例：在上午8点到11点的第3和第15分钟执行
+
+  ```bash
+  3,15 8-11 * * * myCommand.sh   与上面的步骤同上
+  ```
+
+**相关文章** 
+
+1. [shell定时任务](https://blog.csdn.net/jerryDzan/article/details/88967535) 
+
 ### Quartz 定时任务
-
-
 
 #### 1. 定时任务执行原理
 
@@ -426,10 +469,13 @@ FROM
 
 
 
-### 常见问题及解决办法
+#### 3. 常见问题及解决办法
 
 1. quartz job 同表不同环境处理
 
 2. 线上有个任务有问题，立即kill掉jvm，但是机器重启后任务还是会执行，怎么解决？ 
 
    **回答**：在机器重启前删除掉QRTZ_FIRED_TRIGGERS中对应的记录
+
+### 
+
