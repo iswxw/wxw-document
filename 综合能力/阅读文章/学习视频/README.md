@@ -28,3 +28,4 @@
 - [ConcurrentHashMap8源码解读](https://live.csdn.net/room/weixin_48013460/P9vMfZVB?utm_source=1181338978) 
 - [缓存穿透及手写BoomFilter](https://live.csdn.net/room/weixin_48013460/b8zbt8gN?utm_source=1181338978) 
 - [深度解读Spring Boot核心原理](https://live.csdn.net/room/weixin_48013460/eYV94ZMC?utm_source=1181338978) 
+- [Java程序员第三年的你是什么水平？](https://live.csdn.net/room/weixin_48013460/mL1HmrOw?skip=1) 

@@ -84,6 +84,8 @@ InnoDB 有行锁和表锁，MyIsam 只有表锁。
 
 没有特殊情况，使用 InnoDB 即可。如果表中绝大多数都只是读查询，可以考虑 MyISAM。
 
+
+
 ### 索引
 
 #### 1. 什么是索引？
@@ -363,9 +365,62 @@ explain 字段有：
 
 主要关注 type、key、row、extra 等字段。主要是看是否使用了索引，是否扫描了过多的行数，是否出现 Using temporary、Using filesort 等一些影响性能的主要指标。
 
+#### 4. 如何做慢 SQL 优化？
+
+首先要搞明白慢的原因是什么：
+
+1. 查询条件没有命中索引？
+2. load 了不需要的数据列？
+3. 还是数据量太大？
+
+所以优化也是针对这三个方向来的。
+
+- 首先用 explain 分析语句的执行计划，查看使用索引的情况，是不是查询没走索引，如果可以加索引解决，优先采用加索引解决。
+- 分析语句，看看是否存在一些导致索引失效的用法，是否 load 了额外的数据，是否加载了许多结果中并不需要的列，对语句进行分析以及重写。
+- 如果对语句的优化已经无法进行，可以考虑表中的数据量是否太大，如果是的话可以进行垂直拆分或者水平拆分。
+
+#### 5. 说说 MySQL 的主从复制？
+
+MySQL主从复制涉及到三个线程，一个运行在主节点（Log Dump Thread），其余两个（I/O Thread，SQL Thread）运行在从节点，如下图所示
+
+![img](assets/aHR0cHM6Ly9tbWJpei5xcGljLmNuL3N6X21tYml6X2pwZy9LUlJ4dnFHY2ljWkhacGRhaGliczZuTVVxUGdRaGliaWF0V1g1Nk1iTWlhZ3FGbzVNSmgwa2Q2UjEyTHc4dEM3Rk5GWmlhMVRsdWtueFg1QmhkMkNobjl5RTVidy8.jpg) 
+
+主从复制默认是异步的模式，具体过程如下。
+
+1. 从节点上的I/O 线程连接主节点，并请求从指定日志文件（bin log file）的指定位置（bin log position，或者从最开始的日志）之后的日志内容；
+2. 主节点接收到来自从节点的 I/O请求后，读取指定文件的指定位置之后的日志信息，返回给从节点。返回信息中除了日志所包含的信息之外，还包括本次返回的信息的 bin-log file 以及 bin-log position；从节点的 I/O 进程接收到内容后，将接收到的日志内容更新到 relay log 中，并将读取到的 bin log file（文件名）和position（位置）保存到 master-info 文件中，以便在下一次读取的时候能够清楚的告诉 Master “我需要从某个bin-log 的哪个位置开始往后的日志内容”；
+3. 从节点的 SQL 线程检测到 relay-log 中新增加了内容后，会解析 relay-log 的内容，并在本数据库中执行。
+
+#### 6. 异步复制，主库宕机后，数据可能丢失？
+
+可以使用半同步复制或全同步复制。
+
+- **半同步复制：**
+
+修改语句写入bin log后，不会立即给客户端返回结果。而是首先通过log dump 线程将 binlog 发送给从节点，从节点的 I/O 线程收到 binlog 后，写入到 relay log，然后返回 ACK 给主节点，主节点 收到 ACK 后，再返回给客户端成功。
+
+![img](assets/aHR0cHM6Ly9tbWJpei5xcGljLmNuL3N6X21tYml6X2pwZy9LUlJ4dnFHY2ljWkhacGRhaGliczZuTVVxUGdRaGliaWF0V1hQSEJkMTJ4b05yc29pYXhtemJHSXBBTG9YU3FoaWJxTjk5SW0zaHZPVFBUdVI0Nlpncm5NQnVEQS8.jpg) 
+
+半同步复制的特点：
+
+- 确保事务提交后 binlog 至少传输到一个从库
+- 不保证从库应用完这个事务的 binlog
+- 性能有一定的降低，响应时间会更长
+- 网络异常或从库宕机，卡主主库，直到超时或从库恢复
 
 
 
+- **全同步复制** 
+
+主节点和所有从节点全部执行了该事务并确认才会向客户端返回成功。因为需要等待所有从库执行完该事务才能返回，所以全同步复制的性能必然会收到严重的影响。
+
+#### 7. 主库写压力大，从库复制很可能出现延迟？
+
+可以使用并行复制（并行是指从库多个SQL线程并行执行 relay log），解决从库复制延迟的问题。
+
+MySQL 5.7 中引入基于组提交的并行复制，其核心思想：一个组提交的事务都是可以并行回放，因为这些事务都已进入到事务的 prepare 阶段，则说明事务之间没有任何冲突（否则就不可能提交）。
+
+判断事务是否处于一个组是通过 last_committed 变量，last_committed 表示事务提交的时候，上次事务提交的编号，如果事务具有相同的 last_committed，则表示这些事务都在一组内，可以进行并行的回放。
 
 **相关文章** 
 
