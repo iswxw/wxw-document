@@ -8,6 +8,11 @@
 
 ### 1. locks
 
+**锁分类**
+
+- 悲观锁：数据库的行锁、表锁、Java关键字synchronized / ReentrantLock
+- 乐观锁：MySQL 的MVCC，JUC 原子操作类，Redis的watch/exec
+
 #### 1.1 AbstractQueuedSynchronizer
 
 ##### 前言
