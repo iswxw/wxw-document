@@ -10,7 +10,7 @@
 
 #### Java 集合
 
-1. linkList 和arrayList的区别
+1. linkList 和arrayList、vector的区别
 2. hashmap的数据结构
 3. concurrentHashMap
 
