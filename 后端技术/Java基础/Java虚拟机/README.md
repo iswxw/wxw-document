@@ -39,12 +39,24 @@ Java技术体系中所提倡的自动内存管理最终可以归结为自动化�
 
 对象主要分配在新生代的Eden 区上，如果启动了本地线程分配缓冲，将按线程优先在TLAB上分配。少数情况下也可能会直接分配在老年代中，分配的规则并不是百分之百固定的，其细节取决于当前使用的是哪一种垃圾收集器组合，还有虚拟机中与内存相关的参数的设置。
 
-
-
 **首先说明一点：** 
 
 - **新生代GC (Minor GC)** ：指发生在新生代的垃圾收集动作，因为Java对象大多都具备朝生夕灭的特性，所以Minor GC 非常频繁，一般回收速度也比较快。
 - **老年代GC (Major GC / Full GC)** ：指发生在老年代的GC，出现了Major GC，经常会伴随至少一次的Minor GC(但非绝对的，在ParallelScavenge收集器的收集策略里就有直接进行Major GC的策略选择过程)。MajorGC的速度一般会比Minor GC慢10倍以上。
+
+**JVM 环境配置** 
+
+```c
+-verbose:gc
+-Xms20M
+-Xmx20M
+-Xmn10M
+-XX:SurvivorRatio=8
+-XX:-HandlePromotionFailure
+-XX:+UseSerialGC
+-XX:+PrintTenuringDistribution
+-XX:+PrintGCDetails
+```
 
 #### （1）对象优先在Eden分配
 
@@ -325,6 +337,8 @@ Heap
 ![1609056211886](assets/1609056211886.png) 
 
 下面指令 PromotionFailureALot  目前只支持在debug环境下使用。
+
+
 
 ## 性能监控和故障处理
 
