@@ -14,9 +14,19 @@
 2. hashmap的数据结构
 3. concurrentHashMap
 
+#### Java 并发编程
+
+1. Synchronized和Lock的区别
+
+#### Java 虚拟机
+
+1. JVM垃圾回收机制，何时触发MinorGC等操作
+
 ### MySQL
 
 1. MySQL的 delete from t1 limit 3和delete from t1的区别？ [小提示](https://blog.csdn.net/wjxbj/article/details/84809186)  
+
+
 
 ### 网络编程
 
@@ -29,6 +39,10 @@
 1. 微服务的特点，如何实现服务发现和负载均衡
 
 
+
+### 管理工具
+
+1. Maven出现版本冲突如何解决 [小提示1](https://github.com/GitHubWxw/wxw-document/tree/master/%E6%9E%B6%E6%9E%84%E6%8A%80%E6%9C%AF/%E7%BC%96%E7%A0%81%E5%AE%9E%E6%88%98/Maven) 
 
 ### 设计类
 
