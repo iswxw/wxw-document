@@ -2,13 +2,16 @@
 
 ---
 
-### ZooKeeper 入门
+### ZooKeeper 基础
 
-​       Zookeeper 是用于分布式应用程序的分布式高性能协调架构， [官网文章入口](https://zookeeper.apache.org/doc/r3.3.3/zookeeperOver.html)  。  [应用实战](https://segmentfault.com/a/1190000017178722#articleHeader20)) 
+​     `Zookeeper` 是一个分布式服务框架，主要是用来解决分布式应用中遇到的一些数据管理问题如：`统一命名服务`、`状态同步服务`、`集群管理`、`分布式应用配置项的管理`等。
+
+-  [官网文章入口](https://zookeeper.apache.org/doc/r3.3.3/zookeeperOver.html)  
+-  [应用实战](https://segmentfault.com/a/1190000017178722#articleHeader20) || [下载](https://downloads.apache.org/) 
 
 - [Zookeeper 基础入门](https://blog.csdn.net/qq_41893274/article/details/110305753) 
 
-####  （1）设计目标
+####  1. 设计目标
 
 - **高吞吐量和低延迟**：zookeeper允许分布式进程通过共享的分层名称空间相互调用，该名称的组织方式类似于标准的文件系统，名称空间由数据寄存器（在ZooKeeper中称为znodes）组成，它们类似于文件和目录。与文件系统不同的是，ZooKeeper的**数据是基于内存** 。
 - **只要大多数服务可用，则zookeeper服务可用**
@@ -16,7 +19,7 @@
 
 ​    ![1591603095045](.\assets\1591603095045.png)
 
-####     （2）数据模型和分层名称空间
+####     2. 数据模型和分层名称空间
 
 - 名称是由斜杠（/）分隔的一系列路径元素。ZooKeeper名称空间中的每个节点都由路径标识
 
@@ -30,9 +33,7 @@
 
 2. 临时节点：只要创建znode的会话处于活动状态，这些znode就会存在。会话结束时，将删除znode。（比如实现分布式锁）
 
-
-
-#### （3）zookeeper的特性
+#### 3. zookeeper的特性
 
 - 顺序一致性-来自客户端的更新将按照其发送顺序进行应用。
 
@@ -45,7 +46,7 @@
 - 及时性-确保系统的客户视图在特定时间范围内是最新的。
 
 
-#### （5）基本功能
+#### 4. 基本功能
 
 1. 创建  在树中的某个位置创建一个节点
 2. 删除   删除节点
@@ -55,7 +56,7 @@
 6. 查找子节点  检索节点的子级列表=
 7. 同步   等待数据传播
 
-##### 5.1 zookeeper 客户端命令行操作
+##### 4.1 zookeeper 客户端命令行操作
 
 > Linux 使用 bin/zkCli.sh   || Windows使用 zkcli.cmd 启动客户端
 
@@ -107,7 +108,7 @@
 
 > [zookeeper客户端命令详解](https://www.cnblogs.com/senlinyang/p/7833669.html)  
 
-#### （6）zookeeper 环境
+#### 5. zookeeper 环境
 
 - windows 环境
 
@@ -134,7 +135,7 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 
 ​    windows下：使用 zkServer.cmd  // zkCli.cmd的启动
 
-#### （7）Zookeeper 典型应用场景
+#### 6. Zookeeper 典型应用场景
 
 1. 数据发布订阅（配置中心）
 2. 命名服务
@@ -143,8 +144,10 @@ clientPort：这个端口就是客户端连接 Zookeeper 服务器的端口，Zo
 5. 分布式队列
 6. 分布式锁
 
+### Zookeeper 应用实战
 
-#### （8）Zookeeper 监听机制
+
+#### 1. Zookeeper 监听机制
 
 > Zookeeper的监听机制很多人都踩过坑，感觉实现了watcher 接口，后面节点的变化都会一一推送过来，然而并非如此。
 
@@ -163,13 +166,138 @@ zookeeper 的 watcher 机制，可以分为四个过程：
 
 1. [zookeeper-watcher](https://www.runoob.com/w3cnote/zookeeper-watcher.html) 
 
-#### （9）Zookeeper 选举机制
+#### 2. Zookeeper 一致性协议—ZAB
 
-##### Leader选举
+ZAB 协议是为分布式协调服务ZooKeeper专门设计的一种支持崩溃恢复的一致性协议。基于该协议，ZooKeeper 实现了一种主从模式的系统架构来保持集群中各个副本之间的数据一致性。今天主要看看这个zab协议的工作原理
 
-> Leader选举概述
+##### 2.1 什么是ZAB协议？
+
+分布式系统中一般都要使用主从系统架构模型，指的是一台leader服务器负责外部客户端的写请求。然后其他的都是follower服务器。leader服务器将客户端的写操作数据同步到所有的follower节点中。
+
+![img](assets/0ff41bd5ad6eddc4dae97672961710fb53663304.jpeg) 
+
+就这样，客户端发送来的写请求，全部给Leader，然后leader再转给Follower。这时候需要解决两个问题：
+
+1. leader服务器是如何把数据更新到所有的Follower的
+2. Leader服务器突然间失效了，怎么办？
+
+因此ZAB协议为了解决上面两个问题，设计了两种模式：
+
+- **消息广播模式**：把数据更新到所有的Follower
+
+- **崩溃恢复模式**：Leader发生崩溃时，如何恢复？
+
+##### 2.2 ZAB 协议的工作原理
+
+![1609144902392](assets/1609144902392.png) 
+
+> **ZAB——消息广播模式：**  
+
+大致流程如下：
+
+1. 客户端发来一个request给第一个follower节点，如果是读请求，follower节点直接将数据返回。
+2. 如果是写请求，也就是事务请求，那么follower节点就将请求转发给leader，leader再为每一个Follower准备了一个FIFO队列，并把Proposal(提议)发送到FIFO队列上。
+3. follower节点正常情况下 都会返回一个ack 给 leader ，表示 follower 节点收到 leader的消息了，这里就是所谓的投票。正常情况下都会投票的，没有投票的情况就是 有的follower 节点 挂掉了 投不了票就没投。
+4. 当机器中超过半数的服务器 都投票了（leader 自己本身也参与投票），那么 leader就commit 这个事务请求，然后再通过原子广播 通知 集群中其它的 follower 跟 observer节点来同步数据。
+
+这就是整个消息广播模式。下面我们开始看一下，如果这个leader节点崩溃了，怎么办？也就是第二种模式：崩溃回复模式。
+
+> **ZAB——崩溃恢复模式** 
+
+**进入崩溃恢复模式的情况：** 
+
+1. 当服务器启动时
+2. 当Leader服务器出现网络中断，崩溃或者重启的情况
+3. 当集群中已经不存在过半的服务器与Leader服务器保持正常通信。
+
+**zab协议进入崩溃恢复模式处理流程** 
+
+1. 当leader出现问题，zab协议进入崩溃恢复模式，并且选举出新的leader。当新的leader选举出来以后，如果集群中已经有过半机器完成了leader服务器的状态同（数据同步），退出崩溃恢复，进入消息广播模式。
+
+2. 当新的机器加入到集群中的时候，如果已经存在leader服务器，那么新加入的服务器就会自觉进入崩溃恢复模式，找到leader进行数据同步。
+
+
+
+**相关文章** 
+
+1. [ZAB 协议的工作原理](https://blog.csdn.net/weixin_42168940/article/details/105617148) 
+2. [Zookeeper 一致性协议—ZAB 实践](https://juejin.cn/post/6882277384112832519) 
+3. [zab协议那些事](https://baijiahao.baidu.com/s?id=1666465070459184658&wfr=spider&for=pc)  
+
+#### 3. Zookeeper 选举机制
+
+##### 3.1 zookeeper 选举原理
+
+:do_not_litter: 如果 Zookeeper 是单机部署是不需要选举的，集群模式下才需要选举。 
 
 Leader选举是保证分布式数据一致性的关键所在。当Zookeeper集群中的一台服务器出现以下两种情况之一时，需要进入Leader选举。
+
+1. 服务器初始化启动
+2. 服务器运行期间 Leader 故障
+
+
+
+ 
+
+
+
+**相关文章** 
+
+1. [zookeeper 选举机制](https://mp.weixin.qq.com/s/VmbQNoG7WH--9_akn1DZXQ) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

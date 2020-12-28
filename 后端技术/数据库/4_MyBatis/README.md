@@ -1,4 +1,4 @@
-## MyBatis SQL Mapper Java框架
+## 持久层框架 MyBatis
 
 ---
 
@@ -11,15 +11,31 @@ MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结
 - [Download Snapshot](https://oss.sonatype.org/content/repositories/snapshots/org/mybatis/mybatis/) 
 - [Mybatis 源码构建](https://github.com/tuguangquan/mybatis) 
 
-## MyBatis 基础知识
+## MyBatis 初识
 
 
 
-## MyBatis 缓存架构
+
+
+## MyBatis 原理篇
+
+### 1. MyBatis 本质与特性
+
+### 2. MyBatis 高级功能与扩展
+
+### 3. MyBatis 工作原理
+
+### 4.  MyBatis 一二级缓存详解
 
 
 
-### 二、MyBatis 的用法
+## MyBatis 实用篇
+
+### 1. 理解插件原理，自定义插件
+
+### 2. MyBatis 在Spring中如何保证线程安全
+
+## MyBatis 案例
 
 #### （1）返回值设置
 

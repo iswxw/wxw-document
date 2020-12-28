@@ -331,11 +331,100 @@ studentB:[Student: 1956725890,subject:[Subject: 356573597,name:lishi],name:Lily,
 
 1. [浅拷贝和深拷贝](https://www.jianshu.com/p/94dbef2de298) 
 
-## Java 泛型
+### Java 泛型
 
-## Java 反射
 
-## Java 序列化
+
+**相关文章** 
+
+1. 
+
+### Java 注解
+
+**注解（Annotation）**是JDK1.5引入的新特性,可以理解为它是附加在代码中的一些元信息标记，然后在编译、运行时，可以通过反射进行解析并使用。
+
+关于注解基本使用和必备知识可以查看这篇博客《[Java 注解](https://blog.csdn.net/qq_41893274/article/details/106522329)》 ，这里只对原理和实践进行分析。
+
+**Annotation(注解)**就是Java提供了一种元程序中的元素关联任何信息和任何元数据(metadata)的途径和方法。Annotation是一个接口，程序可以通过反射来获取指定程序元素的Annotation对象，然后通过Annotation对象来获取注解里面的元数据。
+
+#### 1. Annotation的作用
+
+Annotation 是一个辅助类，它在 Junit、Struts、Spring 等工具框架中被广泛使用。
+
+##### （1）编译检查
+
+- Annotation 具有"让编译器进行编译检查的作用"。
+  1. @SuppressWarnings, @Deprecated 和 @Override 都具有编译检查作用。
+
+##### （2）在反射中使用 Annotation
+
+在反射的 Class, Method, Field 等函数中，有许多于 Annotation 相关的接口
+
+```java
+@Slf4j
+public class Cast01_Annotation {
+    @MyAnnotation1(age = 12,name = "刘备")
+    public void test01(){
+ 
+    }
+    @MyAnnotation2(18)
+    public void test02(){
+ 
+    }
+    public static void main(String[] args) {
+        Cast01_Annotation cast01 = new Cast01_Annotation();
+        cast01.test01();
+        cast01.test02();
+ 
+        //通过反射获取注解中的值
+        Method[] methods = Cast01_Annotation.class.getMethods();
+        List<Method> methods1 = Arrays.asList(methods);
+        methods1.forEach(method->{
+            if (method.isAnnotationPresent(MyAnnotation1.class)){
+                MyAnnotation1 annotation = method.getAnnotation(MyAnnotation1.class);
+                log.info("编号：{},年龄：{},姓名：{},学校：{}",
+                annotation.id(),annotation.age(),annotation.name(),annotation.schools());
+            }
+        });
+    }
+}
+ 
+// 自定义注解1
+@Target({ElementType.TYPE,ElementType.METHOD}) //作用域
+@Retention(RetentionPolicy.RUNTIME) //作用范围
+@interface MyAnnotation1{
+    //注解的参数： 参数类型 + 参数名();
+    String name() default "";
+    int age()  ;
+    int id() default -1;
+    String[] schools() default {"北京理工大学","北京大学"};
+}
+ 
+// 自定义注解2
+@Target({ElementType.TYPE,ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@interface MyAnnotation2{
+    int value();
+}
+```
+
+##### （3）根据 Annotation 生成帮助文档
+
+通过给 Annotation 注解加上 @Documented 标签，能使该 Annotation 标签出现在 javadoc 中。
+
+##### （4）能够帮忙查看查看代码
+
+通过 @Override, @Deprecated 等，我们能很方便的了解程序的大致结构。
+
+另外，我们也可以通过自定义 Annotation 来实现一些功能。
+
+**相关文章** 
+
+1. [Java 注解认识](https://www.cnblogs.com/skywang12345/p/3344137.html) 
+
+### Java 反射
+
+### Java 序列化
 
 Java 提供了一种对象序列化的机制，该机制中，一个对象可以被表示为一个字节序列，该字节序列包括该对象的数据、有关对象的类型的信息和存储在对象中数据的类型。
 
@@ -380,7 +469,7 @@ public class Employee implements java.io.Serializable{
 
 如果你想知道一个 Java 标准类是否是可序列化的，请查看该类的文档。检验一个类的实例是否能序列化十分简单， 只需要查看该类有没有实现 java.io.Serializable接口。
 
-### 1.1 序列化
+#### 1.1 序列化
 
 ObjectOutputStream 类用来序列化一个对象，如下的 SerializeDemo 例子实例化了一个 Employee 对象，并将该对象序列化到一个文件中。
 
@@ -403,7 +492,7 @@ ObjectOutputStream 类用来序列化一个对象，如下的 SerializeDemo 例�
     }
 ```
 
-### 1.2 反序列化
+#### 1.2 反序列化
 
 DeserializeDemo 程序实例了反序列化，/tmp/employee.ser 存储了 Employee 对象。
 
