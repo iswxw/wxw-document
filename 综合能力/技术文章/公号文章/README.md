@@ -12,7 +12,7 @@
 2. [亿级订单数据分库分表如何设计（中）](https://mp.weixin.qq.com/s/sn21SHCLDfW2qfGMyDdSlw) 
 3. [JVM垃圾收集器和内存分配策略](https://mp.weixin.qq.com/s/Cy9IdUZDwE3C4X4iUWnggA) 
 4. [JVM类加载机制](https://mp.weixin.qq.com/s/ZoLhrVACLXg6stYnNp2UaQ) 
-5. ​
+5. [延迟队列还能这么玩](https://mp.weixin.qq.com/s/3mTJQnwDtiMwnc72R78m4g) 
 
 ### 转载
 
