@@ -432,6 +432,103 @@ Feign是一种声明式、模板化的HTTP客户端。它的使用方法是定�
 
 > 基本配置参数：https://docs.spring.io/spring-cloud-openfeign/docs/3.0.0-SNAPSHOT/reference/html/appendix.html
 
+#### 3. OpenFeign 配置
+
+> OpenFeign的标注@FeignClient和@EnableFeignClients
+
+- @FeignClient标注用于声明Feign客户端可访问的Web服务。
+- @EnableFeignClients标注用于修饰Spring Boot应用的入口类，以通知Spring Boot启动应用时，扫描应用中声明的Feign客户端可访问的Web服务。
+
+##### （1） @FeignClient标注的参数
+
+- name, value (默认””)，两者等价
+- qualifier (默认””)
+- url (默认””)
+- decode404 (默认false)
+- configuration (默认FeignClientsConfiguration.class)
+- fallback (默认void.class)
+- fallbackFactory (默认void.class)
+- path (默认””)
+- primary (默认true)
+
+##### （2）@FeignClient标注的configuration参数
+
+@FeignClient标注的configuration参数，默认是通过FeignClientsConfiguration类定义的，可以配置Client，Contract，Encoder/Decoder等。
+
+FeignClientsConfiguration类中的配置方法及默认值如下：
+
+- **feignContract**: SpringMvcContract
+- **feignDecoder**: ResponseEntityDecoder
+- **feignEncoder**: SpringEncoder
+- **feignLogger**: Slf4jLogger
+- **feignBuilder**: Feign.Builder
+- **feignClient**: LoadBalancerFeignClient（开启Ribbon时）或默认的HttpURLConnection
+
+##### （3）定制@FeignClient标注的configuration类
+
+@FeignClient标注的默认配置类为FeignClientsConfiguration，我们可以定义自己的配置类如下：
+
+```java
+ @Configuration
+    public class MyConfiguration {
+        @Bean
+        public Contract feignContract(...) {...}
+
+        @Bean
+        public Encoder feignEncoder() {...}
+
+        @Bean
+        public Decoder feignDecoder() {...}
+        ...
+    }
+```
+
+然后在使用@FeignClient标注时，给出参数如下：
+
+```java
+ @FeignClient(name = "myServiceName", configuration = MyConfiguration.class, ...)
+    public interface MyService {
+        @RequestMapping("/")
+        public String getName();
+
+        ...
+    }
+```
+
+当然，定制@FeignClient标注的configuration类还可以有另一个方法，直接配置**application.yaml**文件即可，示例如下：
+
+```yaml
+  feign:
+      client:
+        config:
+          feignName: myServiceName
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: full
+            encoder: com.example.MyEncoder
+            decoder: com.example.MyDecoder
+            contract: com.example.MyContract
+```
+
+##### （4）@EnableFeignClients标注的参数
+
+- value, basePackages (默认{})
+- basePackageClasses (默认{})
+- defaultConfiguration (默认{})
+- clients (默认{})
+
+> 使用OkHttpClient作为client的Feign客户端
+
+```xml
+  <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>3.10.0</version>
+    </dependency>
+```
+
+- 来源：http://ddrv.cn/a/88268
+
 #### 4. Feign和OpenFeign两者区别
 
 ![å¾ç](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL1lMcDlrRjNFbVBrcURDYUoucG5nIXRodW1ibmFpbA.png)  
