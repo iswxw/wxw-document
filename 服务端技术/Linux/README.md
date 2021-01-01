@@ -1334,7 +1334,21 @@ chmod 760 /home/wxw
   ![1606871897509](assets/1606871897509.png) 
 
 
+（3）修改目录所属用户权限
 
+```bash
+chown -R wxw:wxw  study_test
+
+-R : 表示递归修改
+```
+
+
+
+### Linux 常见问题
+
+（1）Linux下切换root用户提示Authentication failure错误的解决方法
+
+- 解决方案：https://blog.csdn.net/renrenxu/article/details/82725659
 
 
 

@@ -2,6 +2,332 @@
 
 ---
 
+
+
+### 0. 基础知识
+
+- Linux **cut**命令用于显示每行从开头算起 num1 到 num2 的文字
+- Linux **who**命令用于显示系统中有哪些使用者正在上面，显示的资料包含了使用者 ID、使用的终端机、从哪边连上来的、上线时间、呆滞时间、CPU 使用量、动作等等。
+- ​
+- ​
+
+| Linux 命令大全                                               |                                                              |                                                              |                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **1、文件管理**                                              |                                                              |                                                              |                                                              |
+| [cat](https://www.runoob.com/linux/linux-comm-cat.html)      | [chattr](https://www.runoob.com/linux/linux-comm-chattr.html) | [chgrp](https://www.runoob.com/linux/linux-comm-chgrp.html)  | [chmod](https://www.runoob.com/linux/linux-comm-chmod.html)  |
+| [chown](https://www.runoob.com/linux/linux-comm-chown.html)  | [cksum](https://www.runoob.com/linux/linux-comm-cksum.html)  | [cmp](https://www.runoob.com/linux/linux-comm-cmp.html)      | [diff](https://www.runoob.com/linux/linux-comm-diff.html)    |
+| [diffstat](https://www.runoob.com/linux/linux-comm-diffstat.html) | [file](https://www.runoob.com/linux/linux-comm-file.html)    | [find](https://www.runoob.com/linux/linux-comm-find.html)    | [git](https://www.runoob.com/linux/linux-comm-git.html)      |
+| [gitview](https://www.runoob.com/linux/linux-comm-gitview.html) | [indent](https://www.runoob.com/linux/linux-comm-indent.html) | [cut](https://www.runoob.com/linux/linux-comm-cut.html)      | [ln](https://www.runoob.com/linux/linux-comm-ln.html)        |
+| [less](https://www.runoob.com/linux/linux-comm-less.html)    | [locate](https://www.runoob.com/linux/linux-comm-locate.html) | [lsattr](https://www.runoob.com/linux/linux-comm-lsattr.html) | [mattrib](https://www.runoob.com/linux/linux-comm-mattrib.html) |
+| [mc](https://www.runoob.com/linux/linux-comm-mc.html)        | [mdel](https://www.runoob.com/linux/linux-comm-mdel.html)    | [mdir](https://www.runoob.com/linux/linux-comm-mdir.html)    | [mktemp](https://www.runoob.com/linux/linux-comm-mktemp.html) |
+| [more](https://www.runoob.com/linux/linux-comm-more.html)    | [mmove](https://www.runoob.com/linux/linux-comm-mmove.html)  | [mread](https://www.runoob.com/linux/linux-comm-mread.html)  | [mren](https://www.runoob.com/linux/linux-comm-mren.html)    |
+| [mtools](https://www.runoob.com/linux/linux-comm-mtools.html) | [mtoolstest](https://www.runoob.com/linux/linux-comm-mtoolstest.html) | [mv](https://www.runoob.com/linux/linux-comm-mv.html)        | [od](https://www.runoob.com/linux/linux-comm-od.html)        |
+| [paste](https://www.runoob.com/linux/linux-comm-paste.html)  | [patch](https://www.runoob.com/linux/linux-comm-patch.html)  | [rcp](https://www.runoob.com/linux/linux-comm-rcp.html)      | [rm](https://www.runoob.com/linux/linux-comm-rm.html)        |
+| [slocate](https://www.runoob.com/linux/linux-comm-slocate.html) | [split](https://www.runoob.com/linux/linux-comm-split.html)  | [tee](https://www.runoob.com/linux/linux-comm-tee.html)      | [tmpwatch](https://www.runoob.com/linux/linux-comm-tmpwatch.html) |
+| [touch](https://www.runoob.com/linux/linux-comm-touch.html)  | [umask](https://www.runoob.com/linux/linux-comm-umask.html)  | [which](https://www.runoob.com/linux/linux-comm-which.html)  | [cp](https://www.runoob.com/linux/linux-comm-cp.html)        |
+| [whereis](https://www.runoob.com/linux/linux-comm-whereis.html) | [mcopy](https://www.runoob.com/linux/linux-comm-mcopy.html)  | [mshowfat](https://www.runoob.com/linux/linux-comm-mshowfat.html) | [rhmask](https://www.runoob.com/linux/linux-comm-rhmask.html) |
+| [scp](https://www.runoob.com/linux/linux-comm-scp.html)      | [awk](https://www.runoob.com/linux/linux-comm-awk.html)      | [read](https://www.runoob.com/linux/linux-comm-read.html)    | [updatedb](https://www.runoob.com/linux/linux-comm-updatedb.html) |
+| **2、文档编辑**                                              |                                                              |                                                              |                                                              |
+| [col](https://www.runoob.com/linux/linux-comm-col.html)      | [colrm](https://www.runoob.com/linux/linux-comm-colrm.html)  | [comm](https://www.runoob.com/linux/linux-comm-comm.html)    | [csplit](https://www.runoob.com/linux/linux-comm-csplit.html) |
+| [ed](https://www.runoob.com/linux/linux-comm-ed.html)        | [egrep](https://www.runoob.com/linux/linux-comm-egrep.html)  | [ex](https://www.runoob.com/linux/linux-comm-ex.html)        | [fgrep](https://www.runoob.com/linux/linux-comm-fgrep.html)  |
+| [fmt](https://www.runoob.com/linux/linux-comm-fmt.html)      | [fold](https://www.runoob.com/linux/linux-comm-fold.html)    | [grep](https://www.runoob.com/linux/linux-comm-grep.html)    | [ispell](https://www.runoob.com/linux/linux-comm-ispell.html) |
+| [jed](https://www.runoob.com/linux/linux-comm-jed.html)      | [joe](https://www.runoob.com/linux/linux-comm-joe.html)      | [join](https://www.runoob.com/linux/linux-comm-join.html)    | [look](https://www.runoob.com/linux/linux-comm-look.html)    |
+| [mtype](https://www.runoob.com/linux/linux-comm-mtype.html)  | [pico](https://www.runoob.com/linux/linux-comm-pico.html)    | [rgrep](https://www.runoob.com/linux/linux-comm-rgrep.html)  | [sed](https://www.runoob.com/linux/linux-comm-sed.html)      |
+| [sort](https://www.runoob.com/linux/linux-comm-sort.html)    | [spell](https://www.runoob.com/linux/linux-comm-spell.html)  | [tr](https://www.runoob.com/linux/linux-comm-tr.html)        | [expr](https://www.runoob.com/linux/linux-comm-expr.html)    |
+| [uniq](https://www.runoob.com/linux/linux-comm-uniq.html)    | [wc](https://www.runoob.com/linux/linux-comm-wc.html)        | [let](https://www.runoob.com/linux/linux-comm-let.html)      |                                                              |
+| **3、文件传输**                                              |                                                              |                                                              |                                                              |
+| [lprm](https://www.runoob.com/linux/linux-comm-lprm.html)    | [lpr](https://www.runoob.com/linux/linux-comm-lpr.html)      | [lpq](https://www.runoob.com/linux/linux-comm-lpq.html)      | [lpd](https://www.runoob.com/linux/linux-comm-lpd.html)      |
+| [bye](https://www.runoob.com/linux/linux-comm-bye.html)      | [ftp](https://www.runoob.com/linux/linux-comm-ftp.html)      | [uuto](https://www.runoob.com/linux/linux-comm-uuto.html)    | [uupick](https://www.runoob.com/linux/linux-comm-uupick.html) |
+| [uucp](https://www.runoob.com/linux/linux-comm-uucp.html)    | [uucico](https://www.runoob.com/linux/linux-comm-uucico.html) | [tftp](https://www.runoob.com/linux/linux-comm-tftp.html)    | [ncftp](https://www.runoob.com/linux/linux-comm-ncftp.html)  |
+| [ftpshut](https://www.runoob.com/linux/linux-comm-ftpshut.html) | [ftpwho](https://www.runoob.com/linux/linux-comm-ftpwho.html) | [ftpcount](https://www.runoob.com/linux/linux-comm-ftpcount.html) |                                                              |
+| **4、磁盘管理**                                              |                                                              |                                                              |                                                              |
+| [cd](https://www.runoob.com/linux/linux-comm-cd.html)        | [df](https://www.runoob.com/linux/linux-comm-df.html)        | [dirs](https://www.runoob.com/linux/linux-comm-dirs.html)    | [du](https://www.runoob.com/linux/linux-comm-du.html)        |
+| [edquota](https://www.runoob.com/linux/linux-comm-edquota.html) | [eject](https://www.runoob.com/linux/linux-comm-eject.html)  | [mcd](https://www.runoob.com/linux/linux-comm-mcd.html)      | [mdeltree](https://www.runoob.com/linux/linux-comm-mdeltree.html) |
+| [mdu](https://www.runoob.com/linux/linux-comm-mdu.html)      | [mkdir](https://www.runoob.com/linux/linux-comm-mkdir.html)  | [mlabel](https://www.runoob.com/linux/linux-comm-mlabel.html) | [mmd](https://www.runoob.com/linux/linux-comm-mmd.html)      |
+| [mrd](https://www.runoob.com/linux/linux-comm-mrd.html)      | [mzip](https://www.runoob.com/linux/linux-comm-mzip.html)    | [pwd](https://www.runoob.com/linux/linux-comm-pwd.html)      | [quota](https://www.runoob.com/linux/linux-comm-quota.html)  |
+| [mount](https://www.runoob.com/linux/linux-comm-mount.html)  | [mmount](https://www.runoob.com/linux/linux-comm-mmount.html) | [rmdir](https://www.runoob.com/linux/linux-comm-rmdir.html)  | [rmt](https://www.runoob.com/linux/linux-comm-rmt.html)      |
+| [stat](https://www.runoob.com/linux/linux-comm-stat.html)    | [tree](https://www.runoob.com/linux/linux-comm-tree.html)    | [umount](https://www.runoob.com/linux/linux-comm-umount.html) | [ls](https://www.runoob.com/linux/linux-comm-ls.html)        |
+| [quotacheck](https://www.runoob.com/linux/linux-comm-quotacheck.html) | [quotaoff](https://www.runoob.com/linux/linux-comm-quotaoff.html) | [lndir](https://www.runoob.com/linux/linux-comm-lndir.html)  | [repquota](https://www.runoob.com/linux/linux-comm-repquota.html) |
+| [quotaon](https://www.runoob.com/linux/linux-comm-quotaon.html) |                                                              |                                                              |                                                              |
+| **5、磁盘维护**                                              |                                                              |                                                              |                                                              |
+| [badblocks](https://www.runoob.com/linux/linux-comm-badblocks.html) | [cfdisk](https://www.runoob.com/linux/linux-comm-cfdisk.html) | [dd](https://www.runoob.com/linux/linux-comm-dd.html)        | [e2fsck](https://www.runoob.com/linux/linux-comm-e2fsck.html) |
+| [ext2ed](https://www.runoob.com/linux/linux-comm-ext2ed.html) | [fsck](https://www.runoob.com/linux/linux-comm-fsck.html)    | [fsck.minix](https://www.runoob.com/linux/linux-comm-fsck-minix.html) | [fsconf](https://www.runoob.com/linux/linux-comm-fsconf.html) |
+| [fdformat](https://www.runoob.com/linux/linux-comm-fdformat.html) | [hdparm](https://www.runoob.com/linux/linux-comm-hdparm.html) | [mformat](https://www.runoob.com/linux/linux-comm-mformat.html) | [mkbootdisk](https://www.runoob.com/linux/linux-comm-mkbootdisk.html) |
+| [mkdosfs](https://www.runoob.com/linux/linux-comm-mkdosfs.html) | [mke2fs](https://www.runoob.com/linux/linux-comm-mke2fs.html) | [mkfs.ext2](https://www.runoob.com/linux/linux-comm-mkfs-ext2.html) | [mkfs.msdos](https://www.runoob.com/linux/linux-comm-mkfs-msdos.html) |
+| [mkinitrd](https://www.runoob.com/linux/linux-comm-mkinitrd.html) | [mkisofs](https://www.runoob.com/linux/linux-comm-mkisofs.html) | [mkswap](https://www.runoob.com/linux/linux-comm-mkswap.html) | [mpartition](https://www.runoob.com/linux/linux-comm-mpartition.html) |
+| [swapon](https://www.runoob.com/linux/linux-comm-swapon.html) | [symlinks](https://www.runoob.com/linux/linux-comm-symlinks.html) | [sync](https://www.runoob.com/linux/linux-comm-sync.html)    | [mbadblocks](https://www.runoob.com/linux/linux-comm-mbadblocks.html) |
+| [mkfs.minix](https://www.runoob.com/linux/linux-comm-mkfs-minix.html) | [fsck.ext2](https://www.runoob.com/linux/linux-comm-fsck-ext2.html) | [fdisk](https://www.runoob.com/linux/linux-comm-fdisk.html)  | [losetup](https://www.runoob.com/linux/linux-comm-losetup.html) |
+| [mkfs](https://www.runoob.com/linux/linux-comm-mkfs.html)    | [sfdisk](https://www.runoob.com/linux/linux-comm-sfdisk.html) | [swapoff](https://www.runoob.com/linux/linux-comm-swapoff.html) |                                                              |
+| **6、网络通讯**                                              |                                                              |                                                              |                                                              |
+| [apachectl](https://www.runoob.com/linux/linux-comm-apachectl.html) | [arpwatch](https://www.runoob.com/linux/linux-comm-arpwatch.html) | [dip](https://www.runoob.com/linux/linux-comm-dip.html)      | [getty](https://www.runoob.com/linux/linux-comm-getty.html)  |
+| [mingetty](https://www.runoob.com/linux/linux-comm-mingetty.html) | [uux](https://www.runoob.com/linux/linux-comm-uux.html)      | [telnet](https://www.runoob.com/linux/linux-comm-telnet.html) | [uulog](https://www.runoob.com/linux/linux-comm-uulog.html)  |
+| [uustat](https://www.runoob.com/linux/linux-comm-uustat.html) | [ppp-off](https://www.runoob.com/linux/linux-comm-ppp-off.html) | [netconfig](https://www.runoob.com/linux/linux-comm-netconfig.html) | [nc](https://www.runoob.com/linux/linux-comm-nc.html)        |
+| [httpd](https://www.runoob.com/linux/linux-comm-httpd.html)  | [ifconfig](https://www.runoob.com/linux/linux-comm-ifconfig.html) | [minicom](https://www.runoob.com/linux/linux-comm-minicom.html) | [mesg](https://www.runoob.com/linux/linux-comm-mesg.html)    |
+| [dnsconf](https://www.runoob.com/linux/linux-comm-dnsconf.html) | [wall](https://www.runoob.com/linux/linux-comm-wall.html)    | [netstat](https://www.runoob.com/linux/linux-comm-netstat.html) | [ping](https://www.runoob.com/linux/linux-comm-ping.html)    |
+| [pppstats](https://www.runoob.com/linux/linux-comm-pppstats.html) | [samba](https://www.runoob.com/linux/linux-comm-samba.html)  | [setserial](https://www.runoob.com/linux/linux-comm-setserial.html) | [talk](https://www.runoob.com/linux/linux-comm-talk.html)    |
+| [traceroute](https://www.runoob.com/linux/linux-comm-traceroute.html) | [tty](https://www.runoob.com/linux/linux-comm-tty.html)      | [newaliases](https://www.runoob.com/linux/linux-comm-newaliases.html) | [uuname](https://www.runoob.com/linux/linux-comm-uuname.html) |
+| [netconf](https://www.runoob.com/linux/linux-comm-netconf.html) | [write](https://www.runoob.com/linux/linux-comm-write.html)  | [statserial](https://www.runoob.com/linux/linux-comm-statserial.html) | [efax](https://www.runoob.com/linux/linux-comm-efax.html)    |
+| [pppsetup](https://www.runoob.com/linux/linux-comm-pppsetup.html) | [tcpdump](https://www.runoob.com/linux/linux-comm-tcpdump.html) | [ytalk](https://www.runoob.com/linux/linux-comm-ytalk.html)  | [cu](https://www.runoob.com/linux/linux-comm-cu.html)        |
+| [smbd](https://www.runoob.com/linux/linux-comm-smbd.html)    | [testparm](https://www.runoob.com/linux/linux-comm-testparm.html) | [smbclient](https://www.runoob.com/linux/linux-comm-smbclient.html) | [shapecfg](https://www.runoob.com/linux/linux-comm-shapecfg.html) |
+| **7、系统管理**                                              |                                                              |                                                              |                                                              |
+| [adduser](https://www.runoob.com/linux/linux-comm-adduser.html) | [chfn](https://www.runoob.com/linux/linux-comm-chfn.html)    | [useradd](https://www.runoob.com/linux/linux-comm-useradd.html) | [date](https://www.runoob.com/linux/linux-comm-date.html)    |
+| [exit](https://www.runoob.com/linux/linux-comm-exit.html)    | [finger](https://www.runoob.com/linux/linux-comm-finger.html) | [fwhios](https://www.runoob.com/linux/linux-comm-fwhios.html) | [sleep](https://www.runoob.com/linux/linux-comm-sleep.html)  |
+| [suspend](https://www.runoob.com/linux/linux-comm-suspend.html) | [groupdel](https://www.runoob.com/linux/linux-comm-groupdel.html) | [groupmod](https://www.runoob.com/linux/linux-comm-groupmod.html) | [halt](https://www.runoob.com/linux/linux-comm-halt.html)    |
+| [kill](https://www.runoob.com/linux/linux-comm-kill.html)    | [last](https://www.runoob.com/linux/linux-comm-last.html)    | [lastb](https://www.runoob.com/linux/linux-comm-lastb.html)  | [login](https://www.runoob.com/linux/linux-comm-login.html)  |
+| [logname](https://www.runoob.com/linux/linux-comm-logname.html) | [logout](https://www.runoob.com/linux/linux-comm-logout.html) | [ps](https://www.runoob.com/linux/linux-comm-ps.html)        | [nice](https://www.runoob.com/linux/linux-comm-nice.html)    |
+| [procinfo](https://www.runoob.com/linux/linux-comm-procinfo.html) | [top](https://www.runoob.com/linux/linux-comm-top.html)      | [pstree](https://www.runoob.com/linux/linux-comm-pstree.html) | [reboot](https://www.runoob.com/linux/linux-comm-reboot.html) |
+| [rlogin](https://www.runoob.com/linux/linux-comm-rlogin.html) | [rsh](https://www.runoob.com/linux/linux-comm-rsh.html)      | [sliplogin](https://www.runoob.com/linux/linux-comm-sliplogin.html) | [screen](https://www.runoob.com/linux/linux-comm-screen.html) |
+| [shutdown](https://www.runoob.com/linux/linux-comm-shutdown.html) | [rwho](https://www.runoob.com/linux/linux-comm-rwho.html)    | [sudo](https://www.runoob.com/linux/linux-comm-sudo.html)    | [gitps](https://www.runoob.com/linux/linux-comm-gitps.html)  |
+| [swatch](https://www.runoob.com/linux/linux-comm-swatch.html) | [tload](https://www.runoob.com/linux/linux-comm-tload.html)  | [logrotate](https://www.runoob.com/linux/linux-comm-logrotate.html) | [uname](https://www.runoob.com/linux/linux-comm-uname.html)  |
+| [chsh](https://www.runoob.com/linux/linux-comm-chsh.html)    | [userconf](https://www.runoob.com/linux/linux-comm-userconf.html) | [userdel](https://www.runoob.com/linux/linux-comm-userdel.html) | [usermod](https://www.runoob.com/linux/linux-comm-usermod.html) |
+| [vlock](https://www.runoob.com/linux/linux-comm-vlock.html)  | [who](https://www.runoob.com/linux/linux-comm-who.html)      | [whoami](https://www.runoob.com/linux/linux-comm-whoami.html) | [whois](https://www.runoob.com/linux/linux-comm-whois.html)  |
+| [newgrp](https://www.runoob.com/linux/linux-comm-newgrp.html) | [renice](https://www.runoob.com/linux/linux-comm-renice.html) | [su](https://www.runoob.com/linux/linux-comm-su.html)        | [skill](https://www.runoob.com/linux/linux-comm-skill.html)  |
+| [w](https://www.runoob.com/linux/linux-comm-w.html)          | [id](https://www.runoob.com/linux/linux-comm-id.html)        | [groupadd](https://www.runoob.com/linux/linux-comm-groupadd.html) | [free](https://www.runoob.com/linux/linux-comm-free.html)    |
+| **8、系统设置**                                              |                                                              |                                                              |                                                              |
+| [reset](https://www.runoob.com/linux/linux-comm-reset.html)  | [clear](https://www.runoob.com/linux/linux-comm-clear.html)  | [alias](https://www.runoob.com/linux/linux-comm-alias.html)  | [dircolors](https://www.runoob.com/linux/linux-comm-dircolors.html) |
+| [aumix](https://www.runoob.com/linux/linux-comm-aumix.html)  | [bind](https://www.runoob.com/linux/linux-comm-bind.html)    | [chroot](https://www.runoob.com/linux/linux-comm-chroot.html) | [clock](https://www.runoob.com/linux/linux-comm-clock.html)  |
+| [crontab](https://www.runoob.com/linux/linux-comm-crontab.html) | [declare](https://www.runoob.com/linux/linux-comm-declare.html) | [depmod](https://www.runoob.com/linux/linux-comm-depmod.html) | [dmesg](https://www.runoob.com/linux/linux-comm-dmesg.html)  |
+| [enable](https://www.runoob.com/linux/linux-comm-enable.html) | [eval](https://www.runoob.com/linux/linux-comm-eval.html)    | [export](https://www.runoob.com/linux/linux-comm-export.html) | [pwunconv](https://www.runoob.com/linux/linux-comm-pwunconv.html) |
+| [grpconv](https://www.runoob.com/linux/linux-comm-grpconv.html) | [rpm](https://www.runoob.com/linux/linux-comm-rpm.html)      | [insmod](https://www.runoob.com/linux/linux-comm-insmod.html) | [kbdconfig](https://www.runoob.com/linux/linux-comm-kbdconfig.html) |
+| [lilo](https://www.runoob.com/linux/linux-comm-lilo.html)    | [liloconfig](https://www.runoob.com/linux/linux-comm-liloconfig.html) | [lsmod](https://www.runoob.com/linux/linux-comm-lsmod.html)  | [minfo](https://www.runoob.com/linux/linux-comm-minfo.html)  |
+| [set](https://www.runoob.com/linux/linux-comm-set.html)      | [modprobe](https://www.runoob.com/linux/linux-comm-modprobe.html) | [ntsysv](https://www.runoob.com/linux/linux-comm-ntsysv.html) | [mouseconfig](https://www.runoob.com/linux/linux-comm-mouseconfig.html) |
+| [passwd](https://www.runoob.com/linux/linux-comm-passwd.html) | [pwconv](https://www.runoob.com/linux/linux-comm-pwconv.html) | [rdate](https://www.runoob.com/linux/linux-comm-rdate.html)  | [resize](https://www.runoob.com/linux/linux-comm-resize.html) |
+| [rmmod](https://www.runoob.com/linux/linux-comm-rmmod.html)  | [grpunconv](https://www.runoob.com/linux/linux-comm-grpunconv.html) | [modinfo](https://www.runoob.com/linux/linux-comm-modinfo.html) | [time](https://www.runoob.com/linux/linux-comm-time.html)    |
+| [setup](https://www.runoob.com/linux/linux-comm-setup.html)  | [sndconfig](https://www.runoob.com/linux/linux-comm-sndconfig.html) | [setenv](https://www.runoob.com/linux/linux-comm-setenv.html) | [setconsole](https://www.runoob.com/linux/linux-comm-setconsole.html) |
+| [timeconfig](https://www.runoob.com/linux/linux-comm-timeconfig.html) | [ulimit](https://www.runoob.com/linux/linux-comm-ulimit.html) | [unset](https://www.runoob.com/linux/linux-comm-unset.html)  | [chkconfig](https://www.runoob.com/linux/linux-comm-chkconfig.html) |
+| [apmd](https://www.runoob.com/linux/linux-comm-apmd.html)    | [hwclock](https://www.runoob.com/linux/linux-comm-hwclock.html) | [mkkickstart](https://www.runoob.com/linux/linux-comm-mkkickstart.html) | [fbset](https://www.runoob.com/linux/linux-comm-fbset.html)  |
+| [unalias](https://www.runoob.com/linux/linux-comm-unalias.html) | [SVGATextMode](https://www.runoob.com/linux/linux-comm-svgatextmode.html) | [gpasswd](https://www.runoob.com/linux/linux-comm-gpasswd.html) |                                                              |
+| **9、备份压缩**                                              |                                                              |                                                              |                                                              |
+| [ar](https://www.runoob.com/linux/linux-comm-ar.html)        | [bunzip2](https://www.runoob.com/linux/linux-comm-bunzip2.html) | [bzip2](https://www.runoob.com/linux/linux-comm-bzip2.html)  | [bzip2recover](https://www.runoob.com/linux/linux-comm-bzip2recover.html) |
+| [gunzip](https://www.runoob.com/linux/linux-comm-gunzip.html) | [unarj](https://www.runoob.com/linux/linux-comm-unarj.html)  | [compress](https://www.runoob.com/linux/linux-comm-compress.html) | [cpio](https://www.runoob.com/linux/linux-comm-cpio.html)    |
+| [dump](https://www.runoob.com/linux/linux-comm-dump.html)    | [uuencode](https://www.runoob.com/linux/linux-comm-uuencode.html) | [gzexe](https://www.runoob.com/linux/linux-comm-gzexe.html)  | [gzip](https://www.runoob.com/linux/linux-comm-gzip.html)    |
+| [lha](https://www.runoob.com/linux/linux-comm-lha.html)      | [restore](https://www.runoob.com/linux/linux-comm-restore.html) | [tar](https://www.runoob.com/linux/linux-comm-tar.html)      | [uudecode](https://www.runoob.com/linux/linux-comm-uudecode.html) |
+| [unzip](https://www.runoob.com/linux/linux-comm-unzip.html)  | [zip](https://www.runoob.com/linux/linux-comm-zip.html)      | [zipinfo](https://www.runoob.com/linux/linux-comm-zipinfo.html) |                                                              |
+| **10、设备管理**                                             |                                                              |                                                              |                                                              |
+| [setleds](https://www.runoob.com/linux/linux-comm-setleds.html) | [loadkeys](https://www.runoob.com/linux/linux-comm-loadkeys.html) | [rdev](https://www.runoob.com/linux/linux-comm-rdev.html)    | [dumpkeys](https://www.runoob.com/linux/linux-comm-dumpkeys.html) |
+| [MAKEDEV](https://www.runoob.com/linux/linux-comm-makedev.html) | [poweroff](https://www.runoob.com/linux/linux-comm-poweroff.html) |                                                              |                                                              |
+
+------
+
+#### 0.1 其他命令
+
+- [Linux bc 命令](https://www.runoob.com/linux/linux-comm-bc.html)
+- [Linux tail 命令](https://www.runoob.com/linux/linux-comm-tail.html)
+- [Linux head 命令](https://www.runoob.com/linux/linux-comm-head.html)
+- [Linux xargs 命令](https://www.runoob.com/linux/linux-comm-xargs.html)
+- [Linux ip 命令](https://www.runoob.com/linux/linux-comm-ip.html)
+- [Linux nohup 命令](https://www.runoob.com/linux/linux-comm-nohup.html)
+- [Linux killall 命令](https://www.runoob.com/linux/linux-comm-killall.html)
+- [Linux pkill 命令](https://www.runoob.com/linux/linux-comm-pkill.html)
+
+#### 0.2 扩展文章
+
+- [Linux 常用命令全拼](https://www.runoob.com/w3cnote/linux-command-full-fight.html) 
+
+#### 0.3 变量
+
+##### （1）定义变量
+
+> 定义变量 赋值号`=`的周围不能有空格，这可能和你熟悉的大部分编程语言都不一样
+
+**变量的定义规则** 
+
+1. 变量名区分大小写
+2. 变量名不能有特殊符号
+3. 变量名不能以数字开头
+4. 等号两边不能有任何空格
+5. 变量名尽量做到见名知意
+
+**特别说明**：对于有空格的字符串给变量赋值时，要用引号引起来
+
+```bash
+[root@MissHou ~]# A=hello           定义变量A
+[root@MissHou ~]# echo $A           调用变量A，要给钱的，不是人民币是美元"$"
+hello
+[root@MissHou ~]# echo ${A}         还可以这样调用，不管你的姿势多优雅，总之要给钱
+hello
+[root@MissHou ~]# A=world           因为是变量所以可以变，移情别恋是常事
+[root@MissHou ~]# echo $A           不管你是谁，只要调用就要给钱
+world
+[root@MissHou ~]# unset A           不跟你玩了，取消变量
+[root@MissHou ~]# echo $A           从此，我单身了，你可以给我介绍任何人
+```
+
+**举例分析** 
+
+- 直接赋值给一个变量
+
+  ```bash
+  [root@MissHou ~]# A=1234567
+  [root@MissHou ~]# echo $A
+  1234567
+  [root@MissHou ~]# echo ${A:2:4}     表示从A变量中第3个字符开始截取，截取4个字符
+  3456
+
+  说明：
+  $变量名 和 ${变量名}的异同
+  相同点：都可以调用变量
+  不同点：${变量名}可以只截取变量的一部分，而$变量名不可以
+  ```
+
+- 命令执行结果赋值给变量
+
+  ```bash
+  [root@MissHou ~]# B=`date +%F`
+  [root@MissHou ~]# echo $B
+  2019-04-16
+  [root@MissHou ~]# C=$(uname -r)
+  [root@MissHou ~]# echo $C
+  2.6.32-696.el6.x86_64
+  ```
+
+- 交互式定义变量
+
+  让用户自己给变量赋值，比较灵活。
+
+  ```bash
+  语法：`read [选项] 变量名` 
+
+  参数说明：
+       -p 定义提示用户的信息
+       -n定义字符数（限制变量值的长度）
+       -s不显示（不显示用户输入的内容）
+       -t定义超时时间，默认单位为秒（限制用户输入变量值的超时时间）`
+  ```
+
+  - 举例说明：
+
+  - 用法1：用户自己定义变量值
+
+    ```bash
+    用法1：用户自己定义变量值
+    [root@MissHou ~]# read name
+    harry
+    [root@MissHou ~]# echo $name
+    harry
+    [root@MissHou ~]# read -p "Input your name:" name
+    Input your name:tom
+    [root@MissHou ~]# echo $name
+    tom
+    ```
+
+  - 变量值来自文件
+
+    ```bash
+    [root@MissHou ~]# cat 1.txt 
+    10.1.1.1 255.255.255.0
+
+    [root@MissHou ~]# read ip mask < 1.txt 
+    [root@MissHou ~]# echo $ip
+    10.1.1.1
+    [root@MissHou ~]# echo $mask
+    255.255.255.0
+    ```
+
+- **定义有类型的变量**(declare)
+
+  给变量做一些限制，固定变量的类型，比如：整型、只读
+
+  ```bash
+  用法：`declare 选项 变量名=变量值`
+  ```
+
+  **常用选项：**
+
+  | 选项 | 释义                       | 举例                                         |
+  | ---- | -------------------------- | -------------------------------------------- |
+  | -i   | 将变量看成整数             | declare -i A=123                             |
+  | -r   | 定义只读变量               | declare -r B=hello                           |
+  | -a   | 定义普通数组；查看普通数组 |                                              |
+  | -A   | 定义关联数组；查看关联数组 |                                              |
+  | -x   | 将变量通过环境导出         | declare -x AAA=123456 等于 export AAA=123456 |
+
+##### （2）变量的分类
+
+1. **本地变量** 
+
+   当前用户自定义的变量。当前进程中有效，其他进程及当前进程的子进程无效
+
+2. 环境变量
+
+   > 当前进程有效，并且能够被**子进程**调用。
+
+   - `env`查看当前用户的环境变量
+   - `set`查询当前用户的所有变量(临时变量与环境变量)
+   - `export 变量名=变量值`    或者  `变量名=变量值；export 变量名` 
+
+   ```bash
+   [root@MissHou ~]# export A=hello		临时将一个本地变量（临时变量）变成环境变量
+   [root@MissHou ~]# env|grep ^A
+   A=hello
+
+   永久生效：
+   vim /etc/profile 或者 ~/.bashrc
+   export A=hello
+   或者
+   A=hello
+   export A
+
+   说明：系统中有一个变量PATH，环境变量
+   export PATH=/usr/local/mysql/bin:$PATH
+   ```
+
+3. 全局变量
+
+   全局所有的用户和程序都能调用，且继承，新建的用户也默认能调用.
+
+- **解读相关配置文件**
+
+| 文件名               | 说明                               | 备注                                                       |
+| -------------------- | ---------------------------------- | ---------------------------------------------------------- |
+| $HOME/.bashrc        | 当前用户的bash信息,用户登录时读取  | 定义别名、umask、函数等                                    |
+| $HOME/.bash_profile  | 当前用户的环境变量，用户登录时读取 |                                                            |
+| $HOME/.bash_logout   | 当前用户退出当前shell时最后读取    | 定义用户退出时执行的程序等                                 |
+| /etc/bashrc          | 全局的bash信息，所有用户都生效     |                                                            |
+| /etc/profile         | 全局环境变量信息                   | 系统和所有用户都生效                                       |
+| \$HOME/.bash_history | 用户的历史命令                     | history -w   保存历史记录         history -c  清空历史记录 |
+
+**说明：**以上文件修改后，都需要重新source让其生效或者退出重新登录。
+
+- **用户登录**系统**读取**相关  文件的顺序
+  1. `/etc/profile`
+  2. `$HOME/.bash_profile`
+  3. `$HOME/.bashrc`
+  4. `/etc/bashrc`
+  5. `$HOME/.bash_logout` 
+
+4. 系统变量
+
+   | 内置变量     | 含义                                                         |
+   | ------------ | ------------------------------------------------------------ |
+   | $?           | 上一条命令执行后返回的状态；状态值为0表示执行正常，**非0**表示执行异常或错误 |
+   | $0           | 当前执行的程序或脚本名                                       |
+   | $#           | 脚本后面接的参数的**个数**                                   |
+   | $*           | 脚本后面**所有参数**，参数当成一个整体输出，每一个变量参数之间以空格隔开 |
+   | $@           | 脚本后面**所有参数**，参数是独立的，也是全部输出             |
+   | \$1\~$9      | 脚本后面的**位置参数**，$1表示第1个位置参数，依次类推        |
+   | \${10}\~${n} | 扩展位置参数,第10个位置变量必须用{}大括号括起来(2位数字以上扩起来) |
+   | $$           | 当前所在进程的进程号，如`echo $$`                            |
+   | $！          | 后台运行的最后一个进程号 (当前终端）                         |
+   | !$           | 调用最后一条命令历史中的参数                                 |
+
+#### 0.4 四则运算
+
+##### （1）四则运算符号
+
+| 表达式  | 举例                            |
+| ------- | ------------------------------- |
+| $((  )) | echo $((1+1))                   |
+| $[ ]    | echo $[10-5]                    |
+| expr    | expr 10 / 5                     |
+| let     | n=1;let n+=1  等价于  let n=n+1 |
+
+#### 0.5 数组
+
+> [shell 数组](https://www.runoob.com/linux/linux-shell-array.html) 
+
+
+
 ### 1. 文件管理
 
 **awk、sed、grep更适合的方向：** 
@@ -598,16 +924,296 @@ nl /etc/passwd | sed -e '3,$d' -e 's/bash/blueshell/'
 
 -e表示多点编辑，第一个编辑命令删除/etc/passwd第三行到末尾的数据，第二条命令搜索bash替换为blueshell。
 
+**相关文章** 
 
+- [sed命令编辑](https://www.runoob.com/linux/linux-comm-sed.html)  
+
+
+### 2. 实战案例
+
+> 编写shell 过程中注意事项
+
+1. 开头加解释器：#!/bin/bash 语法缩进，使用四个空格；多加注释说明。
+2. 命名建议规则：变量名大写、局部变量小写，函数名小写，名字体现出实际作用。
+3. 默认变量是全局的，在函数中变量local指定为局部变量，避免污染其他作用域。
+4. 有两个命令能帮助我调试脚本：set -e 遇到执行非0时退出脚本，set-x 打印执行过程。 写脚本一定先测试再到生产上。
+
+#### 2.1 基本实例
+
+##### （1）获取随机字符串或数字
+
+- 获取随机8位字符串：
+
+```bash
+方法1：
+# echo $RANDOM |md5sum |cut -c 1-8
+471b94f2
+方法2：
+# openssl rand -base64 4
+vg3BEg==
+方法3：
+# cat /proc/sys/kernel/random/uuid |cut -c 1-8
+ed9e032c
+```
+
+- 获取随机8位数字：
+
+```bash
+方法1：
+# echo $RANDOM |cksum |cut -c 1-8
+23648321
+方法2：
+# openssl rand -base64 4 |cksum |cut -c 1-8
+38571131
+方法3：
+# date +%N |cut -c 1-8
+69024815
+```
+
+cksum：打印CRC效验和统计字节
+
+##### （2）**检查主机存活状态** 
+
+```bash
+方法1：将错误IP放到数组里面判断是否ping失败三次
+#!/bin/bash
+for IP in $IP_LIST; do
+    NUM=1
+    while [ $NUM -le 3 ]; do
+        if ping -c 1 $IP &> /dev/null; then
+            echo "$IP Ping is successful."
+            break
+        else
+            FAIL_COUNT[$NUM]=$IP
+            let NUM++
+        fi
+    done
+    if [ ${#FAIL_COUNT[*]} -eq 3 ]; then
+        echo "${FAIL_COUNT[1]} Ping is failure!"
+        unset FAIL_COUNT[*]
+    fi
+done
+
+   方法2：将错误次数放到FAIL_COUNT变量里面判断是否ping失败三次
+#!/bin/bash
+for IP in $IP_LIST; do
+    FAIL_COUNT=0
+    for (( i=1;i<=3;i++)); do
+        if ping -c 1 $IP &>/dev/null; then
+            echo "$IP Ping is successful."
+            break
+        else
+            let FAIL_COUNT++
+        fi
+    done
+    if [ $FAIL_COUNT -eq 3 ]; then
+        echo "$IP Ping is failure!"
+    fi
+done
+
+方法3：利用for循环将ping通就跳出循环继续，如果不跳出就会走到打印ping失败
+#!/bin/bash
+ping_success_status() {
+    if ping -c 1 $IP &>/dev/null; then
+        echo "$IP Ping is successful."
+        continue
+    fi
+}
+
+for IP in $IP_LIST; do
+    ping_success_status
+    ping_success_status
+    ping_success_status
+    echo "$IP Ping is failure!"
+done
+```
+
+##### （3）**监控CPU、内存和硬盘利用率**
+
+```bash
+#!/bin/bash
+
+DATE=$(date +%F" "%H:%M)
+IP=$(ifconfig eth0 |awk '/netmask/ {print $2}')
+if ! which vmstat &> /dev/null; then
+    echo "vmstat command no found, Please install procps package."
+    exit 1
+fi
+
+## CPU
+US=$(vmstat |awk 'NR==3 {print $13}')
+SY=$(vmstat |awk 'NR==3 {print $14}')
+IDLE=$(vmstat |awk 'NR==3 {print $15}')
+WAIT=$(vmstat |awk 'NR==3 {print $15}')
+USE=$(($US+$SY))
+if [ $USE -ge 50 ];then
+    echo "
+    Date: $DATE
+    Host: $IP
+    Problem: CPU utilization $USE"
+fi
+
+## Mem
+TOTAL=$(free -m |awk '/Mem/ {print $2}')
+USE=$(free -m |awk '/Mem/ {print $3}')
+FREE=$(free -m |awk '/Mem/ {print $4+$6}')
+
+if [ $FREE -lt 1024 ]; then
+    echo "
+    Date: $DATE
+    Host: $IP
+    Problem: Total=$TOTAL,Use=$USE,Free=$FREE"
+fi
+
+#disk
+PART_USE=$(df -h |awk -F'[% ]+' 'BEGIN{OFS="="} /^\/dev/ {print $1,$2,$5,$6}')
+for i in $PART_USE; do
+    PART=$(echo $i |cut -d"=" -f1)
+    TOTAL=$(echo $i |cut -d "=" -f2)
+    USE=$(echo $i |cut -d"=" -f3)
+    MOUNT=$(echo $i |cut -d"=" -f4)
+    if [ $USE -gt 80 ]; then
+        echo "
+        Date: $DATE
+        Host: $IP
+        Total: $TOTAL
+        Problem: $PART=$USE($MOUNT)"
+    fi
+done
+```
+
+##### （4）**批量主机磁盘利用率监控**
+
+前提监控端和被监控端SSH免交互登录或者密钥登录。 写一个配置文件保存被监控主机SSH连接信息，文件内容格式：IP User Port
+
+```bash
+#!/bin/bash
+HOST_INFO=host.info
+for IP in $(awk '/^[^#]/ {print $1}' $HOST_INFO); do
+    USER=$(awk -v ip=$IP 'ip==$1 {print $2}' $HOST_INFO)
+    PORT=$(awk -v ip=$IP 'ip==$1 {print $3}' $HOST_INFO)
+    TMP_FILE=/tmp/disk.tmp
+    ssh -p $PORT $USER@$IP df -h > $TMP_FILE
+    USE_RATE_LIST=$(awk 'BEGIN{OFS="="} /^\/dev/ {print $NF,int($5)}' $TMP_FILE)
+
+    for USE_RATE in $USE_RATE_LIST; do
+        PART_NAME=${USE_RATE%=*} ##从右到左，非贪婪匹配，匹配到的删除
+        USE_RATE=${USE_RATE#*=} ##从左到右，非贪婪匹配，匹配到的删除
+        if [ $USE_RATE -ge 10 ];then
+        echo "Warning: $IP $PART_NAME Partition usage $USE_RATE%!"
+        fi
+    done
+done
+```
+
+##### （5）**检查网站可用性** 
+
+```bash
+#!/bin/bash
+
+#--------------------
+#1）检查URL可用性
+#方法1：
+check_url() {
+    HTTP_CODE=$(curl -o /dev/null --connect-timeout 3 -s -w "%{http_code}" $1)
+    if [ $HTTP_CODE -ne 200 ]; then
+        echo "Warning: $1 Access failure!"
+    fi
+}
+#方法2：
+check_url_2() {
+    if ! wget -T 10 --tries=1 --spider $1 &>/dev/null; then
+#-T超时时间，--tries尝试1次，--spider爬虫模式
+        echo "Warning: $1 Access failure!"
+    fi
+}
+
+#check_url www.baidu.com
+#check_url_2 www.aaaa.com
+
+#2）判断三次URL可用性
+#思路与上面检查主机存活状态一样。
+
+#---------------------------------
+
+URL_LIST="www.baidu.com www.agasgf.com"
+
+#------
+#方法1：利用循环技巧，如果成功就跳出当前循环，否则执行到最后一行
+check_url_3() {
+    HTTP_CODE=$(curl -o /dev/null --connect-timeout 3 -s -w "%{http_code}" $1)
+    if [ $HTTP_CODE -eq 200 ]; then
+        continue
+    fi
+}
+
+for URL in $URL_LIST; do
+    check_url_3 $URL
+    check_url_3 $URL
+    check_url_3 $URL
+    echo "Warning: $URL Access failure!"
+done
+
+#------
+#方法2：错误次数保存到变量
+
+for URL in $URL_LIST; do
+    FAIL_COUNT=0
+    for ((i=1;i<=3;i++)); do
+        HTTP_CODE=$(curl -o /dev/null --connect-timeout 3 -s -w "%{http_code}" $URL)
+        if [ $HTTP_CODE -ne 200 ]; then
+            let FAIL_COUNT++
+        else
+            break
+        fi
+    done
+    if [ $FAIL_COUNT -eq 3 ]; then
+        echo "Warning: $URL Access failure!"
+    fi
+done
+
+#------
+#方法3：错误次数保存到数组
+for URL in $URL_LIST;do
+    NUM=1
+    unset FAIL_COUNT
+    while [ $NUM -le 3 ]; do
+        HTTP_CODE=$(curl -o /dev/null --connect-timeout 3 -s -w "%{http_code}" $URL)
+        if [ $HTTP_CODE -ne 200 ]; then
+            FAIL_COUNT[$NUM]=$URL
+            let NUM++
+        else
+            break
+        fi
+    done
+    if [ ${#FAIL_COUNT[@]} -eq 3 ];then
+        echo "Warning: $URL Access failure!"
+    fi
+done
+```
+
+（6）**检查MySQL主从同步状态** 
+
+```bash
+#!/bin/bash  
+USER=bak
+PASSWD=123456
+# #gsub去除冒号后面的空格
+IO_SQL_STATUS=$(mysql -u$USER -p$PASSWD -e  show slave statusG  |awk -F:  /Slave_.*_Running/{gsub(": ",":");print $0} )
+for i in $IO_SQL_STATUS; do
+    THREAD_STATUS_NAME=${i%:*}
+    THREAD_STATUS=${i#*:}
+    if [ "$THREAD_STATUS" != "Yes" ]; then
+        echo "Error: MySQL Master-Slave $THREAD_STATUS_NAME status is $THREAD_STATUS!"
+    fi
+done
+```
 
 
 
 **相关文章** 
 
-- [sed命令编辑](https://www.runoob.com/linux/linux-comm-sed.html) 
-
-
-
+1. [30个Linux Shell脚本经典案例（上）](https://zhuanlan.zhihu.com/p/161356277) 
 
 
 
