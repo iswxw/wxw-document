@@ -34,4 +34,5 @@
 - [邻家小铺](http://microapp.gitee.io/linjiashop/) 
 - [https://pigx.pig4cloud.com/#/wel/index](https://pigx.pig4cloud.com/#/wel/index) 
 - [蘑菇博客](http://moxi159753.gitee.io/mogu_blog_doc/#/README) 
+- [主机监控工具](https://www.wgstart.com/) 
 
