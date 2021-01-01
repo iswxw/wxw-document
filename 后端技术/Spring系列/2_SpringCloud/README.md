@@ -529,9 +529,7 @@ FeignClientsConfiguration类中的配置方法及默认值如下：
 
 - 来源：http://ddrv.cn/a/88268
 
-#### 4. Feign和OpenFeign两者区别
-
-![å¾ç](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL1lMcDlrRjNFbVBrcURDYUoucG5nIXRodW1ibmFpbA.png)  
+#### 4. Feign和OpenFeign两者区别![60949310923](assets/1609493109235.png) 
 
 #### 5. SpringCloud集成OpenFeign
 
