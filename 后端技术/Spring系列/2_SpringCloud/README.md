@@ -88,7 +88,7 @@
 - zookeeper是一个很强大的k-v组件，功能应是这些技术中最多的，但是我们只需要服务注册的组件，paxos的一致性算法也不如raft高效，保持长连接会对服务造成一定的影响。
 - etcd其实只是一个k-v系统，需要额外添加对服务发现的支持。
 
-### （1）Eureka 注册中心
+### 2.1 Eureka 注册中心
 
 #### 1. Eureka  自我保护
 
@@ -108,7 +108,7 @@
 
 
 
-### （2）Zookeeper注册中心
+### 2.2 Zookeeper注册中心
 
 - zookeeper是一个分布式协调工具，可以实现注册中心功能
 - zookeeper服务器取代Eureka服务器，zk作为服务注册中心
@@ -149,7 +149,7 @@ delete /sanguo/wuguo2				//删除/sanguo下的wuguo2
 deleteall /sanguo/wuguo				//递归删除
 ```
 
-### （3）Consul 注册中心
+### 2.3 Consul 注册中心
 
 #### 1. Consul 简介   
 
@@ -230,7 +230,7 @@ DC：dc1表示该节点属于DataCenter1
 
 - [Springcloud consul的官网](https://www.springcloud.cc/spring-cloud-consul.html)
 
-### （4）注册中心选型
+### 2.4 注册中心选型
 
 ![13](img/13.png)
 
@@ -264,7 +264,7 @@ DC：dc1表示该节点属于DataCenter1
 
 ![12](img/12.png)
 
-### （5）Ribbon 负载均衡
+### 2.5 Ribbon 负载均衡
 
 - 负载均衡服务调用
 
@@ -408,29 +408,201 @@ large_client_header_buffers 默认值 ：large_client_header_buffers 4 4k/8k
 
 ![19](img/19.png)
 
-### （6）OpenFeign服务调用
+### 2.6 OpenFeign服务调用
 
 #### 1. OpenFeign简介
 
-> what?  [官网](https://cloud.spring.io/spring-cloud-static/spring-cloud-openfeign/2.2.2.RELEASE/reference/html/)
+- 官方文档：<https://cloud.spring.io/spring-cloud-openfeign/2.2.x/reference/html/> 
+- 实例代码地址：https://github.com/GitHubWxw/springcloud2020
 
-​      Feign是一种声明式、模板化的HTTP客户端。在Spring Cloud中使用Feign，可以做到使用HTTP请求访问远程服务，就像调用本地方法一样的，开发者完全感知不到这是在调用远程方法，更感知不到在访问HTTP请求。
+Feign是一种声明式、模板化的HTTP客户端。它的使用方法是定义一个服务接口然后在上面添加注解。Feign也支 持可拔插式的编码器和解码器。Spring Cloud对Feign进行了封装使其支持了Spring MVC标准注解和HttpMessageConverters。Feign可以与Eureka和Ribbon组合使用以支持负载均衡。
 
-> Why
+#### 2. OpenFeign特性
 
-![20](img/20.png)
+前面在使用Ribbon + RestTemplate时，利用RestTemplate对http请求的封装处理, 形成了一套模版化的调用方法。但是在实际开发中，由于对服务依赖的调用可能不止一处,往往一个接口会被多 处调用，所以通常都会针对每个微服务自行封装-些客户端类来包装这些依赖服务的调用。
 
-> **Feign和OpenFeign两者区别**
+所以, Feign在此基础上做了进一步封装, 由他来帮助我们定义和实现依赖服务接口的定义。**在Feign的实现下我们只需创建一个接口并使用注解的方式来配置它(以前是Dao接口 上面标注Mapper注解现在是一个微服务接口 上面标注一个Feign注解即可)，即可完成对服务提供方的接口绑定，**简化了使用Spring cloud Ribbon时,自动封装服务调用客户端的开发量。
 
-![21](img/21.png)
+- openfeign 超时控制
+- OpenFeign 日志打印
+- OpenFeign loadbalancer 负载均衡
+- OpenFeign  histrix 熔断
+- OpenFeign  fallback 故障转移
+- OpenFeign 重试
 
-#### 2. Open调用关系总结
+> 基本配置参数：https://docs.spring.io/spring-cloud-openfeign/docs/3.0.0-SNAPSHOT/reference/html/appendix.html
+
+#### 4. Feign和OpenFeign两者区别
+
+![å¾ç](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL1lMcDlrRjNFbVBrcURDYUoucG5nIXRodW1ibmFpbA.png)  
+
+#### 5. SpringCloud集成OpenFeign
+
+##### （1）测试服务集群和Eureka集群
+
+![60948244231](assets/1609482442311.png) 
+
+Eureka是服务注册中心就不多说。8081和8082服务是两个功能相同的项目，是一个服务集群，因为OpenFeign代替了Ribbon + RestTemplate的工作，故说明OpenFeign带有Ribbon的依赖可以实现负载均衡。服务集群的功能很简单，就是从数据库中根据id进行查询。
+
+- 修改host文件配置host实例，搭建eureka的集群
+
+  ```c
+  127.0.0.1 eureka7001.com
+  127.0.0.1 eureka7002.com
+  ```
+
+##### （2）cloud-feign-order9001 配置
+
+```yaml
+server:
+  port: 9001
+spring:
+  application:
+    name: cloud-feign-order9001
+
+# 注册中心配置
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer,默认为true
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true,单节点无所谓，集群必须设置为true,才能配合ribbon使用负载均衡
+    fetch-registry: true
+    service-url:
+      # 单机版
+#      defaultZone: http://localhost:7001/eureka
+      #集群版
+       defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka
+  instance:
+    #避免显示主机名
+    instance-id: cloud-feign-order9001
+    #显示IP地址
+    prefer-ip-address: true
+    #Eureka客户端向服务端发送心跳的时间间隔，单位为秒（默认30秒）
+    lease-renewal-interval-in-seconds: 30
+    #Eureka服务端在收到最后一次心跳后等待时间上线，单位为秒（默认为90秒），超时将剔除服务
+    lease-expiration-duration-in-seconds: 90
+#超时控制
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+# 开启日志
+logging:
+  level:
+    # fegin日志以什么级别监控那个接口
+    com.wxw.cloud.rpc.PaymentFeignService: debug
+```
+
+##### （3）主启动类
+
+```java
+@EnableFeignClients
+@SpringBootApplication
+public class OrderFeignMain9001 {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderFeignMain9001.class,args);
+    }
+}
+```
+
+注意@EnableFeignClients注解不能少，这表明在该服务中使用了OpenFeign。
+
+##### （4）Dao层封装Feign 的服务
+
+```java
+@Component
+@FeignClient(value = "CLOUD-SERVER-PAY8001")
+public interface PaymentFeignManager {
+
+    @GetMapping("/payment")
+    public Result<Person> getTestObject();
+
+    @GetMapping(value = "/payment/feign/timeout")
+    public String paymentFeignTimeout();
+}
+```
+
+接口中的方法其实就是要调用服务的controller层的类接口的形式。下面是服务层的Service
+
+```java
+@Slf4j
+@Service
+public class OrderFeignService {
+
+    @Resource
+    private PaymentFeignManager paymentFeignManager;
+    /**
+     * 消费端 支付接口
+     * @return
+     */
+    public Result<Person> getTestObject(){
+        return paymentFeignManager.getTestObject();
+    }
+
+   // 超时控制
+    public String paymentFeignTimeout(){
+        // 客户端默认等待1秒钟
+        return paymentFeignManager.paymentFeignTimeout();
+    }
+
+```
+
+下面是服务层的controller
+
+```java
+@RestController
+@Slf4j
+public class OrderFeignController {
+
+    @Resource
+    private PaymentFeignService paymentFeignService;
+    /**
+     * 消费端 支付接口
+     * @return
+     */
+    @GetMapping(value = "/payment/get/{id}")
+    public Result<Person> getTestObject(){
+        return paymentFeignService.getTestObject();
+    }
+
+   // 超时控制
+    @GetMapping(value = "/consumer/payment/feign/timeout")
+    public String paymentFeignTimeout(){
+        // 客户端默认等待1秒钟
+        return paymentFeignService.paymentFeignTimeout();
+    }
+}
+```
+
+此处就表明了OpenFeign中的一个特性支持SpringMVC的注解。
+
+要注意的是服务层@GetMapping(value = “/payment/get/{id}”)是controller中url的全拼，此处没在PaymentController类上没加类似@RequestMapping(value = “/xx”)。故conroller中的@GetMapping(value = “/payment/get/{id}”)与service中的相同。
+
+##### （5）测试结果
+
+- 访问<http://localhost/consumer/payment/get/5>
+
+![图片](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL20wQjhyNVZhQzl4eDdFaXcucG5nIXRodW1ibmFpbA.png)
+
+![图片](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL2I2N3pzUnNXbnNJUWVPcXoucG5nIXRodW1ibmFpbA.png)
+
+可以看到负载均衡起作用了。
+
+> 源码地址：https://github.com/GitHubWxw/springcloud2020
+
+#### 6. Open调用关系总结
 
 ![22](img/22.png)
 
-> **1. openfeign超时控制**
+#### 7. OpenFegin 高级功能
+
+##### （1）openfeign超时控制
 
 - OpenFeign默认等待一秒钟，超过后报错
+
+- 调用超时测试接口：<http://localhost:9001/consumer/payment/feign/timeout>会出现  
 
   ![23](img/23.png)
 
@@ -439,21 +611,116 @@ large_client_header_buffers 默认值 ：large_client_header_buffers 4 4k/8k
 - YML文件里需要开启OpenFeign客户端超时控制
 
 ```yml
-ribbon:
-  ReadTimeout:  5000
-  ConnectTimeout: 5000
+feign:
+  client:
+    config:
+      default:
+        #指的是建立连接后从服务器读取到可用资源所用的时间
+        connectTimeout: 5000
+        #指的是建立连接所用的时间，适用于网络状况异常的情况下两端连接所用的时间
+        readTimeout: 5000
 ```
 
-> **2. OpenFeign日志打印功能**
+##### （2）OpenFeign日志打印
 
 - Feign 提供了日志打印功能，我们可以通过配置来调整日志打印功能，从而了解Feign中Http请求的细节，简言之就是对Feign接口调用情况进行监控和输出。
+
 - Feign日志级别
   1. `NONE`，不记录（**DEFAULT**）。
   2. `BASIC`，仅记录请求方法和URL以及响应状态代码和执行时间。
   3. `HEADERS`，记录基本信息以及请求和响应标头。
   4. `FULL`，记录请求和响应的标题，正文和元数据。
 
-### （7）Hystrix断路器
+- 如何启用日志
+
+  - 添加配置类
+
+    ```java
+    @Configuration
+    public class FeignConfig {
+        @Bean
+        Logger.Level feignLoggerLevel(){
+            return Logger.Level.FULL;
+        }
+    }
+    ```
+
+    注意此处的Logger要使用feign中的。
+
+  - 在yml文件中添加相关配置
+
+    ```yaml
+    # 开启日志
+    logging:
+      level:  # feign日志以什么级别监控哪个接口
+        com.wxw.cloud.service.PaymentFeignService: debug  # 指定特定的接口或者类
+    ```
+
+> 相关文章
+
+- [Spring Cloud 结合 OpenFeign  深入浅出](https://www.cnblogs.com/wf614/p/12919798.html#Feign_14) 
+
+（3）Openfeign 负载均衡
+
+- http://localhost:9001/consumer/payment/get/5   测试地址
+- 具体案例见上面具体案例
+
+##### （4）OpenFeign 断路器
+
+> 版本更新提醒
+
+- openfegin 2.2.5 是Histrix
+- openfegin 2.3.0 是CircuitBreaker
+- Feign中的后备实现以及Hystrix后备如何工作存在局限性。返回`com.netflix.hystrix.HystrixCommand`的方法目前不支持后备`rx.Observable`。
+
+**使用 ** 
+
+- @FeignClient(name = "hello", fallbackFactory = HystrixClientFallbackFactory.class) ：
+
+  - 需要访问引起回退触发器的原因，则可以使用`fallbackFactory`  
+  - 调用路径：http://localhost:9001/consumer/payment/histrix-fallback 
+
+  ```java
+  @FeignClient(name = "hello", fallback = HystrixClientFallback.class)
+  protected interface HystrixClient {
+      @RequestMapping(method = RequestMethod.GET, value = "/hello")
+      Hello iFailSometimes();
+  }
+
+  static class HystrixClientFallback implements HystrixClient {
+      @Override
+      public Hello iFailSometimes() {
+          return new Hello("fallback");
+      }
+  }
+  ```
+
+- @FeignClient(name = "hello", fallback = HystrixClientFallback.class) ：当它们的电路断开或出现错误时执行的默认代码路径
+
+  ```java
+  @FeignClient(name = "hello", fallbackFactory = HystrixClientFallbackFactory.class)
+  protected interface HystrixClient {
+      @RequestMapping(method = RequestMethod.GET, value = "/hello")
+      Hello iFailSometimes();
+  }
+
+  @Component
+  static class HystrixClientFallbackFactory implements FallbackFactory<HystrixClient> {
+      @Override
+      public HystrixClient create(Throwable cause) {
+          return new HystrixClient() {
+              @Override
+              public Hello iFailSometimes() {
+                  return new Hello("fallback; reason was: " + cause.getMessage());
+              }
+          };
+      }
+  }
+  ```
+
+> OpenFeign 实例代码地址：https://github.com/GitHubWxw/springcloud2020 
+
+### 2.7 Hystrix断路器
 
 - 分布式系统面临的问题
 
@@ -537,15 +804,15 @@ ribbon:
 
 > 服务限流
 
-###  （8）Gateway
+###  2.8 Gateway
 
 
 
-### （9）config
+### 2.9 config
 
 
 
-### （10）bus
+### 2.10 bus
 
 ## 三、Spring Cloud Alibaba
 

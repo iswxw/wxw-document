@@ -2,9 +2,7 @@
 
 
 
-
-
-### CSDN
+### CSDN 公开课
 
 - [一致性Hash算法](https://live.csdn.net/room/weixin_48013460/9UKU2ArQ?utm_source=1181338978)  
 - [MySQL为什么选择B+Tree做索引？](https://live.csdn.net/room/weixin_48013460/gCSQKfGx?utm_source=1181338978) 
@@ -32,4 +30,7 @@
 - [深挖并发编程原子性问题](https://live.csdn.net/room/weixin_48013460/meiHbyMX?utm_source=1181338978) 
 - [说一下JVM性能调优怎么做？](https://live.csdn.net/room/weixin_48013460/hRSTIEQZ?utm_source=1181338978) 
 - [Spring事务源码分析—大树](https://live.csdn.net/room/weixin_48013460/qDUmBT0u?utm_source=1181338978) 
+- [大型互联网分布式系统架构思路分享](https://live.csdn.net/room/weixin_48013460/NaU0zi8a?utm_source=1181338978) 
 
+
+> **回放地址**：https://live.csdn.net/list/weixin_48013460
