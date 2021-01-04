@@ -5,7 +5,7 @@
 ### 1. 算法
 
 - [【LeetCode】215-数组中的第K个最大元素](https://www.cnblogs.com/yuzhenzero/p/10521748.html) 
-- 
+- ​
 
 #### 2. 热门算法题
 
@@ -17,10 +17,7 @@
 
 
 
-### 大厂面经
 
-#### 快手 [目录](https://www.nowcoder.com/discuss/experience?tagId=639&order=3&companyId=898&phaseId=0) 
+### 资源收集
 
-1. [闪电快车一面](https://www.nowcoder.com/discuss/583374) 
-2. [快手电商商业化后台（JAVA）一二面](https://www.nowcoder.com/discuss/582631) 
-
+- [中华石杉——Java进阶](https://gitee.com/shishan100/Java-Interview-Advanced) 

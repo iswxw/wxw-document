@@ -15,7 +15,7 @@
 ### JVM 虚拟机
 
 - [Java中9种常见的CMS GC问题分析与解决](https://mp.weixin.qq.com/s/RFwXYdzeRkTG5uaebVoLQw) ——美团技术团队
-- 
+- ​
 
 ### Linux
 
@@ -37,7 +37,7 @@
 
 #### 1. Kafka
 
-- 
+- ​
 
 #### 2. RocketMQ
 
@@ -59,6 +59,8 @@
 ### 设计实战
 
 - [秒杀系统架构分析与实战](https://mp.weixin.qq.com/s/vC26ezvSm4w5Yz55velBOg) ——Java团长 
+- [如果让你设计一个消息中间件，你会怎么做？](https://mp.weixin.qq.com/s?__biz=MzU0OTk3ODQ3Ng==&mid=2247484645&idx=1&sn=663238af983603a4c0b33cf42c3ebbcf&chksm=fba6ece6ccd165f0d78f271a21fdc1b91ad8d3def896e2f4df79d9c8d4cf99e3b2978d703dde&mpshare=1&scene=1&srcid=0608edSfhNw7AIjzl9R54Sih%23rd) 
+- ​
 
 ### 开源社区
 
@@ -71,4 +73,3 @@
 
 - [高情商的人，都戒掉了这三种习惯](https://mp.weixin.qq.com/s/ZS4x3dugtzvpwHF23Fe8hA) 
 
-  
