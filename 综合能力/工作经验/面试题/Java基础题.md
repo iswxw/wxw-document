@@ -21,10 +21,15 @@
 #### Java 虚拟机
 
 1. JVM垃圾回收机制，何时触发MinorGC等操作
+2. 老年代回收会**STW**，什么时候会STW?
+3. **G1**的回收机制？
+4. ​
 
 ### MySQL
 
-1. MySQL的 delete from t1 limit 3和delete from t1的区别？ [小提示](https://blog.csdn.net/wjxbj/article/details/84809186)  
+1. 数据库的事务？
+2. 数据库隔离级别？
+3. MySQL的 delete from t1 limit 3和delete from t1的区别？ [小提示](https://blog.csdn.net/wjxbj/article/details/84809186)  
 
 
 
@@ -32,7 +37,11 @@
 
 1. time_wait在哪一端产生，作用是什么 ， [小提示1](https://blog.csdn.net/u013616945/article/details/77510925)  [小提示2](https://yuerblog.cc/2020/03/09/%E5%85%B3%E4%BA%8Etime_wait%E9%97%AE%E9%A2%98%E7%AE%80%E8%BF%B0%E4%B8%8E%E4%BC%98%E5%8C%96/) 
 
- 
+
+### Linux编程
+
+1. linux中，想要查找日志中的某些信息，用什么命令查找？
+
 
 ### 微服务
 
