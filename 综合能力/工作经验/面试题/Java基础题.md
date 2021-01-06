@@ -18,6 +18,13 @@
 
 1. Synchronized和Lock的区别
 
+2. 并发与并行的区别  [小提示](https://blog.csdn.net/java_zero2one/article/details/51477791) 
+
+   - 并发是指一个处理器同时处理多个任务。 
+   - 并行是指多个处理器或者是多核的处理器同时处理多个不同的任务。 
+
+   并发是逻辑上的同时发生（simultaneous），而并行是物理上的同时发生
+
 #### Java 虚拟机
 
 1. JVM垃圾回收机制，何时触发MinorGC等操作
@@ -36,6 +43,7 @@
 ### 网络编程
 
 1. time_wait在哪一端产生，作用是什么 ， [小提示1](https://blog.csdn.net/u013616945/article/details/77510925)  [小提示2](https://yuerblog.cc/2020/03/09/%E5%85%B3%E4%BA%8Etime_wait%E9%97%AE%E9%A2%98%E7%AE%80%E8%BF%B0%E4%B8%8E%E4%BC%98%E5%8C%96/) 
+2. ​
 
 
 ### Linux编程
@@ -56,3 +64,17 @@
 ### 设计类
 
 1. 设计一个[算法](https://www.nowcoder.com/jump/super-jump/word?word=%E7%AE%97%E6%B3%95)，抽奖次数越多中奖概率就越高  [均匀抽奖](https://blog.csdn.net/z69183787/article/details/81430400)   
+
+
+
+### 海量数据
+
+- TopK问题 [小提示](https://blog.csdn.net/xushiyu1996818/article/details/106801793) 
+  - 全局排序
+  - 局部淘汰（冒泡、快排+二分）
+  - 分治法（hash%K）
+  - bitmap
+
+**相关文章** 
+
+1. [海量数据处理算法策略——1](https://blog.csdn.net/java_zero2one/article/details/51477791) 
