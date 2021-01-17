@@ -2,18 +2,10 @@
 
 
 
-### 1. 算法
+### 题目收集
 
-- [【LeetCode】215-数组中的第K个最大元素](https://www.cnblogs.com/yuzhenzero/p/10521748.html) 
-- ​
-
-#### 2. 热门算法题
-
-- https://www.nowcoder.com/ta/job-code-high-rd?company=898
-
-
-
-
+- [ 2020-12-04 —— 阿里、网易、滴滴社招 Java  ](https://www.nowcoder.com/discuss/575391 )   
+- [2020-09-12——滴滴-阿里，社招面试经历](https://www.nowcoder.com/discuss/575391 ) 
 
 
 

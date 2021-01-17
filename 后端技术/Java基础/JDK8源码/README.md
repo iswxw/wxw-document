@@ -1610,6 +1610,7 @@ monitor运行图如下：
 1. [逐步深入了解synchronized](https://zhuanlan.zhihu.com/p/325835746) 
 2. [synchronized 关键字](https://blog.csdn.net/qq_41893274/article/details/105641685) 
 3. [不可不说的Java 锁](https://tech.meituan.com/2018/11/15/java-lock.html) 
+4. [Java3y synchronized](https://mp.weixin.qq.com/s/6mIxsXLHPWQVmydhtEOFQg) 
 
 #### 1.4 LockSupport
 

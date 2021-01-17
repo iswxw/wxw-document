@@ -1362,6 +1362,7 @@ GeoHash 算法会继续对这个整数做一次 base32 编码 (0-9,a-z 去掉 a,
 **相关文章** 
 
 1. [双写一致性问题和解决方案](https://blog.csdn.net/sufu1065/article/details/108459758) 
+2. [缓存一致性问题怎么解决？](https://mp.weixin.qq.com/s/dYvM8_6SQnYRB6KjPsprbw) 
 
 
 
