@@ -28,6 +28,9 @@
 4. HashMap，ConcurrentHashMap
 5. 分析线程池的实现原理和线程的调度过程
 6. Synchronized和Lock的区别
+7. Synchronized 如何实现锁重入的？[参考地址](http://www.cppcns.com/ruanjian/java/249457.html) 
+   - 加锁时，需要判断锁是否已经被获取。如果已经被获取，则判断获取锁的线程是否是当前线程。如果是当前线程，则给获取次数加1。如果不是当前线程，则需要等待。
+   - 释放锁时，需要给锁的获取次数减1，然后判断，次数是否为0了。如果次数为0了，则需要调用锁的唤醒方法，让锁上阻塞的其他线程得到执行的机会
 
 ### JVM
 
@@ -55,17 +58,16 @@
    - **装饰者模式：** 装饰者模式可以动态地给对象添加一些额外的属性或行为。相比于使用继承，装饰者模式更加灵活。简单点儿说就是当我们需要修改原有的功能，但我们又不愿直接去修改原有的代码时，设计一个Decorator套在原有代码外面。
 
      1. 在 JDK 中就有很多地方用到了装饰者模式，比如 `InputStream`家族，`InputStream` 类下有 `FileInputStream` (读取文件)、`BufferedInputStream` (增加缓存,使读取文件速度大大提升)等子类都在不修改`InputStream` 代码的情况下扩展了它的功能
-
-
-     2.  我们的项目需要连接多个数据库，而且不同的客户在每次访问中根据需要会去访问不同的数据库。这种模式让我们可以根据客户的需求能够动态切换不同的数据源。Spring 中用到的包装器模式在类名上含有 `Wrapper`或者 `Decorator`。这些类基本上都是动态地给一个对象添加一些额外的职责
-
+     2. 我们的项目需要连接多个数据库，而且不同的客户在每次访问中根据需要会去访问不同的数据库。这种模式让我们可以根据客户的需求能够动态切换不同的数据源。Spring 中用到的包装器模式在类名上含有 `Wrapper`或者 `Decorator`。这些类基本上都是动态地给一个对象添加一些额外的职责
    - **观察者模式**：Spring **事件驱动模型**就是观察者模式
 
-     事件流程：
 
-     1. 定义一个事件: 实现一个继承自 `ApplicationEvent`，并且写相应的构造函数；
-     2. 定义一个事件监听者：实现 `ApplicationListener` 接口，重写 `onApplicationEvent()` 方法；
-     3. 使用事件发布者发布消息: 可以通过 `ApplicationEventPublisher` 的 `publishEvent()` 方法发布消息。 
+​              事件流程：
+
+1. 定义一个事件: 实现一个继承自 `ApplicationEvent`，并且写相应的构造函数；
+2. 定义一个事件监听者：实现 `ApplicationListener` 接口，重写 `onApplicationEvent()` 方法；
+3. 使用事件发布者发布消息: 可以通过 `ApplicationEventPublisher` 的 `publishEvent()` 方法发布消息。 
+
 
 2. 动态代理[jdk、cglib] 
 

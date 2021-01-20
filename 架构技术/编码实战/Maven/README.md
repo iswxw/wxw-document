@@ -105,6 +105,15 @@ A -> C -> X(2.0)
 
 子 POM 内声明的依赖优先于父 POM 中声明的依赖。
 
+##### （4）pom 依赖加载顺序
+
+[Maven pom 文件引用顺序](https://www.cnblogs.com/aspirant/p/11122680.html) 
+
+1. <dependencies> 强制引用
+2. </dependencyManagement> 强制引用
+3. 然后是 <parent> 里面 强制引用找
+4. 如果实在是没有了，就从  dependencies 的间接引用 找；
+
 #### 3.4 解决依赖冲突
 
 ##### （1）排除原则

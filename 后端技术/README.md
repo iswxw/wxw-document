@@ -21,24 +21,21 @@
 
 
 
-### Java
+### Java 基础
 
-- [Java基础](/后端技术/Java基础知识/Java基础/) 
-- [Java 8源码](/后端技术/Java基础知识/JDK8源码/)
-- [Java 并发编程](/后端技术/Java基础知识/JUC并发编程/) 
-- [Java 虚拟机](/后端技术/Java基础知识/Java虚拟机/)  
+- [Java基础](/后端技术/Java基础/Java基础/) 
+- [Java 8源码](/后端技术/Java基础/JDK8源码/)
+- [Java 并发编程](/后端技术/Java基础/JUC并发编程/) 
+- [Java 虚拟机](/后端技术/Java基础/Java虚拟机/)  
+- [设计模式](/后端技术/Java基础/设计模式/) 
+- [网络编程](/后端技术/Java基础/网络编程/) 
 
-### 计算机基础
-
-- 操作系统
-- 计算机网络
-
-### 数据库
+###  数据库
 
 - [MySQL](/后端技术/数据库\1_MySQL/) 
 - [PostgreSQL](/后端技术/数据库/2_PostgreSQL/) 
 - [SQL Server](/后端技术/数据库/3_SQLServer/) 
-- [MyBatis](/后端技术/数据库/4_My Batis/) 
+- [MyBatis](/后端技术/数据库/4_MyBatis/)  
 - [NoSql]() 
 
 ### 分布式中间件
@@ -88,23 +85,20 @@
 - [leetcode 题解](/后端技术/数据结构与算法/leetcode/readme.md) 
 - [剑指Offer 题解](/后端技术/必会框架/Netty/) 
 
+
+
 ### 必会框架
 
 - Spring系列及源码分析
 - [高性能NIO—Netty](/后端技术/必会框架/Netty/) 
-- RPC
-- MyBatis源码解析
+- Dubbo
+- MyBatis
 
-### 安全框架
 
-- [Oauth 2.0](/后端技术/安全框架/Oauth2.0/README.md)  
-
-### 面向对象
-
-- [设计模式](/后端技术/Java基础知识/设计模式/)  
 
 ### 开源框架
 
-- [定时任务](/后端技术/开源框架/定时任务/)
+- [定时任务——quartz](/后端技术/开源框架/定时任务/) 
 - [开源限流工具——Guava](/后端技术/开源框架/Guava/) 
 - [分布式锁工具——Redission](/后端技术/开源框架/Redission/) 
+- [Oauth 2.0](/后端技术/安全框架/Oauth2.0/README.md)  
