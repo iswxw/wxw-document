@@ -13,3 +13,8 @@
 - [架构理论](/架构技术/架构思维/架构理论/) 
 
 
+
+相关资源
+
+1. [阿里云 Spring Boot 系列应用生成器 Spring Boot - CLI](https://start.aliyun.com/bootstrap.html)  
+
