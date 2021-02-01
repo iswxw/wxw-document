@@ -45,14 +45,24 @@
 
 #### 3. RabbitMQ
 
+
+
 ### 分布式系列
 
-#### 1. 分布式锁
+#### 分布式理论
+
+- ​
+
+#### 分布式技术
+
+
+
+#### 分布式锁
 
 - [分布式锁用 Redis 还是 Zookeeper？](https://mp.weixin.qq.com/s/eJEVXM0FSXMrCd00n5Cf0w) 
 - [ZooKeeper分布式锁的实现原理](https://www.cnblogs.com/ysw-go/p/11444993.html)  ——[curator zk客户端](http://curator.apache.org/) 
 
-#### 2. 分布式事务
+#### 分布式事务
 
 - [阿里终面：分布式事务原理](https://mp.weixin.qq.com/s/7gfmnXQRRim0OCIRC0tQ5w) 
 
@@ -70,6 +80,9 @@
 ### 洞见
 
 - [真正拉开人与人之间差距的，不是情商，不是智商，而是…](https://mp.weixin.qq.com/s/_18gi1iyjZCvcaD-syfG0g) 
+- [高情商的人，都戒掉了这三种习惯](https://mp.weixin.qq.com/s/ZS4x3dugtzvpwHF23Fe8hA)  
 
-- [高情商的人，都戒掉了这三种习惯](https://mp.weixin.qq.com/s/ZS4x3dugtzvpwHF23Fe8hA) 
 
+相关文章
+
+- [黄小斜](https://github.com/h2pl/Java-Tutorial) 

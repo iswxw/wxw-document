@@ -330,6 +330,7 @@ LeaderSelector 和 Leader Latch 最的差别在于，leader可以释放领导权
 
 1. [zookeeper 选举机制](https://mp.weixin.qq.com/s/VmbQNoG7WH--9_akn1DZXQ) 
 2. [zookeeper核心之使用 Zookeeper 实现 leader 选举](https://www.cnblogs.com/47Gamer/p/13624396.html) 
+3. [ZooKeeper是强一致的吗？怎么实现的？](https://mp.weixin.qq.com/s/BAZiyIAnUOty2-BdV7GE7g) 
 
 
 
