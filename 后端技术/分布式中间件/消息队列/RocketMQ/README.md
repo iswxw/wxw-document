@@ -1592,14 +1592,10 @@ public void subscribe(finalString topic, final MessageSelector messageSelector)
 ```java
 DefaultMQProducer producer = new DefaultMQProducer("please_rename_unique_group_name");
 producer.start();
-Message msg = new Message("TopicTest",
-   tag,
-   ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET)
-);
+Message msg = new Message("TopicTest",tag,("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET));
 // 设置一些属性
 msg.putUserProperty("a", String.valueOf(i));
 SendResult sendResult = producer.send(msg);
-
 producer.shutdown();
 ```
 
@@ -1729,3 +1725,28 @@ public class TransactionListenerImpl implements TransactionListener {
 4. 事务性消息可能不止一次被检查或消费。
 5. 提交给用户的目标主题消息可能会失败，目前这依日志的记录而定。它的高可用性通过 RocketMQ 本身的高可用性机制来保证，如果希望确保事务消息不丢失、并且事务完整性得到保证，建议使用同步的双重写入机制。
 6. 事务消息的生产者 ID 不能与其他类型消息的生产者 ID 共享。与其他类型的消息不同，事务消息允许反向查询、MQ服务器能通过它们的生产者 ID 查询到消费者。
+
+# 5. 案例分析
+
+
+
+# 6. 高级功能
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
