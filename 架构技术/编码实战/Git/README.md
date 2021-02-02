@@ -117,8 +117,6 @@ git merge dev
 git branch -d dev
 ```
 
-
-
 ### 解决冲突 
 
 当两个分支都对同一个文件的同一行进行了修改，在分支合并时就会产生冲突。
@@ -203,6 +201,13 @@ Git 仓库和 Github 中心仓库之间的传输是通过 SSH 加密。
 
 ```bash
 $ ssh-keygen -t rsa -C "youremail@example.com"
+
+
+# 添加远程仓库
+git remote add origin 仓库的https地址
+
+# 提交代码
+git push -u origin master
 ```
 
 然后把公钥 id_rsa.pub 的内容复制到 Github "Account settings" 的 SSH Keys 中。
