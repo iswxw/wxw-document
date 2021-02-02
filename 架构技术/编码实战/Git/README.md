@@ -94,7 +94,32 @@ Git 的版本库有一个称为 Stage 的暂存区以及最后的 History 版本
 
 ![1608024038887](assets/1608024038887.png) 
 
-### 冲突 
+#### 4.1 分支管理指令
+
+```bash
+# 查看当前分支
+git branch
+
+# 创建新分支dev   dev:新分支名称  -b:创建并切换到dev
+git checkout -b dev
+
+# 在dev分支上进行开发,master分支不变
+git add readme.txt 
+git commit -m "branch test"
+
+# 切回到master分支,不会看到dev分支上的修改内容
+git checkout master
+
+# 切回master分支,再进行合并dev到当前master分支
+git merge dev
+
+# 切回master分支,删除dev分支
+git branch -d dev
+```
+
+
+
+### 解决冲突 
 
 当两个分支都对同一个文件的同一行进行了修改，在分支合并时就会产生冲突。
 
@@ -109,6 +134,13 @@ Creating a new branch is quick & simple.
 Creating a new branch is quick AND simple.
 >>>>>>> feature1
 ```
+
+#### 5.1 解决方案
+
+1. 尽量避免不同人修改同一个文件
+2. 如果修改相同文件,应该先更新再修改
+3. 如果重复发生,相关人员在发生冲突方协商解决
+4. 冲突解决完成后,标记已解决,提交代码,双方都更新最新代码
 
 ### Fast forward (快进式合并)
 
