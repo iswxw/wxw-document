@@ -137,9 +137,43 @@ public class ConcurrentTestDistributeDemo {
 
 
 
-#### 1.3 常见问题
+#### 1.3 分布式锁租约续期
 
-**（1）attempt to unlock lock, not locked by current thread by node id: 046f5254-fcdc-4806-81b0-29eb409f5ed4 thread-id: 314**
+##### （1）发现问题
+
+Redis分布式锁在加锁的时候，我们一般都会给一个锁的过期时间（TTL），这是为了防止加锁后client宕机，锁无法被释放的问题。但是所有这种姿势的用法都会面临同一个问题，就是没法保证client的执行时间一定小于锁的TTL。虽然大多数程序员都会乐观的认为这种情况不可能发生，但是各种异常情况都会导致该问题的发生，比如网络延迟、jvm full gc。
+
+- Martin Kleppmann也质疑过这一点，这里直接用他的图：
+
+![img](assets/1742349-20200730140901768-1493067256.png) 
+
+1. Client1获取到锁
+2. Client1开始任务，然后发生了STW的GC，时间超过了锁的过期时间
+3. Client2 获取到锁，开始了任务
+4. Client1的GC结束，继续任务，这个时候Client1和Client2都认为自己获取了锁，都会处理任务，从而发生错误。
+
+##### （2）解决方案
+
+> 解决方案思路一样，实现方式可以自定义，使用Redisson自带的watchdog 或者自定义一个守护线程结合Lua脚本，更新key过期时间
+
+1. 给锁设置一个WatchDog自动给锁进行续期。实现的原理是在加锁成功之后启动一个定时线程（WatchDog）自动给锁进行续期。[watch思路](https://segmentfault.com/a/1190000037526623) 
+2. 先给锁设置一个LockTime，然后启动一个守护线程，让守护线程在一段时间后，重新去设置这个锁的LockTime。[源码](https://github.com/GitHubWxw/wxw-concurrent/tree/dev-wxw/cloud-concurrent/src/main/java/com/wxw/common/redis_distributed_lock/autorenew) 
+
+##### （3）
+
+
+
+
+
+**相关文章** 
+
+1. [分布式锁租约续期](https://www.cnblogs.com/qg000/p/13403466.html) 
+
+#### 1.4 常见问题
+
+**（1） 业务执行超时或者GC超时，导致锁提前过期** 
+
+> attempt to unlock lock, not locked by current thread by node id: 046f5254-fcdc-4806-81b0-29eb409f5ed4 thread-id: 314
 
 ![1606803692008](assets/1606803692008.png) 
 
@@ -168,7 +202,25 @@ public class ConcurrentTestDistributeDemo {
 
 ![img](assets/1676531f71973f37) 
 
+
+
+#### 1.1 总结
+
+- **使用Zookeeper实现分布式锁的优点**：有效的解决单点问题，不可重入问题，非阻塞问题以及锁无法释放的问题。实现起来较为简单。
+
+- **使用Zookeeper实现分布式锁的缺点**：性能上不如使用缓存实现分布式锁。 需要对ZK的原理有所了解
+  1. **性能上可能并没有缓存服务那么高**。因为每次在创建锁和释放锁的过程中，都要动态创建、销毁瞬时节点来实现锁功能。ZK中创建和删除节点只能通过Leader服务器来执行，然后将数据同不到所有的Follower机器上。
+  2. **使用Zookeeper也有可能带来并发问题**，只是并不常见而已。考虑这样的情况，由于网络抖动，客户端可ZK集群的session连接断了，那么zk以为客户端挂了，就会删除临时节点，这时候其他客户端就可以获取到分布式锁了。就可能产生并发问题。这个问题不常见是因为zk有重试机制，一旦zk集群检测不到客户端的心跳，就会重试，Curator客户端支持多种重试策略。多次重试之后还不行的话才会删除临时节点。（所以，选择一个合适的重试策略也比较重要，要在锁的粒度和并发之间找一个平衡。）
+
+
+
 ### 分布式锁技术选型
+
+上面几种方式，哪种方式都无法做到完美。就像CAP一样，在复杂性、可靠性、性能等方面无法同时满足，所以，根据不同的应用场景选择最适合自己的才是王道。
+
+| 从实现的复杂性角度（从低到高） | 从性能角度（从高到低）     | 从可靠性角度（从高到低）  |
+| ------------------------------ | -------------------------- | ------------------------- |
+| Zookeeper >= 缓存 > 数据库     | 缓存 > Zookeeper >= 数据库 | Zookeeper > 缓存 > 数据库 |
 
 #### （1）强一致性 分布式锁
 
@@ -185,6 +237,8 @@ public class ConcurrentTestDistributeDemo {
 **相关文章**  
 
 1. [zookeeper 分佈式锁](https://www.cnblogs.com/ysw-go/p/11444993.html) 
+2. [分布式锁方案选型](https://www.cnblogs.com/qg000/p/13368103.html) 
+3. [分布式锁 租约续期](https://www.cnblogs.com/qg000/p/13403466.html) 
 
 
 
