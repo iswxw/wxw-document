@@ -37,6 +37,8 @@
 
 - [悟空聊架构](https://github.com/Jackson0714) ——[在线文档](http://www.passjava.cn/) 
 - [LeetCodeTop](https://github.com/afatcoder/LeetcodeTop)  ——汇总互联网公司技术岗考察leetcode题目的热
+- [Java-Interview-Tutorial——JavaEdge](https://github.com/Wasabi1234/Java-Interview-Tutorial)  
+- [JavaGuide](https://github.com/Snailclimb/JavaGuide) 
 
 ### 关注网站
 

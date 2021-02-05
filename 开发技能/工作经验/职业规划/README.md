@@ -29,9 +29,13 @@
 
   比如：采用MySQL分库分表 + 分布式NoSQL数据库 + Elasticsearch分布式搜索 + Redis缓存的架构，来整体设计这个数据存储架构。
 
-- ​
+- 
 
 
+
+### 工作总结
+
+- [职业生涯复盘总结——JavaEdge](https://javaedge.blog.csdn.net/article/details/112407245)  
 
 
 
@@ -39,7 +43,7 @@
 ### 工作的前5年
 
 - 赚钱是次要的，赚技能是最重要的。
-- ​
+- 
 - 
 
 
