@@ -2742,14 +2742,15 @@ consumer.start();
 
 ## 4.6 事务消息
 
-###4.6.1 流程分析
+### 4.6.1 流程分析
 
 ![](assets/事务消息.png)
 
 
 
 上图说明了事务消息的大致方案，其中分为两个流程：正常事务消息的发送及提交、事务消息的补偿流程。
-####1）事务消息发送及提交
+
+#### 1）事务消息发送及提交
 
 (1) 发送消息（half消息）。
 
@@ -2777,7 +2778,7 @@ consumer.start();
 * TransactionStatus.RollbackTransaction: 回滚事务，它代表该消息将被删除，不允许被消费。
 * TransactionStatus.Unknown: 中间状态，它代表需要检查消息队列来确定状态。
 
-###4.6.1 发送事务消息
+### 4.6.2 发送事务消息
 
 #### 1) 创建事务性生产者
 
@@ -2844,7 +2845,7 @@ public class TransactionListenerImpl implements TransactionListener {
 }
 ```
 
-### 4.6.2 使用限制
+### 4.6.3 使用限制
 
 1. 事务消息不支持延时消息和批量消息。
 2. 为了避免单个消息被检查太多次而导致半队列消息累积，我们默认将单个消息的检查次数限制为 15 次，但是用户可以通过 Broker 配置文件的 `transactionCheckMax`参数来修改此限制。如果已经检查某条消息超过 N 次的话（ N = `transactionCheckMax` ） 则 Broker 将丢弃此消息，并在默认情况下同时打印错误日志。用户可以通过重写 `AbstractTransactionCheckListener` 类来修改这个行为。
