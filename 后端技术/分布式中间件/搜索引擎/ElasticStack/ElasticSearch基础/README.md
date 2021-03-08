@@ -1133,7 +1133,7 @@ POST /itcast/person/_search
 }
 ```
 
-##### 3. range查询
+##### 3. range 范围查询
 
 range 过滤允许我们按照指定范围查找一批数据：
 
@@ -1155,7 +1155,7 @@ range 过滤允许我们按照指定范围查找一批数据：
 - lt : 小于
 - lte: 小于等于
 
-示例：
+**示例：** 
 
 ```json
 POST /itcast/person/_search
