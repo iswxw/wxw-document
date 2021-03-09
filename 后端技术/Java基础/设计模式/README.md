@@ -166,17 +166,145 @@
 
 #### 2. 工厂模式
 
+在工厂模式中，我们在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象。
 
+![1615267384373](assets/1615267384373.png)
+
+**2.1 主要解决的问题** 
+
+**意图：** 定义一个创建对象的接口，让其子类自己决定实例化哪一个工厂类，工厂模式使其创建过程延迟到子类进行。
+
+**主要解决：**主要解决接口选择的问题。
+
+**何时使用：**我们明确地计划不同条件下创建不同实例时。
+
+**如何解决：**让其子类实现工厂接口，返回的也是一个抽象的产品。
+
+**关键代码：**创建过程在其子类执行。
+
+**应用实例：** 1、Hibernate 换数据库只需换方言和驱动就可以。
+
+**优点：** 
+
+1. 一个调用者想创建一个对象，只要知道其名称就可以了。 
+2. 扩展性高，如果想增加一个产品，只要扩展一个工厂类就可以。
+3. 屏蔽产品的具体实现，调用者只关心产品的接口。
+
+**缺点：**每次增加一个产品时，都需要增加一个具体类和对象实现工厂，使得系统中类的个数成倍增加，在一定程度上增加了系统的复杂度，同时也增加了系统具体类的依赖。这并不是什么好事。
+
+**使用场景：** 
+
+1. 日志记录器：记录可能记录到本地硬盘、系统事件、远程服务器等，用户可以选择记录日志到什么地方。
+2. 数据库访问，当用户不知道最后系统采用哪一类数据库，以及数据库可能有变化时。
+3. 设计一个连接服务器的框架，需要三个协议，"POP3"、"IMAP"、"HTTP"，可以把这三个作为产品类，共同实现一个接口。
+
+**注意事项：**作为一种创建类模式，在任何需要生成复杂对象的地方，都可以使用工厂方法模式。有一点需要注意的地方就是复杂对象适合使用工厂模式，而简单对象，特别是只需要通过 new 就可以完成创建的对象，无需使用工厂模式。如果使用工厂模式，就需要引入一个工厂类，会增加系统的复杂度。
+
+#### 3. 建造者模式
+
+**3.1 建造者模式定义** 
+
+**建造者模式（Builder Pattern）** 使用多个简单的对象一步一步构建成一个复杂的对象。这种类型的设计模式属于创建型模式，它提供了一种创建对象的最佳方式。
+
+- 一个 Builder 类会一步一步构造最终的对象。该 Builder 类是独立于其他对象的。
+
+**3.2主要解决问题** 
+
+**意图：**将一个复杂的构建与其表示相分离，使得同样的构建过程可以创建不同的表示。
+
+**主要解决：**主要解决在软件系统中，有时候面临着"一个复杂对象"的创建工作，其通常由各个部分的子对象用一定的算法构成；由于需求的变化，这个复杂对象的各个部分经常面临着剧烈的变化，但是将它们组合在一起的算法却相对稳定。
+
+**何时使用：**一些基本部件不会变，而其组合经常变化的时候。
+
+**如何解决：**将变与不变分离开。
+
+**关键代码：**建造者：创建和提供实例，导演：管理建造出来的实例的依赖关系。
+
+**应用实例：** 1、JAVA 中的 StringBuilder。
+
+**优点：** 1、建造者独立，易扩展。 2、便于控制细节风险。
+
+**缺点：** 1、产品必须有共同点，范围有限制。 2、如内部变化复杂，会有很多的建造类。
+
+**使用场景：** 1、需要生成的对象具有复杂的内部结构。 2、需要生成的对象内部属性本身相互依赖。
+
+**注意事项：**与工厂模式的区别是：建造者模式更加关注与零件装配的顺序。
+
+```java
+public class SqlSessionFactoryBuilder {
+
+  public SqlSessionFactory build(Reader reader) {
+    return build(reader, null, null);
+  }
+
+  public SqlSessionFactory build(Reader reader, String environment) {
+    return build(reader, environment, null);
+  }
+
+  public SqlSessionFactory build(Reader reader, Properties properties) {
+    return build(reader, null, properties);
+  }
+
+  public SqlSessionFactory build(Reader reader, String environment, Properties properties) {
+    try {
+      XMLConfigBuilder parser = new XMLConfigBuilder(reader, environment, properties);
+      return build(parser.parse());
+    } catch (Exception e) {
+      throw ExceptionFactory.wrapException("Error building SqlSession.", e);
+    } finally {
+      ErrorContext.instance().reset();
+      try {
+        reader.close();
+      } catch (IOException e) {
+        // Intentionally ignore. Prefer previous error.
+      }
+    }
+  }
+
+  public SqlSessionFactory build(InputStream inputStream) {
+    return build(inputStream, null, null);
+  }
+
+  public SqlSessionFactory build(InputStream inputStream, String environment) {
+    return build(inputStream, environment, null);
+  }
+
+  public SqlSessionFactory build(InputStream inputStream, Properties properties) {
+    return build(inputStream, null, properties);
+  }
+
+  public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
+    try {
+      XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
+      return build(parser.parse());
+    } catch (Exception e) {
+      throw ExceptionFactory.wrapException("Error building SqlSession.", e);
+    } finally {
+      ErrorContext.instance().reset();
+      try {
+        inputStream.close();
+      } catch (IOException e) {
+        // Intentionally ignore. Prefer previous error.
+      }
+    }
+  }
+
+  public SqlSessionFactory build(Configuration config) {
+    return new DefaultSqlSessionFactory(config);
+  }
+
+}
+```
 
 ### 结构型模式
 
 #### 1. 代理模式
 
+![1615267711581](assets/1615267711581.png) 
+
 - **静态代理**：同一个接口下，用一个实现类调用另外一个实现类的方法实现并在自己的方法体中逻辑增强 
 - **JDK动态代理** ：基于接口实现、实现InvocationHanlder接口，使用Proxy代理类生成代理子类
 - **Cglib动态代理** ： 基于ASM技术修改字节码生成子类处理，实现MethodInterceptor接口，重写它的 intercept () 方法 
-
-
 
 相关文章
 
@@ -184,7 +312,7 @@
 
 #### 2. 装饰者模式
 
-**（1）模式定义** 
+**2.1 模式定义** 
 
 **装饰器模式（Decorator Pattern）** : 允许向一个现有的对象添加新的功能，同时又不改变其结构。这种类型的设计模式属于结构型模式，它是作为现有的类的一个包装。
 
@@ -192,7 +320,9 @@
 
 我们通过下面的实例来演示装饰器模式的用法。其中，我们将把一个形状装饰上不同的颜色，同时又不改变形状类。
 
-**（2）主要解决的问题** 
+![1615194878896](assets/1615194878896.png) 
+
+**2.2 主要解决的问题** 
 
 **意图：**动态地给一个对象添加一些额外的职责。就增加功能来说，装饰器模式相比生成子类更为灵活。
 
@@ -217,13 +347,174 @@
 
 **注意事项：**可代替继承。
 
-**（4）角色关系** 
+**2.3 装饰者模式在MyBatis中的应用** 
 
-![1615194878896](assets/1615194878896.png) 
+
 
 相关文章
 
 1. https://www.runoob.com/design-pattern/decorator-pattern.html
+
+#### 3. 组合模式
+
+组合模式（Composite Pattern），又叫部分整体模式，是用于把一组相似的对象当作一个单一的对象。组合模式依据树形结构来组合对象，用来表示部分以及整体层次。这种类型的设计模式属于结构型模式，它创建了对象组的树形结构。
+
+这种模式创建了一个包含自己对象组的类。该类提供了修改相同对象组的方式。
+
+**3.1 解决的问题** 
+
+**意图：**将对象组合成树形结构以表示"部分-整体"的层次结构。组合模式使得用户对单个对象和组合对象的使用具有一致性。
+
+**主要解决：**它在我们树型结构的问题中，模糊了简单元素和复杂元素的概念，客户程序可以像处理简单元素一样来处理复杂元素，从而使得客户程序与复杂元素的内部结构解耦。
+
+**何时使用：** 
+
+1. 您想表示对象的部分-整体层次结构（树形结构）。 
+2. 您希望用户忽略组合对象与单个对象的不同，用户将统一地使用组合结构中的所有对象。
+
+**如何解决：**树枝和叶子实现统一接口，树枝内部组合该接口。
+
+**关键代码：**树枝内部组合该接口，并且含有内部属性 List，里面放 Component。
+
+**优点：** 
+
+1. 块调用简单。 
+2. 节点自由增加。
+
+**缺点：**在使用组合模式时，其叶子和树枝的声明都是实现类，而不是接口，违反了依赖倒置原则。
+
+**使用场景：**部分、整体场景，如树形菜单，文件、文件夹的管理。
+
+**注意事项：**定义时为具体类。
+
+**3.2 MyBatis 中引用组合模式** 
+
+Mybatis支持动态SQL的强大功能，比如下面的这个SQL：
+
+![Mybatis中9种经典的设计模式！你知道几个？](assets/e4fb5d1e7e0341cb84edab0aeb888fc7.jpg) 
+
+对于实现该SqlSource接口的所有节点，就是整个组合模式树的各个节点： 
+
+![1615268164173](assets/1615268164173.png) 
+
+#### 4. 适配器模式
+
+**4.1 模式定义** 
+
+**适配器模式（Adapter Pattern）** 是作为两个不兼容的接口之间的桥梁。这种类型的设计模式属于结构型模式，它结合了两个独立接口的功能。
+
+这种模式涉及到一个单一的类，该类负责加入独立的或不兼容的接口功能
+
+**4.2 主要解决的问题** 
+
+**意图：**将一个类的接口转换成客户希望的另外一个接口。适配器模式使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。
+
+**主要解决：**主要解决在软件系统中，常常要将一些"现存的对象"放到新的环境中，而新环境要求的接口是现对象不能满足的。
+
+**何时使用：** 
+
+1. 系统需要使用现有的类，而此类的接口不符合系统的需要。 
+2. 想要建立一个可以重复使用的类，用于与一些彼此之间没有太大关联的一些类，包括一些可能在将来引进的类一起工作，这些源类不一定有一致的接口。
+3. 、通过接口转换，将一个类插入另一个类系中。
+
+**如何解决：**继承或依赖（推荐）。
+
+**关键代码：**适配器继承或依赖已有的对象，实现想要的目标接口。
+
+**应用实例：** 
+
+1. JAVA JDK 1.1 提供了 Enumeration 接口，而在 1.2 中提供了 Iterator 接口，想要使用 1.2 的 JDK，则要将以前系统的 Enumeration 接口转化为 Iterator 接口，这时就需要适配器模式。 
+2. 在 LINUX 上运行 WINDOWS 程序。 
+3. JAVA 中的 jdbc。
+
+**优点：** 
+
+1. 可以让任何两个没有关联的类一起运行。 
+2. 提高了类的复用。 
+3. 增加了类的透明度。
+4. 灵活性好。
+
+**缺点：**
+
+1. 过多地使用适配器，会让系统非常零乱，不易整体进行把握。比如，明明看到调用的是 A 接口，其实内部被适配成了 B 接口的实现，一个系统如果太多出现这种情况，无异于一场灾难。因此如果不是很有必要，可以不使用适配器，而是直接对系统进行重构。 2.由于 JAVA 至多继承一个类，所以至多只能适配一个适配者类，而且目标类必须是抽象类。
+
+**使用场景：**有动机地修改一个正常运行的系统的接口，这时应该考虑使用适配器模式。
+
+**注意事项：**适配器不是在详细设计时添加的，而是解决正在服役的项目的问题。
+
+**4.3 mybatis 中引用案例** 
+
+> Log 该接口定义了Mybatis直接使用的日志方法，而Log接口具体由谁来实现呢？
+
+Mybatis提供了多种日志框架的实现，这些实现都匹配这个Log接口所定义的接口方法，最终实现了所有外部日志框架到Mybatis日志包的适配
+
+![1615270613326](assets/1615270613326.png) 
+
+比如 ` Slf4jImpl` 实现类的适配逻辑
+
+```java
+public class Slf4jImpl implements Log {
+
+  private Log log;
+
+  public Slf4jImpl(String clazz) {
+    Logger logger = LoggerFactory.getLogger(clazz);
+
+    if (logger instanceof LocationAwareLogger) {
+      try {
+        // check for slf4j >= 1.6 method signature
+        logger.getClass().getMethod("log", Marker.class, String.class, int.class, 
+                                                          String.class, Object[].class, Throwable.class);
+        log = new Slf4jLocationAwareLoggerImpl((LocationAwareLogger) logger);
+        return;
+      } catch (SecurityException | NoSuchMethodException e) {
+        // fail-back to Slf4jLoggerImpl
+      }
+    }
+
+    // Logger is not LocationAwareLogger or slf4j version < 1.6
+    log = new Slf4jLoggerImpl(logger);
+  }
+
+  @Override
+  public boolean isDebugEnabled() {
+    return log.isDebugEnabled();
+  }
+
+  @Override
+  public boolean isTraceEnabled() {
+    return log.isTraceEnabled();
+  }
+
+  @Override
+  public void error(String s, Throwable e) {
+    log.error(s, e);
+  }
+
+  @Override
+  public void error(String s) {
+    log.error(s);
+  }
+
+  @Override
+  public void debug(String s) {
+    log.debug(s);
+  }
+
+  @Override
+  public void trace(String s) {
+    log.trace(s);
+  }
+
+  @Override
+  public void warn(String s) {
+    log.warn(s);
+  }
+
+}
+```
+
+
 
 ### 行为型模式
 
@@ -539,11 +830,17 @@ public class ZkWatcherDemo {
 
 在模板模式（Template Pattern）中，一个抽象类公开定义了执行它的方法的方式/模板。它的子类可以按需要重写方法实现，但调用将以抽象类中定义的方式进行。这种类型的设计模式属于行为型模式。模板方法模式就是利用了面向对象中的多态特性。
 
+![模板模式的 UML 图](assets/template_pattern_uml_diagram.jpg) 
+
 **主要解决：**一些方法通用，却在每一个子类都重新写了这一方法。
 
-**优点：** 1、封装不变部分，扩展可变部分。 2、提取公共代码，便于维护。 3、行为由父类控制，子类实现。
+**优点：** 
 
-**缺点：**每一个不同的实现都需要一个子类来实现，导致类的个数增加，使得系统更加庞大。
+1. 封装不变部分，扩展可变部分。 
+2. 提取公共代码，便于维护。 
+3. 行为由父类控制，子类实现。
+
+**缺点：** 每一个不同的实现都需要一个子类来实现，导致类的个数增加，使得系统更加庞大。
 
 **注意事项：**为防止恶意操作，一般模板方法都加上 final 关键词。
 
@@ -554,6 +851,69 @@ public class ZkWatcherDemo {
 1. AQS 的实现
 
 > 来源：[模板方法模式](https://www.runoob.com/design-pattern/template-pattern.html) 
+
+#### 6. 迭代器模式
+
+**6.1 模式定义** 
+
+迭代器模式（Iterator Pattern）是 Java 和 .Net 编程环境中非常常用的设计模式。这种模式**用于顺序访问集合对象的元素**，不需要知道集合对象的底层表示。迭代器模式属于行为型模式。
+
+**6.2 主要解决问题** 
+
+**意图：**提供一种方法顺序访问一个聚合对象中各个元素, 而又无须暴露该对象的内部表示。
+
+**主要解决：**不同的方式来遍历整个整合对象。
+
+**何时使用：**遍历一个聚合对象。
+
+**如何解决：**把在元素之间游走的责任交给迭代器，而不是聚合对象。
+
+**关键代码：**定义接口：hasNext, next。
+
+**应用实例：**JAVA 中的 iterator。
+
+**优点：** 
+
+1. 它支持以不同的方式遍历一个聚合对象。 
+2. 迭代器简化了聚合类。 
+3. 在同一个聚合上可以有多个遍历。 
+4. 在迭代器模式中，增加新的聚合类和迭代器类都很方便，无须修改原有代码。
+
+**缺点：**由于迭代器模式将存储数据和遍历数据的职责分离，增加新的聚合类需要对应增加新的迭代器类，类的个数成对增加，这在一定程度上增加了系统的复杂性。
+
+**使用场景：** 
+
+1. 访问一个聚合对象的内容而无须暴露它的内部表示。 
+2. 需要为聚合对象提供多种遍历方式。 
+3. 为遍历不同的聚合结构提供一个统一的接口。
+
+**注意事项：**迭代器模式就是分离了集合对象的遍历行为，抽象出一个迭代器类来负责，这样既可以做到不暴露集合的内部结构，又可让外部代码透明地访问集合内部的数据。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
