@@ -19,3 +19,45 @@
 
 
 
+### 服务端技术
+
+- Curl
+- GoLang
+- Linux
+- Python
+- Shell
+
+### 后端技术
+
+- Javaj基础
+- 分布式中间件
+  - 缓存
+  - 搜索引擎
+  - 消息队列
+  - Dubbo
+  - Zookeeper
+- 数据库
+- 微服务
+- Devops
+- Spring系列
+- SpringCloudAlibaba
+- 开源框架
+  - 定时任务
+  - Guava
+  - Oauth2.0
+  - Redission
+- 数据结构与算法
+
+
+### 架构技术
+
+- 编码实战
+- 架构思维
+
+### 项目实战
+
+- 分布式算法
+- 服务治理
+- 功能设计
+- 项目案例
+- 项目总结
