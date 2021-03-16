@@ -1044,15 +1044,128 @@ func transactionDemo() {
 
 在项目开发中redis的使用也比较频繁，本文介绍了Go语言中`go-redis`库的基本使用。
 
+#### 4.1 Redis 前言
 
+Redis是一个开源的内存数据库，Redis提供了多种不同类型的数据结构，很多业务场景下的问题都可以很自然地映射到这些数据结构上。除此之外，通过复制、持久化和客户端分片等特性，我们可以很方便地将Redis扩展成一个能够包含数百GB数据、每秒处理上百万次请求的系统。
 
+- 缓存系统，减轻主数据库（MySQL）的压力。
+- 计数场景，比如微博、抖音中的关注数和粉丝数。
+- 热门排行榜，需要排序的场景特别适合使用ZSET（实时排行）。
+- 利用LIST可以实现队列的功能。
 
+**（1）Redis 环境准备** 
 
+- 参考：[docker 安装并启动redis](https://www.runoob.com/docker/docker-install-redis.html) 
 
+> 安装过程
 
+1. 查看可用的redis版本
 
+   - 访问 Redis 镜像库地址： https://hub.docker.com/_/redis?tab=tags。
+   - ` 用 docker search redis 命令来查看可用版本`  
 
+2. 取最新的Redis镜像
 
+   - ` docker pull redis:latest` 
+
+3. 运行容器
+
+   ```bash
+   docker run -itd --name redis-test -p 6379:6379 redis
+   ```
+
+4. 通过 redis-cli 连接测试使用 redis 服务
+
+   ```bash
+   docker exec -it redis-test /bin/bash
+   ```
+
+#### 4.2 go-redis 库
+
+**（1）安装** 
+
+区别于另一个比较常用的Go语言redis client库：[redigo](https://github.com/gomodule/redigo)，我们这里采用 go-redis 连接Redis数据库并进行操作，因为`go-redis`支持连接哨兵及集群模式的Redis。
+
+- go-redis仓库地址：https://github.com/go-redis/redis
+- redigo 仓库地址：https://github.com/gomodule/redigo 
+
+使用以下命令下载并安装:
+
+```bash
+go get -u github.com/go-redis/redis
+```
+
+**（2）go 连接 V8 新版本Redis**  
+
+ 最新版本的`go-redis`库的相关命令都需要传递`context.Context`参数，例如：
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/go-redis/redis/v8" // 注意导入的是新版本
+	"time"
+)
+
+// 申明全局变量
+var (
+	rdb *redis.Client
+)
+
+func main() {
+	V8Example()
+}
+// 连接初始化
+func initClient() (err error) {
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",  // no password set
+		DB:       8,   // use default DB
+		PoolSize: 100, // 连接池大小
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5000 * time.Second)
+	defer cancel()
+	_, err = rdb.Ping(ctx).Result()
+	return err
+}
+// 测试案例
+func V8Example() {
+	ctx := context.Background()
+	if err := initClient(); err != nil {
+		fmt.Printf("redis 连接初始化失败 err:%v\n", err)
+		return
+	}
+
+	err := rdb.Set(ctx, "key", "value", 0).Err()
+	if err != nil {
+		panic(err)
+	}
+
+	val, err := rdb.Get(ctx, "key").Result()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("key", val)
+
+	val2, err := rdb.Get(ctx, "key2").Result()
+	if err == redis.Nil {
+		fmt.Println("key2 does not exist")
+	} else if err != nil {
+		panic(err)
+	} else {
+		fmt.Println("key2", val2)
+	}
+	// Output: key value
+	// key2 does not exist
+}
+```
+
+#### 4.3 redis 基本使用
+
+**（1）set/get** 
 
 
 
