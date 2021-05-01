@@ -669,7 +669,7 @@ Linux系统是一个多用户多任务的分时操作系统，任何一个要使
    useradd –d  /home/sam -m sam         # 创建了一个用户sam，其中-d和-m选项用来为登录名sam产生一个主目录 /home/sam（/home为默认的用户主目录所在的父目录）
    
    实例 2 
-   useradd -s /bin/sh -g group –G adm,root gem   
+   useradd -s /bi n/sh -g group –G wxw   
    # 此命令新建了一个用户gem，该用户的登录Shell是 /bin/sh，它属于group用户组，同时又属于adm和root用户组，其中group用户组是其主组。
    # 这里可能新建组：#groupadd group及groupadd adm
    # 增加用户账号就是在/etc/passwd文件中为新用户增加一条记录，同时更新其他系统文件如/etc/shadow, /etc/group等。
