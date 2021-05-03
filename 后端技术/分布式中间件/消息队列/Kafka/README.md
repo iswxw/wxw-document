@@ -1,4 +1,4 @@
-## Kafka 基础
+## 消息队列之 Kafka 
 
 在大数据时代飞速发展的当下，Kafka凭借着**其高吞吐低延迟、高压缩性、持久性、可靠性、容错性以及高并发**的优势，解决了“在巨大数据下进行准确收集并分析”的难题，也受到了不少大厂以及工程师的青睐，
 
@@ -16,21 +16,19 @@
 
 - [尚硅谷—kafka 教程](https://www.bilibili.com/video/BV1a4411B7V9) 
 
-## Kafka 初识
+## 1. kafka 初识
 
-### 1. kafka 概述
-
-#### 1.1 定义
+### 1.1 kafka 概述
 
 kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（Message Queue），主要应用于大数据实时处理领域。
 
-#### 1.2 消息队列
+#### 1.1.1  消息队列
 
-##### 1.2.1  传统消息队列的应用场景
+> 传统消息队列的应用场景
 
-> **异步处理** 
+- **异步处理** 
 
-![61812031575](assets/1618120315755.png)
+![61812031575](asserts/1618120315755.png)
 
  
 
@@ -42,23 +40,23 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 - **灵活性和峰值处理能力** ： 在访问量剧增的情况下，应用任然要继续发挥作用，但这样的突发流量并不常见。如果以能处理这类峰值访问为标准来投入资源随时待命，这无疑是巨大的浪费。使用消息队列能够使关键组件顶住突发的访问压力，而不会因为突发的超负荷请求而完全崩溃。
 - **异步通信**：很多时候用户不想也不需要及时处理消息。消息队列提供了异步处理机制，允许用户把一个消息放入队列，但并不立即处理。想向队列中放入多少消息就放多少，然后在需要的时候再去处理它们。
 
-##### 1.2.2 消息队列的两种模式
+> 消息队列的两种模式
 
 - **点对点模式** （一对一，消费者主动拉取消息，消息收到后消息清除） 
 
 消息生产者生产消息发送到 Queue中，然后消息消费者从Queue中取出并且消费消息。消息被消费以后，Queue中不再存储，所以消息消费者不可能消费已经被消费的消息，Queue 支持存在多个消费者，但是对一个消息而言，只会有一个消费者可以消费。
 
-![61812161185](assets/1618121611855.png)
+![61812161185](asserts/1618121611855.png)
 
 - **发布/订阅模式** （一对多，消费者消费数据后不会清除消息）
 
 消息生产者（发布）将消息发布到 Topic中，同时有多个消息消费者（订阅）消费该消息。与点对点不同的是，发布到Topic 的消息会被所有订阅者消费。
 
-![61812157999](assets/1618121579999.png) 
+![61812157999](asserts/1618121579999.png) 
 
-#### 1.3 基础架构
+#### 1.1.2 基础架构
 
-![61812190686](assets/1618121906868.png)
+![61812190686](asserts/1618121906868.png)
 
 - **Producer** : 消息生产者，就是向 kafka broker 发送消息的客户端。
 - **Consumer** : 消息消费者，从 kafka broker 取消息的客户端。
@@ -70,13 +68,93 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 - **Leader：** 每个分区副本的 "主"，生产者发送数据的对象，以及消费者消费消息的对象都是Leader.
 - **Follower：** 每个分区多个副本的 “从节点” ，实时从Leader中同步数据，保持和Leader数据的同步。Leader发生故障时，某个Follower会成为新的Leader.
 
-### 2. kafka 快速入门
+### 1.2 kafka 快速入门
 
-#### 2.1 入门
+> 来源 CSDN：https://blog.csdn.net/qq_41893274/article/details/115562660
 
-- 具体见CSDN：https://blog.csdn.net/qq_41893274/article/details/115562660
+#### 1.2.1 docker 构建 Kafka 环境
 
-#### 2.2 kafka server-properties配置
+> 来源
+
+- Docker 搭建Kafka：https://www.cnblogs.com/toov5/p/11406325.html
+
+**（1）搭建zookeeper环境** 
+
+在centos7中，拉取zookeeper镜像，以及创建zookeeper容器:
+
+```bash
+## 拉取镜像
+docker pull zookeeper
+
+## 创建zookeeper容器
+docker run -d --name zookeeper -p 2181:2181 -t zookeeper
+```
+
+**（2）搭建kafka环境** 
+
+```bash
+## 拉去镜像
+docker pull wurstmeister/kafka
+
+## 创建kafka容器
+docker run --name kafka01 \
+-p 9092:9092 \
+-e KAFKA_BROKER_ID=0 \
+-e KAFKA_ZOOKEEPER_CONNECT=wxw.plus:2181 \
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://wxw.plus:9092 \
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 \
+-d  wurstmeister/kafka
+```
+
+**（3）创建主题** 
+
+```bash
+## 进入到容器中:
+docker exec -it kafka01 /bin/bash
+
+## 创建主题: my_log
+/opt/kafka/bin/kafka-topics.sh --create --zookeeper wxw.plus:2181 --replication-factor 1 --partitions 1 --topic my_log
+```
+
+![image-20210503201814790](asserts/image-20210503201814790.png) 
+
+**（4）搭建kafka 管理平台** 
+
+- kafka-manager 项目地址：https://github.com/yahoo/kafka-manager
+
+> kafka-manager是目前最受欢迎的kafka集群管理工具，最早由雅虎开源，用户可以在Web界面执行一些简单的集群管理操作。具体支持以下内容：
+
+- 管理多个集群
+- 轻松检查群集状态（主题，消费者，偏移，代理，副本分发，分区分发）=
+- 运行首选副本选举
+- 使用选项生成分区分配以选择要使用的代理
+- 运行分区重新分配（基于生成的分配）
+- 使用可选主题配置创建主题（0.8.1.1具有与0.8.2+不同的配置）
+- 删除主题（仅支持0.8.2+并记住在代理配置中设置delete.topic.enable = true）
+- 主题列表现在指示标记为删除的主题（仅支持0.8.2+）
+- 批量生成多个主题的分区分配，并可选择要使用的代理
+- 批量运行重新分配多个主题的分区
+- 将分区添加到现有主题
+- 更新现有主题的配置
+
+在centos7 中，执行如下命令拉取镜像，创建对应容器，以及打开防火墙：
+
+```bash
+## 拉取Kafka-manager 管理平台镜像
+docker pull sheepkiller/kafka-manager
+
+## 启动管理平台容器 ##  注意防火墙端口
+docker run -d --name kafka-manager --link zookeeper:zookeeper \
+--link kafka01:kafka01 -p 9001:9000 --restart=always \
+--env ZK_HOSTS=zookeeper:2181 \
+sheepkiller/kafka-manager
+```
+
+>  访问Kafka-manager ：http://wxw.plus:9001/
+
+<img src="asserts/image-20210503204433868.png" alt="image-20210503204433868" style="zoom:50%;" /> 
+
+#### 1.2.2 server-properties配置
 
 ```
 broker.id =0
@@ -210,11 +288,13 @@ ZooKeeper的连接超时时间
 zookeeper.sync.time.ms =2000
 ```
 
-### 3. kafka 架构深入
+## 2. kafka 核心知识
 
-#### 3.1 kafka 工作流程
 
-![61812609751](assets/1618126097515.png) 
+
+#### 4.1 kafka 工作流程
+
+![61812609751](asserts/1618126097515.png) 
 
 
 
@@ -222,9 +302,9 @@ Kafka 中消息是以 **topic** 进行分类的，生产者生产消息，消费
 
 topic 是逻辑上的概念，而partition 是物理上的概念，每个partition 对应一个log文件，该log文件中存储的就是 Producer 生产的数据，Producer 生产的数据会不断的追加到该log 文件的末端，且每条数据都有自己的offset。消费者组中的每个消费者都会实时记录自己消费到了哪个 offset,以便出错恢复时，从上次的位置继续消费。
 
-#### 3.2 kafka 文件存储机制
+#### 4.2 kafka 文件存储机制
 
-![61812652095](assets/1618126520955.png) 
+![61812652095](asserts/1618126520955.png) 
 
 由于生产者生产的消息会不断追加到log文件末尾，为防止log文件过大导致数据定位效率低下，kafka采取了**分片**和**索引**机制，将每个partition 分为多个 Segment。每个segment对应两个文件
 
@@ -236,24 +316,24 @@ topic 是逻辑上的概念，而partition 是物理上的概念，每个partiti
 - wxw_topic_callback_dev-0 中 wxw_topic_callback_dev 是topic, 0 是分区号
 - 后面的 .index 和 .log 是文件
 
-![61812827861](assets/1618128278610.png) ![61812831575](assets/1618128315752.png)   
+![61812827861](asserts/1618128278610.png) ![61812831575](asserts/1618128315752.png)   
 
 index和log 是以当前segment的第一条消息的 offset命名，下图是 index和log文件结构示意图：
 
-![61812865044](assets/1618128650447.png) 
+![61812865044](asserts/1618128650447.png) 
 
 - index 文件存储大量的索引信息，
 - .log文件存储大量的数据
 
 索引文件中的元数据指向对应数据文件中 Message 的物理偏移地址。
 
-#### 3.3 Kafka 生产者
+## 3. 遇到的问题
+
+**3.1 kafka Operation timed out**  
 
 
 
-## Kafka高级
 
-## Kafka 案例
 
 
 
