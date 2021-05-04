@@ -724,331 +724,149 @@ deployment:
 
 说明：https://ci.apache.org/projects/flink/flink-docs-stable/dev/table/sqlClient.html
 
+
+
 ## 2  Flink 核心知识
 
-### 2.1  Flink之 Data Source
+### 2.1 Flink 部署
 
-> Data Sources 是什么呢？就字面意思其实就可以知道：数据来源。
+### 2.2 Flink 运行时架构
 
-Flink 做为一款流式计算框架，它可用来做批处理，即处理静态的数据集、历史的数据集；也可以用来做流处理，即实时的处理些实时数据流，实时的产生数据流结果，只要数据源源不断的过来，Flink 就能够一直计算下去，这个 Data Sources 就是数据的来源地。
+### 2.3 Flink 流处理API
 
-Flink添加数据来源有两种方式：分别是针对 **流式处理** 和 **批处理** 任务
+#### 2.3.1 Environment
 
-- **流式处理** 添加数据源环境：` StreamExecutionEnvironment env1 = StreamExecutionEnvironment.getExecutionEnvironment();  ` 
-- **批处理** 添加数据源环境：` ExecutionEnvironment env2 = ExecutionEnvironment.getExecutionEnvironment();  ` 
+#### 2.3.2 Source
 
-Flink 已经提供了若干实现好了的 source functions，当然你也可以通过实现 SourceFunction 来自定义非并行的 source 或者实现 ParallelSourceFunction 接口或者扩展 RichParallelSourceFunction 来自定义并行的 source，
-
-#### 2.1.1 数据源处理环境
-
-> StreamExecutionEnvironment 中可以使用以下几个已实现的 stream sources：
-
-<img src="asserts/zEIHvS.jpg" alt="img" style="zoom: 33%;" /> 
-
-总的来说可以分为下面几大类：
-
-> 基于集合
-
-- fromCollection(Collection) - 从 Java 的 Java.util.Collection 创建数据流。集合中的所有元素类型必须相同。
-- fromCollection(Iterator, Class) - 从一个迭代器中创建数据流。Class 指定了该迭代器返回元素的类型。
-- fromElements(T …) - 从给定的对象序列中创建数据流。所有对象类型必须相同。
-- fromParallelCollection(SplittableIterator, Class) - 从一个迭代器中创建并行数据流。Class 指定了该迭代器返回元素的类型。
-- generateSequence(from, to) - 创建一个生成指定区间范围内的数字序列的并行数据流。
-
-> 基于文件
-
-- readTextFile(path) - 读取文本文件，即符合 TextInputFormat 规范的文件，并将其作为字符串返回。
-- readFile(fileInputFormat, path) - 根据指定的文件输入格式读取文件（一次）。
-- readFile(fileInputFormat, path, watchType, interval, pathFilter, typeInfo) - 这是上面两个方法内部调用的方法。它根据给定的 fileInputFormat 和读取路径读取文件。根据提供的 watchType，这个 source 可以定期（每隔 interval 毫秒）监测给定路径的新数据（FileProcessingMode.PROCESS_CONTINUOUSLY），或者处理一次路径对应文件的数据并退出（FileProcessingMode.PROCESS_ONCE）。你可以通过 pathFilter 进一步排除掉需要处理的文件。
-
-> 基于Socket
-
-- socketTextStream(String hostname, int port) - 从 socket 读取。元素可以用分隔符切分。
-
-总之：
-
-1. 基于集合：有界数据集，更偏向于本地测试用
-2. 基于文件：适合监听文件修改并读取其内容
-3. 基于 Socket：监听主机的 host port，从 Socket 中获取数据
-4. 自定义 addSource：大多数的场景数据都是无界的，会源源不断的过来。比如去消费 Kafka 某个 topic 上的数据，这时候就需要用到这个 addSource，可能因为用的比较多的原因吧，Flink 直接提供了 FlinkKafkaConsumer011 等类可供你直接使用。你可以去看看 FlinkKafkaConsumerBase 这个基础类，它是 Flink Kafka 消费的最根本的类。
-
-#### 2.1.2 常见的数据源
-
-![img](asserts/UTfWCZ.jpg) 
-
-#### 2.1.3  自定义 Source
-
-如果你想自己自定义自己的 Source 呢？那么你就需要去了解一下 SourceFunction 接口了，它是所有 stream source 的根接口，它继承自一个标记接口（空接口）Function。
-
-SourceFunction 定义了两个接口方法：
-
-<img src="asserts/image-20210503174748190.png" alt="image-20210503174748190" style="zoom: 33%;" /> 
-
-1. **run** ： 启动一个 source，即对接一个外部数据源然后 emit 元素形成 stream（大部分情况下会通过在该方法里运行一个 while 循环的形式来产生 stream）。
-
-2. **cancel** ： 取消一个 source，也即将 run 中的循环 emit 元素的行为终止。
-
-正常情况下，一个 SourceFunction 实现这两个接口方法就可以了。其实这两个接口方法也固定了一种实现模板。
-
-> 比如，实现一个 XXXSourceFunction，那么大致的模板是这样的：(直接拿 FLink 源码的实例给你看看)
-
-![img](asserts/URhlXT.jpg) 
-
-> 自定义 MySQL 作为数据源，用Flink 接收并处理数据
+##### 1. 从集合中读取数据
 
 ```java
-public class SourceFromMySQL extends RichSourceFunction<Student> {
-
-    PreparedStatement ps;
-    private Connection connection;
-
-    /**
-     * open() 方法中建立连接，这样不用每次 invoke 的时候都要建立连接和释放连接。
-     *
-     * @param parameters
-     * @throws Exception
-     */
-    @Override
-    public void open(Configuration parameters) throws Exception {
-        super.open(parameters);
-        connection = getConnection();
-        String sql = "select * from Student;";
-        ps = this.connection.prepareStatement(sql);
-    }
-
-    /**
-     * 程序执行完毕就可以进行，关闭连接和释放资源的动作了
-     *
-     * @throws Exception
-     */
-    @Override
-    public void close() throws Exception {
-        super.close();
-        if (connection != null) { //关闭连接和释放资源
-            connection.close();
-        }
-        if (ps != null) {
-            ps.close();
-        }
-    }
-
-    /**
-     * DataStream 调用一次 run() 方法用来获取数据
-     *
-     * @param ctx
-     * @throws Exception
-     */
-    @Override
-    public void run(SourceContext<Student> ctx) throws Exception {
-        ResultSet resultSet = ps.executeQuery();
-        while (resultSet.next()) {
-            Student student = new Student(
-                    resultSet.getInt("id"),
-                    resultSet.getString("name").trim(),
-                    resultSet.getString("password").trim(),
-                    resultSet.getInt("age"));
-            ctx.collect(student);
-        }
-    }
-
-    @Override
-    public void cancel() {
-    }
-
-    private static Connection getConnection() {
-        Connection con = null;
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection(
-              "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8", 
-              "root", "root123456");
-        } catch (Exception e) {
-            System.out.println("-----------mysql get connection has exception , msg = "
-                               + e.getMessage());
-        }
-        return con;
-    }
-}
-```
-
-具体案例：
-
-自定义 Source，基于flink从 MySQL 中读取数据:
-
-- https://github.com/GitHubWxw/wxw-bigdata/tree/dev-wxw/wxw-flink/wxw-flink-kafka
-
-### 2.2 Flink之 Data Sink
-
-> Sink 指水槽、下沉，Data sink 有点把数据存储下来（落库）的意思
-
-<img src="asserts/image-20210504120625303.png" alt="image-20210504120625303" style="zoom:50%;" /> 
-
-如上图，Source 就是数据的来源，中间的 Compute 其实就是 Flink 干的事情，可以做一系列的操作，操作完后就把计算后的数据结果 Sink 到某个地方。（可以是 MySQL、ElasticSearch、Kafka、Cassandra 等）.
-
-上面 `2.1 ` 介绍了DataSource有哪些，下面看看DataSink 有哪些。
-
-#### 2.2.1 DataSink 是什么
-
-<img src="asserts/siWsAK.jpg" alt="img" style="zoom:50%;" /> 
-
-> 图片来源：https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/connectors/
-
-- 看下源码有哪些呢？
-
-![img](asserts/F38tbg.jpg) 
-
-可以看到有 Kafka、ElasticSearch、Socket、RabbitMQ、JDBC、Cassandra POJO、File、Print 等 Sink 的方式。
-
-**（1）SinkFunction** 
-
-<img src="asserts/image-20210504121651535.png" alt="image-20210504121651535" style="zoom:25%;" /> 
-
-从上图可以看到 SinkFunction 接口有 invoke 方法，它有一个 RichSinkFunction 抽象类。
-
-上面的那些自带的 Sink 可以看到都是继承了 RichSinkFunction 抽象类，实现了其中的方法，那么我们要是自己定义自己的 Sink 的话其实也是要按照这个套路来做的。
-
-> 这里就拿个较为简单的 PrintSinkFunction 源码来说明：
-
-```java
-@PublicEvolving
-public class PrintSinkFunction<IN> extends RichSinkFunction<IN> {
-    private static final long serialVersionUID = 1L;
-    private final PrintSinkOutputWriter<IN> writer;
-
-    public PrintSinkFunction() {
-        this.writer = new PrintSinkOutputWriter(false);
-    }
-
-    public PrintSinkFunction(boolean stdErr) {
-        this.writer = new PrintSinkOutputWriter(stdErr);
-    }
-
-    public PrintSinkFunction(String sinkIdentifier, boolean stdErr) {
-        this.writer = new PrintSinkOutputWriter(sinkIdentifier, stdErr);
-    }
-
-    public void open(Configuration parameters) throws Exception {
-        super.open(parameters);
-        StreamingRuntimeContext context = (StreamingRuntimeContext)this.getRuntimeContext();
-        this.writer.open(context.getIndexOfThisSubtask(), context.getNumberOfParallelSubtasks());
-    }
-
-    public void invoke(IN record) {
-        this.writer.write(record);
-    }
-
-    public String toString() {
-        return this.writer.toString();
-    }
-}
-```
-
-可以看到它就是实现了 RichSinkFunction 抽象类，然后实现了 invoke 方法，这里 invoke 方法就是把记录打印出来了就是，没做其他的额外操作。
-
-#### 2.2.2 DataSInk 怎么用
-
-```java
-SingleOutputStreamOperator.addSink(new PrintSinkFunction<>();
-```
-
-这样就可以了，如果是其他的 Sink Function 的话需要换成对应的。使用这个 Function 其效果就是打印从 Source 过来的数据，和直接 Source.print() 效果一样。
-
-![](https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/wK45iZ.jpg) 
-
-> 图片来源：https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/wK45iZ.jpg
-
-#### 2.2.3 DataSink 自定义
-
-```java
-public class SinKToMySQL extends RichSinkFunction<Student> {
-    PreparedStatement ps;
-    private Connection connection;
-
-    /**
-     * open() 方法中建立连接，这样不用每次 invoke 的时候都要建立连接和释放连接
-     *
-     * @param parameters
-     * @throws Exception
-     */
-    @Override
-    public void open(Configuration parameters) throws Exception {
-        super.open(parameters);
-        connection = getConnection();
-        String sql = "insert into Student(id, name, password, age) values(?, ?, ?, ?);";
-        ps = this.connection.prepareStatement(sql);
-    }
-
-    @Override
-    public void close() throws Exception {
-        super.close();
-        //关闭连接和释放资源
-        if (connection != null) {
-            connection.close();
-        }
-        if (ps != null) {
-            ps.close();
-        }
-    }
-
-    /**
-     * 每条数据的插入都要调用一次 invoke() 方法
-     *
-     * @param value
-     * @param context
-     * @throws Exception
-     */
-    @Override
-    public void invoke(Student value, Context context) throws Exception {
-        //组装数据，执行插入操作
-        ps.setInt(1, value.getId());
-        ps.setString(2, value.getName());
-        ps.setString(3, value.getPassword());
-        ps.setInt(4, value.getAge());
-        ps.executeUpdate();
-    }
-
-    private static Connection getConnection() {
-        Connection con = null;
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8", "root", "root123456");
-        } catch (Exception e) {
-            System.out.println("-----------mysql get connection has exception , msg = "+ e.getMessage());
-        }
-        return con;
-    }
-}
-```
-
-这里的 source 是从 kafka 读取数据的，然后 Flink 从 Kafka 读取到数据（JSON）后用阿里 fastjson 来解析成 student 对象，然后在 addSink 中使用我们创建的 SinkToMySQL，这样就可以把数据存储到 MySQL 了。
-
-```java
-public class Main3 {
+public class Demo1Source_Collection {
     public static void main(String[] args) throws Exception {
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+        environment.setParallelism(1);
 
-        Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("zookeeper.connect", "localhost:2181");
-        props.put("group.id", "metric-group");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("auto.offset.reset", "latest");
+        //1. source 从集合中读取数据 方式一
+        DataStreamSource<SensorReading> dataStreamSource1 = environment.fromCollection(Arrays.asList(
+                new SensorReading("sensor_1", 1547718201L, 36.0),
+                new SensorReading("sensor_2", 1547718202L, 23.7),
+                new SensorReading("sensor_3", 1547718205L, 18.8)
+        ));
 
-        SingleOutputStreamOperator<Student> student = env.addSource(new FlinkKafkaConsumer011<>(
-                "student",   //这个 kafka topic 需要和上面的工具类的 topic 一致
-                new SimpleStringSchema(),
-                props)).setParallelism(1)
-                .map(string -> JSON.parseObject(string, Student.class)); //Fastjson 解析字符串成 student 对象
+        // 1. source 从集合中读取数据 方式二
+        DataStreamSource<Integer> dataStreamSource2 = environment.fromElements(1,2,12,32,34,3,4,5,6);
 
-        student.addSink(new SinkToMySQL()); //数据 sink 到 mysql
+        //打印到控制台 currentStreamName
+        dataStreamSource1.print("fromCollection");
+        // 设置并行度
+        dataStreamSource2.print("fromElements").setParallelism(1);
 
-        env.execute("Flink add sink");
+        // 执行
+        environment.execute("JobName");
     }
 }
 ```
 
-### 2.3 Flink之 Data Transformation
+> 控制台打印结果
+
+<img src="asserts/image-20210504232620845.png" alt="image-20210504232620845" style="zoom:50%;" /> 
+
+##### 2. 从文件中读取数据 
+
+- 在resource目录下新建 sensor.txt文件
+
+```txt
+"sensor_1", 1547718201L, 36.0
+"sensor_2", 1547718202L, 23.7
+"sensor_3", 1547718205L, 18.8
+```
+
+- 主程序
+
+```java
+public class Demo2Source_File {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        //1. source 从文件中读取数据 方式一
+        String filePath = "wxw-flink/wxw-flink-java/src/main/resources/file/sensor.txt";
+        DataStream<String> dataStream = environment.readTextFile(filePath);
+
+        //打印到控制台 currentStreamName 设置并行度
+        dataStream.print("readTextFile").setParallelism(1);
+
+        // 执行
+        environment.execute("JobName");
+    }
+}
+```
+
+> 控制台打印结果
+
+<img src="asserts/image-20210504234059512.png" alt="image-20210504234059512" style="zoom:50%;" /> 
+
+##### 3. 从kafka中读取数据
+
+> 从Kafka 读去数据的程序
+
+```java
+public class Demo3Source_Kafka {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+        environment.setParallelism(1);
+
+        //1. source 从kafka中读取数据 方式一
+        Properties props = new Properties();
+        props.put("bootstrap.servers","localhost:9092");
+        props.put("group.id","consumer-group");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); //key 序列化
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); //value 序列化
+        props.put("auto.offset.reset","latest");
+
+        FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>("sensor", new SimpleStringSchema(), props);
+        DataStreamSource<String> dataStreamSource = environment.addSource(flinkKafkaConsumer);
+
+        //打印到控制台 currentStreamName 设置并行度
+        dataStreamSource.print("FlinkKafkaConsumer").setParallelism(1);
+
+        // 执行
+        environment.execute("JobName");
+    }
+}
+```
+
+在docker 容器中操作操作Kafka，创建topic并发送消息：
+
+```bash
+## 0. 启动kafka
+docker run -d --name kafka \
+-p 9092:9092 \
+-e KAFKA_BROKER_ID=0 \
+-e KAFKA_ZOOKEEPER_CONNECT=wxw.plus:2181 \
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://wxw.plus:9092 \
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 wurstmeister/kafka
+
+## 1. 进入 kafka 容器
+docker exec -it ${CONTAINER ID} /bin/bash
+cd opt/kafka/bin
+## 2. 创建 topic = sensor
+./kafka-topics.sh --create --zookeeper wxw.plus:2181 --replication-factor 1 --partitions 1 --topic sensor
+## 3. 运行一个生产者，发送消息
+./kafka-console-producer.sh --broker-list wxw.plus:9092 --topic sensor
+## 4. 可以发送消息了，比如：
+```
+
+- 相关文章：https://www.cnblogs.com/angelyan/p/14445710.html
+
+> 打印结果
+
+<img src="asserts/image-20210505003456920.png" alt="image-20210505003456920" style="zoom:50%;" /> 
+
+
+
+#### 2.3.3 Transformation
 
 > Flink 程序的结构
 
@@ -1060,7 +878,7 @@ Flink 应用程序结构就是如上图所示：
 2. **Transformation**：数据转换的各种操作，有 Map / FlatMap / Filter / KeyBy / Reduce / Fold / Aggregations / Window / WindowAll / Union / Window join / Split / Select / Project 等，操作很多，可以将数据转换计算成你想要的数据。
 3. **Sink：接收器**，Flink 将转换计算后的数据发送的地点 ，你可能需要存储下来，Flink 常见的 Sink 大概有如下几类：写入文件、打印出来、写入 socket 、自定义的 sink 。自定义的 sink 常见的有 Apache kafka、RabbitMQ、MySQL、ElasticSearch、Apache Cassandra、Hadoop FileSystem 等，同理你也可以定义自己的 Sink。
 
-#### 2.3.1 Map
+##### Map
 
 > 其中输入是一个数据流，输出的也是一个数据流：
 
@@ -1092,7 +910,7 @@ SingleOutputStreamOperator<Student> map = student.map(new MapFunction<Student, S
 map.print();
 ```
 
-#### 2.3.2 FlatMap
+##### FlatMap
 
 > FlatMap 采用一条记录并输出零个，一个或多个记录。
 
@@ -1108,7 +926,7 @@ SingleOutputStreamOperator<Student> flatMap = student.flatMap(new FlatMapFunctio
 flatMap.print();
 ```
 
-#### 2.3.3 Filter 
+##### Filter 
 
 > Filter 函数根据条件判断出结果
 
@@ -1126,7 +944,7 @@ SingleOutputStreamOperator<Student> filter = student.filter(new FilterFunction<S
 filter.print();
 ```
 
-#### 2.3.4 KeyBy
+##### KeyBy
 
 > KeyBy 在逻辑上是基于 key 对流进行分区。在内部，它使用 hash 函数对流进行分区。它返回 KeyedDataStream 数据流。
 
@@ -1141,7 +959,7 @@ KeyedStream<Student, Integer> keyBy = student.keyBy(new KeySelector<Student, Int
 keyBy.print();
 ```
 
-#### 2.3.5  Reduce
+##### Reduce
 
 > Reduce 返回单个的结果值，并且 reduce 操作每处理一个元素总是创建一个新值。常用的方法有 average, sum, min, max, count，使用 reduce 方法都可实现。
 
@@ -1166,7 +984,7 @@ SingleOutputStreamOperator<Student> reduce = student.keyBy(new KeySelector<Stude
 reduce.print();
 ```
 
-#### 2.3.6 Fold
+##### Fold
 
 > Fold 通过将最后一个文件夹流与当前记录组合来推出 KeyedStream。 它会发回数据流。
 
@@ -1179,7 +997,7 @@ KeyedStream.fold("1", new FoldFunction<Integer, String>() {
 })
 ```
 
-#### 2.3.7 Aggregations
+##### Aggregations
 
 > DataStream API 支持各种聚合，例如 min，max，sum 等。 这些函数可以应用于 KeyedStream 以获得 Aggregations 聚合。
 
@@ -1198,7 +1016,7 @@ KeyedStream.maxBy("key")
 
 - max 和 maxBy 之间的区别在于 max 返回流中的最大值，但 maxBy 返回具有最大值的键， min 和 minBy 同理。
 
-#### 2.3.8 Window
+##### Window
 
 > Window 函数允许按时间或其他条件对现有 KeyedStream 进行分组。 以下是以 10 秒的时间窗口聚合：
 
@@ -1210,7 +1028,7 @@ Flink 定义数据片段以便（可能）处理无限数据流。 这些切片�
 
 要将流切片到窗口，我们可以使用 Flink 自带的窗口分配器。 我们有选项，如 tumbling windows, sliding windows, global 和 session windows。 Flink 还允许您通过扩展 WindowAssginer 类来编写自定义窗口分配器。
 
-#### 2.3.9 WindowAll
+##### WindowAll
 
 > windowAll 函数允许对常规数据流进行分组。 通常，这是非并行数据转换，因为它在非分区数据流上运行。
 
@@ -1220,7 +1038,7 @@ Flink 定义数据片段以便（可能）处理无限数据流。 这些切片�
 inputStream.keyBy(0).windowAll(Time.seconds(10));
 ```
 
-#### 1.3.10 Union
+##### Union
 
 > Union 函数将两个或多个数据流结合在一起。 这样就可以并行地组合数据流。 如果我们将一个流与自身组合，那么它会输出每个记录两次。
 
@@ -1228,7 +1046,7 @@ inputStream.keyBy(0).windowAll(Time.seconds(10));
 inputStream.union(inputStream1, inputStream2, ...);
 ```
 
-#### 1.3.11 Window join
+##### Window join
 
 > 可以通过一些 key 将同一个 window 的两个数据流 join 起来。
 
@@ -1240,7 +1058,7 @@ inputStream.join(inputStream1)
            .apply (new JoinFunction () {...});
 ```
 
-#### 1.3.12 Split
+##### Split
 
 > 根据条件将流拆分为两个或多个流。 当您获得混合流并且您可能希望单独处理每个数据流时，可以使用此方法
 
@@ -1260,7 +1078,7 @@ SplitStream<Integer> split = inputStream.split(new OutputSelector<Integer>() {
 });
 ```
 
-#### 1.3.13 Select
+##### Select
 
 > 允许您从拆分流中选择特定流
 
@@ -1271,7 +1089,7 @@ DataStream<Integer> odd = split.select("odd");
 DataStream<Integer> all = split.select("even","odd");
 ```
 
-#### 1.3.14 Project
+##### Project
 
 > Project 函数允许您从事件流中选择属性子集，并仅将所选元素发送到下一个处理流。
 
@@ -1287,258 +1105,9 @@ DataStream<Tuple2<String, String>> out = in.project(3,2);
 (2,20.0,C,D)=> (D,C)
 ```
 
-### 2.4 Flink之 Stream Windows
+### 2.4 Flink Table API 和Flink SQL
 
-目前有许多数据分析的场景从批处理到流处理的演变， 虽然可以将批处理作为流处理的特殊情况来处理，但是分析无穷集的流数据通常需要思维方式的转变并且具有其自己的术语（例如，“windowing（窗口化）”、“at-least-once（至少一次）”、“exactly-once（只有一次）” ）。
-
-对于刚刚接触流处理的人来说，这种转变和新术语可能会非常混乱。 Apache Flink 是一个为生产环境而生的流处理器，具有易于使用的 API，可以用于定义高级流分析程序。
-
-Flink 的 API 在数据流上具有非常灵活的窗口定义，使其在其他开源流处理框架中脱颖而出。在这篇文章中，我们将讨论用于流处理的窗口的概念，介绍 Flink 的内置窗口，并解释它对自定义窗口语义的支持。
-
-#### 2.4.1 什么是 Windows？
-
-下面我们结合一个现实的例子来说明。
-
-> 就拿交通传感器的示例：统计经过某红绿灯的汽车数量之和？
-
-- 假设在一个红绿灯处，我们每隔 15 秒统计一次通过此红绿灯的汽车数量，如下图，可以把汽车的经过看成一个流，无穷的流，不断有汽车经过此红绿灯，因此无法统计总共的汽车数量。但是，我们可以换一种思路，每隔 15 秒，我们都将与上一次的结果进行 sum 操作（滑动聚合），如下：
-
-  ![img](asserts/qZuFCt.jpg) 
-
-  这个结果似乎还是无法回答我们的问题，根本原因在于流是无界的，我们不能限制流，但可以在有一个有界的范围内处理无界的流数据。
-
-> 因此，我们需要换一个问题的提法：每分钟经过某红绿灯的汽车数量之和？
-
-这个问题，就相当于一个定义了一个 Window（窗口），window 的界限是1分钟，且每分钟内的数据互不干扰，因此也可以称为翻滚（不重合）窗口，如下图：
-
-![img](asserts/boZyUF.jpg) 
-
-第一分钟的数量为8，第二分钟是22，第三分钟是27。。。这样，1个小时内会有60个window。
-
-> 再考虑一种情况，每30秒统计一次过去1分钟的汽车数量之和：
-
-![img](asserts/QZ92SU.jpg) 
-
-此时，window 出现了重合。这样，1个小时内会有120个 window。
-
-扩展一下，我们可以在某个地区，收集每一个红绿灯处汽车经过的数量，然后每个红绿灯处都做一次基于1分钟的window统计，即并行处理：
-
-![img](asserts/TIAzbx.jpg) 
-
-**（1）它有什么作用？** 
-
-通常来讲，Window 就是用来对一个无限的流设置一个有限的集合，在有界的数据集上进行操作的一种机制。window 又可以分为基于时间（Time-based）的 window 以及基于数量（Count-based）的 window。
-
-- **Flink 自带的 window** 
-
-  Flink DataStream API 提供了 Time 和 Count 的 window，同时增加了基于 Session 的 window。同时，由于某些特殊的需要，DataStream API 也提供了定制化的 window 操作，供用户自定义 window。
-
-> 下面，主要介绍 Time-Based window 以及 Count-Based window，以及自定义的 window 操作
-
-**（2）Time Windows** 
-
-正如命名那样，Time Windows 根据时间来聚合流数据。例如：一分钟的 tumbling time window 收集一分钟的元素，并在一分钟过后对窗口中的所有元素应用于一个函数。
-
-在 Flink 中定义 tumbling time windows(翻滚时间窗口) 和 sliding time windows(滑动时间窗口) 非常简单：
-
-- **tumbling time windows(翻滚时间窗口)**
-
-  ```java
-  data.keyBy(1)
-  	.timeWindow(Time.minutes(1)) //tumbling time window 每分钟统计一次数量和
-  	.sum(1);
-  ```
-
-- **sliding time windows(滑动时间窗口)** 
-
-  ```java
-  data.keyBy(1)
-  	.timeWindow(Time.minutes(1), Time.seconds(30)) //sliding time window 每隔 30s 统计过去一分钟的数量和
-  	.sum(1);
-  ```
-
-> 有一点我们还没有讨论，即“收集一分钟的元素”的确切含义，它可以归结为一个问题，“流处理器如何解释时间?”
-
-Apache Flink 具有三个不同的时间概念，即 processing time, event time 和 ingestion time。
-
-**（3）Count Windows** 
-
-Apache Flink 还提供计数窗口功能。如果计数窗口设置的为 100 ，那么将会在窗口中收集 100 个事件，并在添加第 100 个元素时计算窗口的值。
-
-<img src="asserts/rRGAcK.jpg" alt="img" style="zoom: 50%;" /> 
-
-在 Flink 的 DataStream API 中，tumbling count window 和 sliding count window 的定义如下:
-
-- **tumbling count window** 
-
-  ```java
-  data.keyBy(1)
-  	.countWindow(100) //统计每 100 个元素的数量之和
-  	.sum(1);
-  ```
-
-- **sliding count window** 
-
-  ```java
-  data.keyBy(1) 
-  	.countWindow(100, 10) //每 10 个元素统计过去 100 个元素的数量之和
-  	.sum(1);
-  ```
-
-#### 2.4.2 解剖 Flink 的窗口机制
-
-Flink 的内置 time window 和 count window 已经覆盖了大多数应用场景，但是有时候也需要定制窗口逻辑，此时 Flink 的内置的 window 无法解决这些问题。为了还支持自定义 window 实现不同的逻辑，DataStream API 为其窗口机制提供了接口。
-
-下图描述了 Flink 的窗口机制，并介绍了所涉及的组件：
-
-<img src="https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/xrhwC8.jpg" alt="img" style="zoom:67%;" /> 
-
-- 到达窗口操作符的元素被传递给 WindowAssigner。WindowAssigner 将元素分配给一个或多个窗口，可能会创建新的窗口。
-  窗口本身只是元素列表的标识符，它可能提供一些可选的元信息，例如 TimeWindow 中的开始和结束时间。注意，元素可以被添加到多个窗口，这也意味着一个元素可以同时在多个窗口存在。
-
-- 每个窗口都拥有一个 Trigger(触发器)，该 Trigger(触发器) 决定何时计算和清除窗口。当先前注册的计时器超时时，将为插入窗口的每个元素调用触发器。在每个事件上，触发器都可以决定触发(即、清除(删除窗口并丢弃其内容)，或者启动并清除窗口。一个窗口可以被求值多次，并且在被清除之前一直存在。注意，在清除窗口之前，窗口将一直消耗内存。
-
-- 当 Trigger(触发器) 触发时，可以将窗口元素列表提供给可选的 Evictor，Evictor 可以遍历窗口元素列表，并可以决定从列表的开头删除首先进入窗口的一些元素。然后其余的元素被赋给一个计算函数，如果没有定义 Evictor，触发器直接将所有窗口元素交给计算函数。
-
-- 计算函数接收 Evictor 过滤后的窗口元素，并计算窗口的一个或多个元素的结果。 DataStream API 接受不同类型的计算函数，包括预定义的聚合函数，如 sum（），min（），max（），以及 ReduceFunction，FoldFunction 或 WindowFunction。
-
-这些是构成 Flink 窗口机制的组件。 接下来我们逐步演示如何使用 DataStream API 实现自定义窗口逻辑。 我们从 DataStream [IN] 类型的流开始，并使用 key 选择器函数对其分组，该函数将 key 相同类型的数据分组在一块。
-
-```java
-SingleOutputStreamOperator<xxx> data = env.addSource(...);
-data.keyBy()
-```
-
-####  2.4.3 如何自定义 Window？
-
-**（1）Window Assigner** 
-
-它负责将元素分配到不同的 window。Window API 提供了自定义的 WindowAssigner 接口，我们可以实现 WindowAssigner 的方法，同时，对于基于 Count 的 window 而言，默认采用了 GlobalWindow 的 window assigner，例如：
-
-```java
-public abstract Collection<W> assignWindows(T element, long timestamp)
-
-keyBy.window(GlobalWindows.create())
-```
-
-**（2）Trigger** 
-
-Trigger 即触发器，定义何时或什么情况下移除 window，我们可以指定触发器来覆盖 WindowAssigner 提供的默认触发器。 请注意，指定的触发器不会添加其他触发条件，但会替换当前触发器。
-
-**（3）Evictor（可选）** 
-
-驱逐者，即保留上一 window 留下的某些元素
-
-最终，通过 apply WindowFunction 来返回 DataStream 类型数据，利用 Flink 的内部窗口机制和 DataStream API 可以实现自定义的窗口逻辑，例如 session window。
-
-> 结论
-
-对于现代流处理器来说，支持连续数据流上的各种类型的窗口是必不可少的。 Apache Flink 是一个具有强大功能集的流处理器，包括一个非常灵活的机制，可以在连续数据流上构建窗口。 Flink 为常见场景提供内置的窗口运算符，以及允许用户自定义窗口逻辑。
-
-### 2.5 Flink之 时间语义
-
-> Flink 在流程序中支持不同的 **Time** 概念，就比如有 Processing Time、Event Time 和 Ingestion Time。
-
-#### 2.5.1 Processing Time
-
-Processing Time 是指事件被处理时机器的系统时间。
-
-当流程序在 Processing Time 上运行时，所有基于时间的操作(如时间窗口)将使用当时机器的系统时间。每小时 Processing Time 窗口将包括在系统时钟指示整个小时之间到达特定操作的所有事件。
-
-例如，如果应用程序在上午 9:15 开始运行，则第一个每小时 Processing Time 窗口将包括在上午 9:15 到上午 10:00 之间处理的事件，下一个窗口将包括在上午 10:00 到 11:00 之间处理的事件。
-
-Processing Time 是最简单的 “Time” 概念，不需要流和机器之间的协调，它提供了最好的性能和最低的延迟。但是，在分布式和异步的环境下，Processing Time 不能提供确定性，因为它容易受到事件到达系统的速度（例如从消息队列）、事件在系统内操作流动的速度以及中断的影响。
-
-#### 2.5.2 Event Time
-
-Event Time 是事件发生的时间，一般就是数据本身携带的时间。这个时间通常是在事件到达 Flink 之前就确定的，并且可以从每个事件中获取到事件时间戳。在 Event Time 中，时间取决于数据，而跟其他没什么关系。Event Time 程序必须指定如何生成 Event Time 水印，这是表示 Event Time 进度的机制。
-
-完美的说，无论事件什么时候到达或者其怎么排序，最后处理 Event Time 将产生完全一致和确定的结果。但是，除非事件按照已知顺序（按照事件的时间）到达，否则处理 Event Time 时将会因为要等待一些无序事件而产生一些延迟。由于只能等待一段有限的时间，因此就难以保证处理 Event Time 将产生完全一致和确定的结果。
-
-假设所有数据都已到达， Event Time 操作将按照预期运行，即使在处理无序事件、延迟事件、重新处理历史数据时也会产生正确且一致的结果。 例如，每小时事件时间窗口将包含带有落入该小时的事件时间戳的所有记录，无论它们到达的顺序如何。
-
-请注意，有时当 Event Time 程序实时处理实时数据时，它们将使用一些 Processing Time 操作，以确保它们及时进行。
-
-#### 2.5.3 Ingestion Time
-
-Ingestion Time 是事件进入 Flink 的时间。 在源操作处，每个事件将源的当前时间作为时间戳，并且基于时间的操作（如时间窗口）会利用这个时间戳。
-
-Ingestion Time 在概念上位于 Event Time 和 Processing Time 之间。 与 Processing Time 相比，它稍微贵一些，但结果更可预测。因为 Ingestion Time 使用稳定的时间戳（在源处分配一次），所以对事件的不同窗口操作将引用相同的时间戳，而在 Processing Time 中，每个窗口操作符可以将事件分配给不同的窗口（基于机器系统时间和到达延迟）。
-
-与 Event Time 相比，Ingestion Time 程序无法处理任何无序事件或延迟数据，但程序不必指定如何生成水印。
-
-在 Flink 中，，Ingestion Time 与 Event Time 非常相似，但 Ingestion Time 具有自动分配时间戳和自动生成水印功能。
-
-说了这么多概念比较干涩，下面直接看图：
-
-<img src="https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/ZjX712.jpg" alt="img" style="zoom:50%;" /> 
-
-#### 2.5.4 设定时间特性 
-
-Flink DataStream 程序的第一部分通常是设置基本时间特性。 该设置定义了数据流源的行为方式（例如：它们是否将分配时间戳），以及像 `KeyedStream.timeWindow(Time.seconds(30))` 这样的窗口操作应该使用上面哪种时间概念。
-
-以下示例显示了一个 Flink 程序，该程序在每小时时间窗口中聚合事件。
-
-```java
-final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-env.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
-
-// 其他
-// env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
-// env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-DataStream<MyEvent> stream = env.addSource(new FlinkKafkaConsumer09<MyEvent>(topic, schema, props));
-
-stream
-    .keyBy( (event) -> event.getUser() )
-    .timeWindow(Time.hours(1))
-    .reduce( (a, b) -> a.add(b) )
-    .addSink(...);
-```
-
-#### 2.5.5 Event Time 和 Watermarks
-
-注意：Flink 实现了数据流模型中的许多技术。有关 Event Time 和 Watermarks 的详细介绍，请查看以下文章：
-
-- [https://www.oreilly.com/ideas/the-world-beyond-batch-streaming-101](http://www.54tianzhisheng.cn/2018/12/11/Flink-time/)
-- [https://research.google.com/pubs/archive/43864.pdf](http://www.54tianzhisheng.cn/2018/12/11/Flink-time/)
-
-支持 Event Time 的流处理器需要一种方法来衡量 Event Time 的进度。 例如，当 Event Time 超过一小时结束时，需要通知构建每小时窗口的窗口操作符，以便操作员可以关闭正在进行的窗口。
-
-Event Time 可以独立于 Processing Time 进行。 例如，在一个程序中，操作员的当前 Event Time 可能略微落后于 Processing Time （考虑到接收事件的延迟），而两者都以相同的速度进行。另一方面，另一个流程序可能只需要几秒钟的时间就可以处理完 Kafka Topic 中数周的 Event Time 数据。
-
-Flink 中用于衡量 Event Time 进度的机制是 Watermarks。 Watermarks 作为数据流的一部分流动并带有时间戳 t。 Watermark（t）声明 Event Time 已到达该流中的时间 t，这意味着流中不应再有具有时间戳 t’<= t 的元素（即时间戳大于或等于水印的事件）
-
-下图显示了带有(逻辑)时间戳和内联水印的事件流。在本例中，事件是按顺序排列的(相对于它们的时间戳)，这意味着水印只是流中的周期性标记。
-
-<img src="https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/oVNmJS.jpg" alt="img" style="zoom:50%;" /> 
-
-Watermark 对于无序流是至关重要的，如下所示，其中事件不按时间戳排序。通常，Watermark 是一种声明，通过流中的该点，到达某个时间戳的所有事件都应该到达。一旦水印到达操作员，操作员就可以将其内部事件时间提前到水印的值。
-
-<img src="asserts/T83QKo.jpg" alt="img" style="zoom:50%;" /> 
-
-**平行流中的水印** 
-
-水印是在源函数处生成的，或直接在源函数之后生成的。源函数的每个并行子任务通常独立生成其水印。这些水印定义了特定并行源处的事件时间。
-
-当水印通过流程序时，它们会提前到达操作人员处的事件时间。当一个操作符提前它的事件时间时，它为它的后续操作符在下游生成一个新的水印。
-
-一些操作员消耗多个输入流; 例如，一个 union，或者跟随 keyBy（…）或 partition（…）函数的运算符。 这样的操作员当前事件时间是其输入流的事件时间的最小值。 由于其输入流更新其事件时间，因此操作员也是如此。
-
-下图显示了流经并行流的事件和水印的示例，以及跟踪事件时间的运算符。
-
-<img src="https://zhisheng-blog.oss-cn-hangzhou.aliyuncs.com/images/WJv5rH.jpg" alt="img" style="zoom:50%;" /> 
-
-
-
-
-
-## 3. Flink 原理
-
-
-
-## 4 SpringBoot 整合Flink
+## 7. SpringBoot 整合Flink
 
 >  前言
 

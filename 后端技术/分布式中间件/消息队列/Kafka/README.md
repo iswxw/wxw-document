@@ -74,20 +74,16 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 
 #### 1.2.1 docker 构建 Kafka 环境
 
-> 来源
-
-- Docker 搭建Kafka：https://www.cnblogs.com/toov5/p/11406325.html
-
 **（1）搭建zookeeper环境** 
 
 在centos7中，拉取zookeeper镜像，以及创建zookeeper容器:
 
 ```bash
 ## 拉取镜像
-docker pull zookeeper
+docker pull wurstmeister/zookeeper
 
 ## 创建zookeeper容器
-docker run -d --name zookeeper -p 2181:2181 -t zookeeper
+docker run -d --name zookeeper -p 2181:2181 -t wurstmeister/zookeeper
 ```
 
 **（2）搭建kafka环境** 
@@ -97,28 +93,50 @@ docker run -d --name zookeeper -p 2181:2181 -t zookeeper
 docker pull wurstmeister/kafka
 
 ## 创建kafka容器
-docker run --name kafka01 \
+docker run -d --name kafka \
 -p 9092:9092 \
 -e KAFKA_BROKER_ID=0 \
 -e KAFKA_ZOOKEEPER_CONNECT=wxw.plus:2181 \
 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://wxw.plus:9092 \
--e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 \
--d  wurstmeister/kafka
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 wurstmeister/kafka
 ```
 
 **（3）创建主题** 
 
 ```bash
-## 进入到容器中:
-docker exec -it kafka01 /bin/bash
-
-## 创建主题: my_log
-/opt/kafka/bin/kafka-topics.sh --create --zookeeper wxw.plus:2181 --replication-factor 1 --partitions 1 --topic my_log
+#进入容器
+docker exec -it ${CONTAINER ID} /bin/bash
+cd opt/bin
+#单机方式：创建一个主题
+bin/kafka-topics.sh --create --zookeeper zookeeper:2181 --replication-factor 1 --partitions 1 --topic mykafka
+#运行一个生产者
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mykafka
+#运行一个消费者
+bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --topic mykafka --from-beginning
 ```
 
 ![image-20210503201814790](asserts/image-20210503201814790.png) 
 
-**（4）搭建kafka 管理平台** 
+**（4）kafka 设置分区数量** 
+
+```bash
+#分区数量的作用：有多少分区就能负载多少个消费者，生产者会自动分配给分区数据，每个消费者只消费自己分区的数据，每个分区有自己独立的offset
+
+#进入kafka容器
+vi opt/kafka/config/server.properties
+修改run.partitions=2
+
+#退出容器
+ctrl+p+q
+
+#重启容器
+docker restart kafka
+
+#修改指定topic
+./kafka-topics.sh --zookeeper localhost:2181 --alter --partitions 3 --topic topicname
+```
+
+**（5）搭建kafka 管理平台** 
 
 - kafka-manager 项目地址：https://github.com/yahoo/kafka-manager
 
@@ -153,6 +171,10 @@ sheepkiller/kafka-manager
 >  访问Kafka-manager ：http://wxw.plus:9001/
 
 <img src="asserts/image-20210503204433868.png" alt="image-20210503204433868" style="zoom:50%;" /> 
+
+> 来源
+
+1. [Docker 搭建Kafka](https://www.cnblogs.com/angelyan/p/14445710.html ) 
 
 #### 1.2.2 server-properties配置
 
@@ -330,8 +352,6 @@ index和log 是以当前segment的第一条消息的 offset命名，下图是 in
 ## 3. 遇到的问题
 
 **3.1 kafka Operation timed out**  
-
-
 
 
 
