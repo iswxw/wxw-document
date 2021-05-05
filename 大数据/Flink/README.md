@@ -864,6 +864,71 @@ cd opt/kafka/bin
 
 <img src="asserts/image-20210505003456920.png" alt="image-20210505003456920" style="zoom:50%;" /> 
 
+##### 4. 自定义source读取数据
+
+> 以传感器在当前温度基础上随机波动为例
+
+```java
+public class Demo4Source_UserDefineFunction {
+    public static void main(String[] args) throws Exception {
+
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+        // environment.setParallelism(1);
+
+        //1. source 从自定义数据源中读取数据
+        DataStreamSource<SensorReading> dataStreamSource = environment.addSource(new MySensorSource());
+
+        //打印到控制台 currentStreamName 设置并行度
+        dataStreamSource.print("UserDefineFunction");
+
+        // 执行
+        environment.execute("JobName");
+    }
+
+    /**
+     * 实现自定义 SourceFunction
+     */
+    private static class MySensorSource implements SourceFunction<SensorReading> {
+
+        // 定义一个标识位，用来控制数据的产生
+        private boolean running = true;
+
+        @Override
+        public void run(SourceContext<SensorReading> sourceContext) throws Exception {
+            // 定义一个随机数发生器
+            Random random = new Random();
+            // 设置10个传感器初识温度
+            Map<String, Double> sensorMap = new HashMap<>();
+            for (int i = 0; i < 10; i++) {
+                sensorMap.put("sensor_" + (i + 1), 60 + random.nextGaussian() * 20);
+            }
+            while (running) {
+                for (String sensorId : sensorMap.keySet()) {
+                    // 在当前温度基础上随机波动
+                    Double newTemp = sensorMap.get(sensorId) + random.nextGaussian();
+                    sensorMap.put(sensorId, newTemp);
+                    sourceContext.collect(new SensorReading(sensorId, System.currentTimeMillis(), newTemp));
+                }
+                // 控制输出的频率 s/per
+                Thread.sleep(1000L);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            running = false;
+        }
+    }
+}
+```
+
+> 打印结果
+
+<img src="asserts/image-20210505122304367.png" alt="image-20210505122304367" style="zoom:50%;" /> 
+
+
+
 
 
 #### 2.3.3 Transformation
@@ -880,7 +945,7 @@ Flink 应用程序结构就是如上图所示：
 
 ##### Map
 
-> 其中输入是一个数据流，输出的也是一个数据流：
+> 其中输入是一个数据流，输出的也是一个数据流，比如转换属性值、类型等；
 
 ```java
 StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -946,7 +1011,11 @@ filter.print();
 
 ##### KeyBy
 
-> KeyBy 在逻辑上是基于 key 对流进行分区。在内部，它使用 hash 函数对流进行分区。它返回 KeyedDataStream 数据流。
+> KeyBy 在逻辑上将一个流拆分成不相交的分区，每个分区包含具有相同key的元素，在内部以hash的形式实现
+
+<img src="asserts/image-20210505130855130.png" alt="image-20210505130855130" style="zoom:25%;" /> 
+
+
 
 ```java
 KeyedStream<Student, Integer> keyBy = student.keyBy(new KeySelector<Student, Integer>() {
@@ -959,9 +1028,28 @@ KeyedStream<Student, Integer> keyBy = student.keyBy(new KeySelector<Student, Int
 keyBy.print();
 ```
 
+##### Aggregations 
+
+> 滚动聚合算子，DataStream API 支持各种聚合，例如 min，max，sum 等。 这些函数可以应用于 KeyedStream 以获得 Aggregations 聚合。
+
+```java
+KeyedStream.sum(0) 
+KeyedStream.sum("key") 
+KeyedStream.min(0) 
+KeyedStream.min("key") 
+KeyedStream.max(0) 
+KeyedStream.max("key") 
+KeyedStream.minBy(0) 
+KeyedStream.minBy("key") 
+KeyedStream.maxBy(0) 
+KeyedStream.maxBy("key")
+```
+
+- max 和 maxBy 之间的区别在于 max 返回流中的最大值，但 maxBy 返回具有最大值的键， min 和 minBy 同理。
+
 ##### Reduce
 
-> Reduce 返回单个的结果值，并且 reduce 操作每处理一个元素总是创建一个新值。常用的方法有 average, sum, min, max, count，使用 reduce 方法都可实现。
+> Reduce  一个分组数据的聚合操作，合并当前元素和上次聚合的结果，产生一个新值，产生的流中包含每一次聚合的结果，而不是只返回最后一次聚合的最终结果。
 
 ```java
 SingleOutputStreamOperator<Student> reduce = student.keyBy(new KeySelector<Student, Integer>() {
@@ -997,25 +1085,6 @@ KeyedStream.fold("1", new FoldFunction<Integer, String>() {
 })
 ```
 
-##### Aggregations
-
-> DataStream API 支持各种聚合，例如 min，max，sum 等。 这些函数可以应用于 KeyedStream 以获得 Aggregations 聚合。
-
-```java
-KeyedStream.sum(0) 
-KeyedStream.sum("key") 
-KeyedStream.min(0) 
-KeyedStream.min("key") 
-KeyedStream.max(0) 
-KeyedStream.max("key") 
-KeyedStream.minBy(0) 
-KeyedStream.minBy("key") 
-KeyedStream.maxBy(0) 
-KeyedStream.maxBy("key")
-```
-
-- max 和 maxBy 之间的区别在于 max 返回流中的最大值，但 maxBy 返回具有最大值的键， min 和 minBy 同理。
-
 ##### Window
 
 > Window 函数允许按时间或其他条件对现有 KeyedStream 进行分组。 以下是以 10 秒的时间窗口聚合：
@@ -1042,6 +1111,8 @@ inputStream.keyBy(0).windowAll(Time.seconds(10));
 
 > Union 函数将两个或多个数据流结合在一起。 这样就可以并行地组合数据流。 如果我们将一个流与自身组合，那么它会输出每个记录两次。
 
+<img src="asserts/image-20210505145849989.png" alt="image-20210505145849989" style="zoom:50%;" /> 
+
 ```java
 inputStream.union(inputStream1, inputStream2, ...);
 ```
@@ -1060,7 +1131,9 @@ inputStream.join(inputStream1)
 
 ##### Split
 
-> 根据条件将流拆分为两个或多个流。 当您获得混合流并且您可能希望单独处理每个数据流时，可以使用此方法
+> 根据特定条件将流拆分为两个或多个流。 当您获得混合流并且您可能希望单独处理每个数据流时，可以使用此方法**（1.13.0 已经废弃）** 
+
+<img src="asserts/image-20210505143335012.png" alt="image-20210505143335012" style="zoom:50%;" /> 
 
 ```java
 SplitStream<Integer> split = inputStream.split(new OutputSelector<Integer>() {
@@ -1080,7 +1153,9 @@ SplitStream<Integer> split = inputStream.split(new OutputSelector<Integer>() {
 
 ##### Select
 
-> 允许您从拆分流中选择特定流
+> 允许您从**Spilit** 拆分流中选择特定流
+
+<img src="asserts/image-20210505143516688.png" alt="image-20210505143516688" style="zoom:50%;" /> 
 
 ```java
 SplitStream<Integer> split;
@@ -1088,6 +1163,20 @@ DataStream<Integer> even = split.select("even");
 DataStream<Integer> odd = split.select("odd"); 
 DataStream<Integer> all = split.select("even","odd");
 ```
+
+##### Connect 和 coMap 和流
+
+> 连接两个保持它们数据类型的数据流，两个数据被connect之后，只是被放在了同一个流中，内部依然保持各自的数据类型和形式，相互独立存在。
+
+<img src="asserts/image-20210505145014715.png" alt="image-20210505145014715" style="zoom:50%;" /> 
+
+- coMap、coFlatMap
+
+  > 作用与map和flatmap一样对connectedStream中分别进行map、flatmap 统一流得倒一个新的数据流
+
+  <img src="asserts/image-20210505145448081.png" alt="image-20210505145448081" style="zoom:50%;" /> 
+
+
 
 ##### Project
 
@@ -1104,6 +1193,12 @@ DataStream<Tuple2<String, String>> out = in.project(3,2);
 (1,10.0,A,B)=> (B,A)
 (2,20.0,C,D)=> (D,C)
 ```
+
+#### 2.3.4 支持的数据类型
+
+#### 2.3.5 实现UDF函数—更细粒度控制流
+
+
 
 ### 2.4 Flink Table API 和Flink SQL
 
