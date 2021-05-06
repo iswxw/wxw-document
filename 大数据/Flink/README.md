@@ -1194,11 +1194,203 @@ DataStream<Tuple2<String, String>> out = in.project(3,2);
 (2,20.0,C,D)=> (D,C)
 ```
 
-#### 2.3.4 支持的数据类型
+#### 2.3.4 更细粒度控制流UDF
 
-#### 2.3.5 实现UDF函数—更细粒度控制流
+##### 1. 自定义函数
 
+-  基础数据类型
+-  jave和scala元组（Tuples）
 
+- 函数类（XXXFunction,比如MapFunction）——匿名函数类（Lambda表达式）
+- 富函数（RickFunction）
+
+```java
+public class Demo4Transform_MultipleStream {
+    public static void main(String[] args) throws Exception {
+
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+        environment.setParallelism(1);
+
+        // source 从文件中读取数据 方式一
+        String filePath = "wxw-flink/wxw-flink-java/src/main/resources/file/sensor.txt";
+        DataStream<String> inputStream = environment.readTextFile(filePath);
+
+        // lambada 表达式
+        DataStream<SensorReading> dataStream = inputStream.map(line -> {
+            String[] fields = line.split(",");
+            return new SensorReading(fields[0], new Long(fields[1]), new Double(fields[2]));
+        });
+
+        // 1. 分流，按照温度为30度分成两条流
+        // 2. 元组 实现自定义的 MapFunction
+        DataStream<Tuple2<String,Integer>> resultStream01 = dataStream.map(new MyMapper01());
+
+        // 3. 富函数 实现自定义 RichFunction
+        DataStream<Tuple2<String,Integer>> resultStream02 = dataStream.map(new MyMapper02());
+        
+        // 打印输出
+        resultStream01.print();
+        resultStream02.print();
+
+        // 执行起来
+        environment.execute();
+    }
+
+    /**
+     * 实现自定义的 MapFunction
+     */
+    public static class MyMapper01 implements MapFunction<SensorReading,Tuple2<String,Integer>> {
+        @Override
+        public Tuple2<String, Integer> map(SensorReading value) throws Exception {
+            return new Tuple2<>(value.getSensorId(),value.getSensorId().length());
+        }
+    }
+
+    /**
+     * 实现自定义的 RichFunction
+     */
+    public static class MyMapper02 extends RichMapFunction<SensorReading,Tuple2<String,Integer>>{
+
+        @Override
+        public Tuple2<String, Integer> map(SensorReading value) throws Exception {
+            return new Tuple2<>(value.getSensorId(),getRuntimeContext().getIndexOfThisSubtask());
+        }
+
+        /**
+         * 很多rich 富函数方法 ...
+         */
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            // 初始化工作，建立数据库连接、定义状态
+            System.out.println("open(); ");
+            super.open(parameters);
+        }
+
+        @Override
+        public void close() throws Exception {
+            // 一般是关闭连接、清空状态等收尾工作
+            System.out.println("close();");
+            super.close();
+        }
+    }
+}
+```
+
+> 运行结果
+
+<img src="asserts/image-20210506233341524.png" alt="image-20210506233341524" style="zoom:50%;" /> 
+
+##### 2. 数据重分区
+
+```java
+public class Demo5Transform_Partition {
+    public static void main(String[] args) throws Exception {
+
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+//        environment.setParallelism(1);
+
+        // source 从文件中读取数据 方式一
+        String filePath = "wxw-flink/wxw-flink-java/src/main/resources/file/sensor.txt";
+        DataStream<String> inputStream = environment.readTextFile(filePath);
+
+        // lambada 表达式
+        DataStream<SensorReading> dataStream = inputStream.map(line -> {
+            String[] fields = line.split(",");
+            return new SensorReading(fields[0], new Long(fields[1]), new Double(fields[2]));
+        });
+
+        // 0. global 全局汇总会一条流
+        DataStream<String> globalStream = inputStream.global();
+
+        // 1. shuffle 洗牌重发|| 使得均匀分布
+        DataStream<String> shuffleStream = inputStream.shuffle();
+
+        // 2. keyBy 分组
+        KeyedStream<SensorReading, String> KeyedByStream = dataStream.keyBy(SensorReading::getSensorId);
+
+        // 打印输出
+        globalStream.print("globalStream");
+        inputStream.print("inputStream");
+        shuffleStream.print("shuffleStream");
+        KeyedByStream.print("KeyedByStream");
+
+        // 执行起来
+        environment.execute();
+    } 
+}
+```
+
+> 运行结果
+
+<img src="asserts/image-20210507000139794.png" alt="image-20210507000139794" style="zoom:50%;" /> 
+
+#### 2.3.5 Sink
+
+##### 1. Sink 进入Kafka
+
+> 启动docker kafka 容器
+
+```bash
+## 启动zookeeper
+docker run -d --name zookeeper -p 2181:2181 -t wurstmeister/zookeeper
+
+## 0. 启动kafka
+docker run -d --name kafka \
+-p 9092:9092 \
+-e KAFKA_BROKER_ID=0 \
+-e KAFKA_ZOOKEEPER_CONNECT=wxw.plus:2181 \
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://wxw.plus:9092 \
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 wurstmeister/kafka
+
+## 1. 进入 kafka 容器
+docker exec -it ${CONTAINER ID} /bin/bash
+cd opt/kafka/bin
+
+## 2. 创建 topic = sensor
+./kafka-topics.sh --create --zookeeper wxw.plus:2181 --replication-factor 1 --partitions 1 --topic sensor
+
+## 3. 运行一个生产者，生产消息
+./kafka-console-producer.sh --broker-list wxw.plus:9092 --topic sensor
+
+## 4.运行一个消费者，消费消息
+./kafka-console-consumer.sh --topic topic-sink-test --from-beginning --bootstrap-server wxw.plus:9092
+```
+
+> Sink 处理消息并发送到Kafka
+
+```java
+public class Demo1Sink_Kafka {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 全局设置并行度
+        environment.setParallelism(1);
+
+        // source 从文件中读取数据 方式一
+        String filePath = "wxw-flink/wxw-flink-java/src/main/resources/file/sensor.txt";
+        DataStream<String> inputStream = environment.readTextFile(filePath);
+
+        // lambada 表达式
+        DataStream<String> dataStream = inputStream.map(line -> {
+            String[] fields = line.split(",");
+            return new SensorReading(fields[0], new Long(fields[1]), new Double(fields[2])).toString();
+        });
+
+        // sink 进入 kafka
+        // ./kafka-console-consumer.sh --topic topic-sink-test --from-beginning --bootstrap-server localhost:9092
+        dataStream.addSink(new FlinkKafkaProducer<String>(
+                        "wxw.plus:9092", "topic-sink-test", new SimpleStringSchema()));
+
+        // 执行起来
+        environment.execute();
+    }
+}
+```
+
+> 消费kafka消息，运行结果
+
+<img src="asserts/image-20210507010244461.png" alt="image-20210507010244461" style="zoom:50%;" /> 
 
 ### 2.4 Flink Table API 和Flink SQL
 
