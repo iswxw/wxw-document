@@ -176,7 +176,91 @@ sheepkiller/kafka-manager
 
 1. [Docker 搭建Kafka](https://www.cnblogs.com/angelyan/p/14445710.html ) 
 
-#### 1.2.2 server-properties配置
+#### 1.2.2 Linux 入门 Kafka 环境
+
+> 来源：http://kafka.apache.org/quickstart
+
+##### 1. 下载kafka
+
+[下载](https://www.apache.org/dyn/closer.cgi?path=/kafka/2.8.0/kafka_2.13-2.8.0.tgz) 最新的Kafka版本并解压缩：
+
+```bash
+$ tar -xzf kafka_2.13-2.8.0.tgz
+$ cd kafka_2.13-2.8.0
+```
+
+##### 2.启动kafka环境
+
+注意：您的本地环境必须安装了Java 8+。运行以下命令以正确的顺序启动所有服务
+
+```bash
+# Start the ZooKeeper service
+# Note: Soon, ZooKeeper will no longer be required by Apache Kafka.
+$ bin/zookeeper-server-start.sh config/zookeeper.properties
+```
+
+打开另一个终端会话并运行：
+
+```bash
+# Start the Kafka broker service
+$ bin/kafka-server-start.sh config/server.properties
+```
+
+成功启动所有服务后，您将运行并可以使用基本的Kafka环境。
+
+##### 3.建立主题以存储事件
+
+Kafka是一个分布式*事件流平台*，可让您跨多台计算机读取，写入，存储和处理 [*事件*](http://kafka.apache.org/documentation/#messages)（在文档中也称为*记录*或 *消息*）。
+
+因此，在编写第一个事件之前，必须创建一个主题。打开另一个终端会话并运行：
+
+```bash
+$ bin/kafka-topics.sh --create --topic quickstart-events --bootstrap-server localhost:9092
+```
+
+Kafka的所有命令行工具都有其他选项：`kafka-topics.sh`不带任何参数的命令即可显示使用情况信息。例如，它还可以向您显示 [详细信息，例如](http://kafka.apache.org/documentation/#intro_topics) 新主题[的分区数](http://kafka.apache.org/documentation/#intro_topics)：
+
+```bash
+$ bin/kafka-topics.sh --describe --topic quickstart-events --bootstrap-server localhost:9092
+Topic:quickstart-events  PartitionCount:1    ReplicationFactor:1 Configs:
+    Topic: quickstart-events Partition: 0    Leader: 0   Replicas: 0 Isr: 0
+```
+
+##### 4. 生产消息
+
+```bash
+$ bin/kafka-console-producer.sh --topic quickstart-events --bootstrap-server localhost:9092
+This is my first event
+This is my second event
+```
+
+您可以随时停止生产者客户端`Ctrl-C`。
+
+##### 5. 消费消息
+
+```bash
+$ bin/kafka-console-consumer.sh --topic quickstart-events --from-beginning --bootstrap-server localhost:9092
+This is my first event
+This is my second event
+```
+
+##### 6. 将数据作为事件流导入/导出
+
+在诸如关系数据库或传统消息传递系统之类的现有系统中，您可能拥有大量数据，以及已经使用这些系统的许多应用程序。 [通过Kafka Connect](http://kafka.apache.org/documentation/#connect)，您可以连续地[将](http://kafka.apache.org/documentation/#connect)来自外部系统的数据导入Kafka，反之亦然。因此，将现有系统与Kafka集成非常容易。为了使此过程更加容易，有数百种此类连接器可供使用。
+
+##### 7. Kafka Stream 处理事件
+
+一旦将数据作为事件存储在Kafka中，就可以使用Java / Scala的[Kafka Streams](http://kafka.apache.org/documentation/streams)客户端库处理数据 。它允许您实现关键任务实时应用程序和微服务，其中输入和/或输出数据存储在Kafka主题中。Kafka Streams结合了在客户端编写和部署标准Java和Scala应用程序的简便性以及Kafka服务器端集群技术的优势，使这些应用程序具有高度可伸缩性，弹性，容错性和分布式性。该库支持一次处理，有状态操作和聚合，开窗，联接，基于事件时间的处理等等。
+
+##### 8，脏数据回收
+
+如果您还想删除本地Kafka环境的任何数据，包括您在此过程中创建的所有事件，请运行以下命令：
+
+```bash
+$ rm -rf /tmp/kafka-logs /tmp/zookeeper
+```
+
+#### 1.2.3 server-properties配置
 
 ```
 broker.id =0
