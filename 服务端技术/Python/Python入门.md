@@ -221,7 +221,7 @@ Python 经常被用于 Web 开发，尽管目前 [PHP](http://c.biancheng.net/ph
 很多游戏使用 [C++](http://c.biancheng.net/cplus/) 编写图形显示等高性能模块，而使用 Python 或 Lua 编写游戏的逻辑。和 Python 相比，Lua 的功能更简单，体积更小；而 Python 则支持更多的特性和数据类型。
 
 除此之外，Python 可以直接调用 Open GL 实现 3D 绘制，这是高性能游戏引擎的技术基础。事实上，有很多 Python 语言实现的游戏引擎，例如 Pygame、Pyglet 以及 Cocos 2d 等。
- 
+
 
 以上也仅是介绍了 Python 应用领域的“冰山一角”，例如，还可以利用 Pygame  进行游戏编程；用 PIL 和其他的一些工具进行图像处理；用 PyRo 工具包进行机器人控制编程，等等。有兴趣的读者，可自行搜索资料进行详细了解。
 
@@ -333,6 +333,17 @@ Traceback (most recent call last):
   File "<pyshell#1>", line 1, in <module>
     print("Hello World!")
 TypeError: 'str' object is not callable
+```
+
+## Python 快速入门
+
+### 1. 前言
+
+```python
+python3                   ## 查看是否安装成功。
+pip3 install [扩展包名称]   ## 下载python的一些扩展包
+pip3 install ipython      ## 自动安装python扩展包
+pip3  list                ## 查看当前python环境中安装了哪些扩展包】
 ```
 
 ## Python 基础语法

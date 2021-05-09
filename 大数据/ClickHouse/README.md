@@ -420,6 +420,61 @@ ALTER TABLE table_name RENAME COLUMN column_name TO new_column_name
 
 
 
+### 4. clickhouse最佳实践
+
+#### 4.1 在阿里广告实时圈人场景中最佳实践
+
+> 来源：https://www.bilibili.com/video/BV1pX4y15758
+
+<img src="asserts/image-20210509161159003.png" alt="image-20210509161159003" style="zoom:59%;" /> 
+
+<img src="asserts/image-20210509154717674.png" alt="image-20210509154717674" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509154746648.png" alt="image-20210509154746648" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509155118832.png" alt="image-20210509155118832" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509155430983.png" alt="image-20210509155430983" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509155544480.png" alt="image-20210509155544480" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509155844305.png" alt="image-20210509155844305" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509155931676.png" alt="image-20210509155931676" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509160814722.png" alt="image-20210509160814722" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509161310282.png" alt="image-20210509161310282" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509162641585.png" alt="image-20210509162641585" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509162843163.png" alt="image-20210509162843163" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509163127276.png" alt="image-20210509163127276" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509163216532.png" alt="image-20210509163216532" style="zoom:50%;" /> 
+
+<img src="asserts/image-20210509163805230.png" alt="image-20210509163805230" style="zoom:50%;" /> 
+
+
+
+
+
+### 5.生产环境
+
+#### 5.1 上生产环境需要考虑的问题
+
+- 目前公司数据量多大，未来增长会如何？ClickHouse生产部署，机器容量配置，多少分片多少副本。需考虑未来三年的数据增长
+- 数据写入是写入本地表还是分布式表
+- ClickHouse是否支持所有业务，需对现有业务整理统一分析
+- 表引擎如何选择
+- 数据库引擎如何选择
+- 分区如何选择
+- 表主键、索引如何选择
+- 数据如何迁移
+- ClickHouse不擅长行级删除，行级搜索，是否有业务需要，如何
+  
+
 ### 常见问题
 
 **1.clickhouse入库操作时，报错SQLFeatureNotSupportedException,InvalidDataAccessApiUsageException** 

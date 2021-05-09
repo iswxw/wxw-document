@@ -4,7 +4,13 @@
 
 ### 1. Docker 初识
 
+> 官方资料：
+
+- https://docs.docker.com/compose/reference/
+
 #### 1.1 Docker 环境准备
+
+##### 1.1.1 centos 安装Docker
 
 > ` CSDN ` : https://blog.csdn.net/qq_41893274/article/details/107094598
 
@@ -44,6 +50,10 @@
    ## 如果centos7安装docker显示 No package docker available 原因是yum没有找到docker的包，需要epel第三方软件库，运行下面的命令
    yum install epel-release
    ```
+
+##### 1.1.2 mac 安装Docker
+
+- 菜鸟教程：https://www.runoob.com/docker/macos-docker-install.html
 
 #### 1.2 启动并运行Docker
 
