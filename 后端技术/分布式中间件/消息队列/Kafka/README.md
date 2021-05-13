@@ -433,9 +433,7 @@ index和log 是以当前segment的第一条消息的 offset命名，下图是 in
 
 索引文件中的元数据指向对应数据文件中 Message 的物理偏移地址。
 
-## 3. 遇到的问题
-
-**3.1 kafka Operation timed out**  
+## 3. kafka 开发手册
 
 
 

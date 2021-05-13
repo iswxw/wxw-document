@@ -1,8 +1,8 @@
-### Docker 技术
+## Docker 技术
 
 
 
-### 1. Docker 初识
+## 1. Docker 初识
 
 > 官方资料：
 
@@ -84,19 +84,67 @@ sudo systemctl restart docker
 
 
 
-### 2. Docker 语法
+## 2. Docker 语法
 
 > Docker 语法概览
 
 ![image](asserts/1615455058457-12a21be5-14bd-4f5c-a377-70c4d29a4796.png)
 
+## 3. Docker 环境
+
+### 3.1 Docker安装My SQL
+
+#### 1. 准备环境
+
+> 资料来源：https://www.runoob.com/docker/docker-install-mysql.html
+
+- 搜索mysql镜像仓库,查看可用镜像
+
+  ```bash
+  docker search mysql
+  ```
+
+- 拉取镜像到本地
+
+  ```bash
+  docker pull mysql
+  ```
+
+- 查看并验证拉取的本地镜像
+
+  ```bash
+  docker images
+  ```
+
+- 通过镜像启动容器
+
+  ```bash
+  docker run -itd --name mysql-instance -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+  
+  参数说明：
+     -p 3306:3306 ：映射容器服务的 3306 端口到宿主机的 3306 端口，外部主机可以直接通过 宿主机ip:3306 访问到 MySQL 的服务。
+     MYSQL_ROOT_PASSWORD=123456：设置 MySQL 服务 root 用户的密码。
+  ```
+
+-  查看正在运行的容器
+
+  ```bash
+  docker ps
+  ```
+
+> 控制台演示
+
+<img src="asserts/image-20210513113604742.png" alt="image-20210513113604742" style="zoom:67%;" />  
+
+- 本机可以通过 root 和密码 123456 访问 MySQL 服务。
 
 
-### 3. Docker 底层
+
+## 4. Docker 底层
 
 
 
-### 4. Docker 原理 
+## 5. Docker 原理 
 
 
 
