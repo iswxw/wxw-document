@@ -138,6 +138,50 @@ sudo systemctl restart docker
 
 - 本机可以通过 root 和密码 123456 访问 MySQL 服务。
 
+### 3.2 Docker 安装Ubuntu
+
+#### 1. 准备环境
+
+> 资料来源：https://www.runoob.com/docker/docker-install-ubuntu.html
+
+```bash
+## 拉取最新镜像
+docker pull ubuntu
+
+## 查看本地镜像
+docker images
+
+## 运行容器
+docker run -itd --name ubuntu-test ubuntu
+
+## 通过 exec 命令进入 ubuntu 容器
+docker exec -it ubuntu-test /bin/bash
+
+## 查看容器的运行信息
+docker ps
+```
+
+### 3.3 Docker安装IOS
+
+#### 1. 相关资料
+
+- docker容器：https://hub.docker.com/r/sickcodes/docker-osx
+
+```bash
+## 拉取镜像
+docker pull sickcodes/docker-osx
+
+## 启动容器
+docker run -it \
+    --device /dev/kvm \
+    -p 50922:10022 \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -e "DISPLAY=${DISPLAY:-:0.0}" \
+    sickcodes/docker-osx:latest
+```
+
+
+
 
 
 ## 4. Docker 底层
