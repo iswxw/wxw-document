@@ -34,7 +34,7 @@ yandex/clickhouse-server:latest
 docker run -d --name clickhouse-test-server --ulimit nofile=262144:262144 --volume=/spps/clickhouse/clickhouse-test-db:/var/lib/clickhouse yandex/clickhouse-server
 ```
 
-**1.1.3 启动 client 并连接 clickhouse-server** 
+**1.1.3 启动 client 并连接 clickhouse-client** 
 
 >  docker启动clickhouse-client
 
