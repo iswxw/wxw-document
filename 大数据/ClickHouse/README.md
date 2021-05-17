@@ -561,12 +561,36 @@ SHOW DICTIONARIES [FROM <db>] [LIKE '<pattern>'] [LIMIT <N>] [INTO OUTFILE <file
 
 相关官方文档 [SHOW Queries](https://clickhouse.tech/docs/en/query_language/show/)。
 
-##### 2.4.1 查看表的元数据信息
+##### 2.4.2 查看表的元数据信息
 
 ```sql
 ## 查看表元数据信息
 DESC|DESCRIBE TABLE [db.]table [INTO OUTFILE filename] [FORMAT format]
 ```
+
+##### 2.4.3  Array 语句
+
+- 数组类型 ` Array(T)  ` 是强数据类型（只能放一种数据类型）
+
+```sql
+select array('a1','a2');
+```
+
+
+
+- 案例一 ：查看数据
+
+<img src="asserts/image-20210518001523527.png" alt="image-20210518001523527" style="zoom:50%;" /> 
+
+-  案例二：查看array中的元素‘
+
+<img src="asserts/image-20210518003054176.png" alt="image-20210518003054176" style="zoom:50%;" /> 
+
+- 案例三：数据拼接
+
+<img src="asserts/image-20210518003241454.png" alt="image-20210518003241454" style="zoom:50%;" /> 
+
+相关官方文档 [array-join](https://clickhouse.tech/docs/zh/sql-reference/statements/select/array-join/) 
 
 #### 2.5 批量写入
 
