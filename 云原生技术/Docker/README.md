@@ -166,6 +166,8 @@ docker ps
 #### 1. 相关资料
 
 - docker容器：https://hub.docker.com/r/sickcodes/docker-osx
+- github资源
+  - https://github.com/ipwnosx/Docker-OSX
 
 ```bash
 ## 拉取镜像

@@ -351,6 +351,20 @@ INSERT INTO wxw.hits_replica SELECT * FROM wxw.hits_local;
 
 复制在多主机模式下运行。数据可以加载到任何副本中，然后系统自动将其与其他实例同步。复制是异步的，因此在给定时刻，并非所有副本都可能包含最近插入的数据。至少应该有一个副本允许数据摄入。另一些则会在重新激活后同步数据并修复一致性。请注意，这种方法允许最近插入的数据丢失的可能性很低。
 
+#### 1.3 ClickHouse 特性
+
+##### 1.3.1 clickhouse为什么快
+
+- C写的，可以基于C++可以利用硬件优势
+- 摒弃了hadoop生态
+- 数据底层以列式数据存储
+- 列用单节点的多核并行处理
+- 为数据建立一级、二级 稀疏索引
+- 使用大量的算法处理数据
+- 支持向量化处理 
+- 预先设计运算模型，预先计算
+- 分布式处理数据
+
 ### 2.ClickHouse SQL语法
 
 > 来源：https://clickhouse.tech/docs/zh/sql-reference/syntax/
@@ -358,6 +372,8 @@ INSERT INTO wxw.hits_replica SELECT * FROM wxw.hits_local;
 #### 2.1 SQL 数据类型
 
 ClickHouse 支持整数、浮点数、字符型、日期、枚举值和数组等多种数据类型。
+
+<img src="asserts/image-20210517224707855.png" alt="image-20210517224707855" style="zoom:50%;" /> 
 
 类型列表
 
@@ -497,6 +513,10 @@ ENGINE = Distributed(default_cluster, test, datagen, id);
 ```
 
 > 出自：https://cloud.tencent.com/document/product/849/53389
+
+##### 2.3.3 建表注意事项
+
+- 建索引的正确方式，开始字段不应该是区分度很高的字段，如果是唯一的，那么索引效果非常差，也不能找区分度特别差的，应该找区分度中等，这就涉及到你的setting的值，如果比较大，可以找区分度稍差的列，如果比较小，找区分度稍大的列作为索引
 
 #### 2.4 查询
 
@@ -727,6 +747,8 @@ ClickHouse 函数有两种类型：常规函数和聚合函数，区别是常规
 
 1. [ClickHouse SQL 语法](https://cloud.tencent.com/document/product/589/43506)  [腾讯云] 
 
+
+
 ### 3. SpringBoot引入ClickHouse
 
 #### 3.1 ClickHouse JDBC驱动
@@ -800,6 +822,137 @@ ClickHouse 函数有两种类型：常规函数和聚合函数，区别是常规
 - 表主键、索引如何选择
 - 数据如何迁移
 - ClickHouse不擅长行级删除，行级搜索，是否有业务需要，如何
+
+#### 5.2 Click House索引
+
+##### 5.2.1 主键索引
+
+primary.idx是表的主键索引。ClickHouse对主键索引的定义和传统数据库的定义稍有不同，它的主键索引没用主键去重的含义，但仍然有快速查找主键行的能力。ClickHouse的主键索引存储的是每一个Granule中起始行的主键值，而MergeTree存储中的数据是按照主键严格排序的。所以当查询给定主键条件时，我们可以根据主键索引确定数据可能存在的 ，再结合上面介绍的Mark标识，我们可以进一步确定数据在列存文件中的位置区间。ClickHoue的主键索引是一种在索引构建成本和索引效率上相对平衡的粗糙索引。MergeTree的主键序列默认是和Order By序列保存一致的，但是用户可以把主键序列定义成Order By序列的部分前缀。
+
+##### 5.2.2 分区键索引
+
+minmax_time.idx、minmax_region_name.idx是表的分区键索引。MergeTree存储会把统计每个Data Part中分区键的最大值和最小值，当用户查询中包含分区键条件时，就可以直接排除掉不相关的Data Part，这是一种OLAP场景下常用的分区裁剪技术。
+
+#### 5.3 clickhouse 慢SQL优化
+
+> 思路
+
+- 分区，原则是尽量把经常一起用到的数据放到相同区（也可以根据where条件来分区），如果一个区太大再放到多个区
+- 主键（索引，即排序）order by字段选择： 就是把where 里面肯定有的字段加到里面，where 中一定有的字段放到第一位，注意字段的区分度适中即可 区分度太大太小都不好，因为ck的索引时稀疏索引，采用的是按照固定的粒度抽样作为实际的索引值，不是mysql的二叉树，所以不建议使用区分度特别高的字段。
+
+**温馨提醒**  
+
+- 索引结构是稀疏索引 不要拿mysql的二叉树来类比
+- 建索引的正确方式，开始字段不应该是区分度很高的字段，如果是唯一的，那么索引效果非常差，也不能找区分度特别差的，应该找区分度中等，这就涉及到你的setting的值，如果比较大，可以找区分度稍差的列，如果比较小，找区分度稍大的列作为索引
+
+**案例分析** 
+
+- boss_info表大概是1500万条数据，20个G数据量
+
+> 表一
+
+```sql
+CREATE TABLE bi.boss_info ( 
+row_id String,  user_id Int32,  user_name String,  gender String,  title String,  is_hr String,  certification String,  user_status String,  user_extra_status String,  completion String,  lure_content String,  email String,  brand_id Int32,  company_name String,  com_id Int32,  company_full_name String,  website String,  address String,  brand_completion String,  brand_certify String,  industry String,  scale String,  stage String,  add_time String,  com_description String,  com_date8 String,  active_time String,  unactive_days Int32,  job_title String,  l1_name String,  l2_name String,  l3_name String,  city String,  low_salary Int32,  high_salary Int32,  degree String,  exp_description String,  work_years String,  job_address String,  job_province String,  job_city String,  job_area String,  job_status String,  job_num Int32,  online_props_buy String,  all_item_num Int32,  all_income String,  online_vip_buy String,  online_vip_time String,  online_super_vip_buy String,  online_super_vip_time String,  offline_props_distribute String,  offline_props_time String,  offline_vip_distribute String,  offline_vip_time String,  pay_now String,  data_dt Date)
+ENGINE = MergeTree() 
+PARTITION BY data_dt 
+ORDER BY (industry, l1_name, l2_name, l3_name, job_city, job_area, row_id) SETTINGS index_granularity = 8192
+```
+
+> 表二
+
+```sql
+CREATE TABLE bi.boss_info2 ( row_id String,  user_id Int32,  user_name String,  gender String,  title String,  is_hr String,  certification String,  user_status String,  user_extra_status String,  completion String,  lure_content String,  email String,  brand_id Int32,  company_name String,  com_id Int32,  company_full_name String,  website String,  address String,  brand_completion String,  brand_certify String,  industry String,  scale String,  stage String,  add_time String,  com_description String,  com_date8 String,  active_time String,  unactive_days Int32,  job_title String,  l1_name String,  l2_name String,  l3_name String,  city String,  low_salary Int32,  high_salary Int32,  degree String,  exp_description String,  work_years String,  job_address String,  job_province String,  job_city String,  job_area String,  job_status String,  job_num Int32,  online_props_buy String,  all_item_num Int32,  all_income String,  online_vip_buy String,  online_vip_time String,  online_super_vip_buy String,  online_super_vip_time String,  offline_props_distribute String,  offline_props_time String,  offline_vip_distribute String,  offline_vip_time String,  pay_now String,  data_dt Date) 
+ENGINE = MergeTree() 
+PARTITION BY data_dt 
+ORDER BY (industry, l1_name, l2_name, l3_name, job_city, job_area) SETTINGS index_granularity = 16384
+```
+
+**建表语句区别：boss_info和boss_info2的区别是去掉了索引中的row_id** 
+
+- 现象一：
+
+```sql
+sql1：select row_id from boss_info order by row_id desc limit 3;   ----耗时较大
+结果中第一条是：999997-1
+3 rows in set. Elapsed: 0.342 sec. Processed 14.62 million rows, 279.07 MB (42.71 million rows/s., 815.10 MB/s.) 
+
+sql2：select row_id from boss_info2 order by row_id desc limit 3;
+3 rows in set. Elapsed: 0.061 sec. Processed 14.62 million rows, 279.07 MB (240.21 million rows/s., 4.58 GB/s.) 
+
+sql3：select  * from boss_info where row_id ='999998-1';----耗时较大,时间不太稳定，再次测平均是4-6s
+1 rows in set. Elapsed: 20.228 sec. Processed 13.16 million rows, 24.10 GB (650.83 thousand rows/s., 1.19 GB/s.) 
+
+sql4：select  * from boss_info2 where row_id ='999997-1';
+1 rows in set. Elapsed: 2.195 sec. Processed 14.62 million rows, 279.08 MB (6.66 million rows/s., 127.16 MB/s.) 
+
+sql5：select row_id from boss_info order by row_id asc limit 3;
+结果中第一条是：1000010-1
+3 rows in set. Elapsed: 0.058 sec. Processed 14.62 million rows, 279.07 MB (251.10 million rows/s., 4.79 GB/s.) 
+
+sql6：select row_id from boss_info2 order by row_id asc limit 3;
+3 rows in set. Elapsed: 0.061 sec. Processed 14.62 million rows, 279.07 MB (240.11 million rows/s., 4.58 GB/s.) 
+
+sql7：select  * from boss_info where row_id ='1000010-1';
+1 rows in set. Elapsed: 4.003 sec. Processed 13.16 million rows, 24.10 GB (3.29 million rows/s., 6.02 GB/s.) 
+
+sql8：select  * from boss_info2 where row_id ='1000010-1';
+1 rows in set. Elapsed: 2.711 sec. Processed 14.62 million rows, 279.07 MB (5.39 million rows/s., 102.95 MB/s.) 
+
+sql9：select count(*) from boss_info;  结果：14622978 
+
+上面所有的sql都是进行了全表扫描.都是扫描了1500万的数据
+
+sql10：select  * from boss_info where industry='咨询' and row_id ='999997-1';
+1 rows in set. Elapsed: 0.172 sec. Processed 147.64 thousand rows, 24.10 65B (859.30 thousand rows/s., 1.54 GB/s.) 
+这句sql没有进行全表扫描，仅仅扫描了15万左右
+
+sql11：select * from boss_info where l1_name='技术' and row_id ='999997-1';
+1 rows in set. Elapsed: 1.728 sec. Processed 4.76 million rows, 8.46 GB (2.75 million rows/s., 4.89 GB/s.) 
+
+sql12：select  * from boss_info where l3_name='C++' and row_id ='999997-1';
+1 rows in set. Elapsed: 3.073 sec. Processed 10.06 million rows, 18.03 GB (3.27 million rows/s., 5.87 GB/s.) 
+
+select industry, l1_name, l2_name, l3_name, job_city, job_area, row_id from boss_info order by  row_id desc limit 3 ;
+3 rows in set. Elapsed: 0.264 sec. Processed 14.62 million rows, 1.91 GB (55.45 million rows/s., 7.24 GB/s.) 
+
+select * from boss_info order by  row_id desc limit 3 ;
+3 rows in set. Elapsed: 3.299 sec. Processed 14.62 million rows, 25.51 GB (4.43 million rows/s., 7.73 GB/s.) 
+
+select  * from boss_info where row_id ='999988-9';
+```
+
+先说ck的索引结构：
+
+- 典型的**稀疏索引**，即ck中数据的存储会按照order by的字段顺序存储，同时会根据你设置的setting（即索引粒度）来抽样数据，数据内容就是order by字段对应的真实值；
+
+**问题：** 
+
+1. 为什么sql10索引生效，sql1和sql3中的row_id索引都没有生效，甚至拉慢了查询效率
+   - 索引结构问题，ck是稀疏索引，sql10中industry刚好是索引的第一部分，所以索引生效直接定位范围区间；但是sql1和sql3中row_id是索引的最后一部分，定位到的返回就会是全表范围，所以真正取值时要进行全表扫描。
+   - 拉慢查询效率原因：
+     首先会扫描所有的索引来定位取值范围，但是定位到的取值范围就是全表，所以此步完全是多做的然后会进行全表扫描
+2. sql3和sql4同是全表扫描，为什么sql3扫描数据量24GB，而sql4只有279M，导致sql3慢了10倍
+   - 数据量近百倍差距--->row_id在索引中是一定加载了所有字段，不在索引中仅仅扫描了row_id字段
+   - row_id是索引一部分的时候 因为用row_id定位的区间是全部（稀疏和在索引末尾部分导致），所以全部字段加载到内存，再找符合row_id条件的记录？没有索引的时候就先用row_id匹配，仅仅读取row_id列，然仅仅加载row_id所在的一个粒度区间所有内容
+3. sql1和sql2相比，为何sql1用了索引反而慢了5倍，为何sql1比sql2的处理速度要快
+   - 可以参考问题一，先走了索引，但实际白走
+
+相关资料
+
+1. [clickhouse 稀疏索引](https://my.oschina.net/u/2000675/blog/4655098) 
+2. [clickhouse的索引结构和查询优化](https://blog.csdn.net/h2604396739/article/details/86172756) 
+
+#### 5.4 引擎
+
+clickhouse是一个完全的分布式列式存储数据库
+
+**引擎的作用：** 
+
+- 决定数据存储的位置
+- 决定数据组织结构
+- 决定是否分块、是否索引、是否持久化、是否可以支持并发读写、是否支持副本、是否支持索引
+- 是否支持分布式
 
 ### 6. 常见问题
 
