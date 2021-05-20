@@ -206,164 +206,214 @@ desc [TableName]  --- 查看表结构
 
   ![image-20210430114853861](asserts/image-20210430114853861.png) 
 
-##### **1.2.2 ClickHouse 集群部署** 
+##### **1.2.2 ClickHouse 更新和删除**  
 
-ClickHouse集群是一个同质集群。 设置步骤:
+- **更新方式一：** 直接使用sql 更新
 
-1. 在群集的所有机器上安装ClickHouse服务端
-2. 在配置文件中设置群集配置
-3. 在每个实例上创建本地表
-4. 创建一个[分布式表](https://clickhouse.tech/docs/zh/engines/table-engines/special/distributed/) 
-
-[分布式表](https://clickhouse.tech/docs/zh/engines/table-engines/special/distributed/)实际上是一种`view`，映射到ClickHouse集群的本地表。 从分布式表中执行**SELECT**查询会使用集群所有分片的资源。 您可以为多个集群指定configs，并创建多个分布式表，为不同的集群提供视图。
-
-具有三个分片，每个分片一个副本的集群的示例配置:
-
-```xml
-<remote_servers>
-    <perftest_3shards_1replicas>
-        <shard>
-            <replica>
-                <host>example-perftest01j.yandex.ru</host>
-                <port>9000</port>
-            </replica>
-        </shard>
-        <shard>
-            <replica>
-                <host>example-perftest02j.yandex.ru</host>
-                <port>9000</port>
-            </replica>
-        </shard>
-        <shard>
-            <replica>
-                <host>example-perftest03j.yandex.ru</host>
-                <port>9000</port>
-            </replica>
-        </shard>
-    </perftest_3shards_1replicas>
-</remote_servers>
-```
-
-为了进一步演示，让我们使用和创建`hits_v1`表相同的`CREATE TABLE`语句创建一个新的本地表，但表名不同:
+按照官方的说明，update/delete 的使用场景是一次更新大量数据，也就是where条件筛选的结果应该是一大片数据。
 
 ```sql
-CREATE TABLE wxw.hits_local (...) ENGINE = MergeTree() ...
+-- 一次更新一天的数据。
+alter table test update status=1 where status=0 and day='2020-04-01'，
+
+-- 能否一次只更新一条数据呢？
+alter table test update pv=110 where id=100
 ```
 
-创建提供集群本地表视图的分布式表:
+频繁的这种操作，可能会对服务造成压力。这很容易理解，如上文提到：
+
+- 更新的单位是分区，如果只更新一条数据，那么需要重建一个分区；
+- 如果更新100条数据，而这100条可能落在3个分区上，则需重建3个分区；
+
+相对来说一次更新一批数据的整体效率远高于一次更新一行。
+
+- **更新方式二：** 使用`ReplacingMergeTree`引擎来变相更新
+
+这个更新的缺点是：
+
+- 只会合并同一个分区的相同主键数据
+- 写入新数据覆盖更新时，不会马上执行（需要在后台排队），需要强制进行分区合并后才可以看到更新后的结果
 
 ```sql
-CREATE TABLE wxw.hits_all AS wxw.hits_local
-ENGINE = Distributed(perftest_3shards_1replicas, wxw, hits_local, rand());
+-- 在上述表中插入数据
+insert into replac_merge_test values ('A000', 'code1', now()),('A000', 'code1', '2020-07-28 21:30:00'), ('A001', 'code1', now()), ('A001', 'code2', '2020-07-28 21:30:00'), ('A0002', 'code2', now());
+
+-- 查询当前数据
+select * from replac_merge_test;
+┌─id────┬─code──┬─────────create_time─┐
+│ A000  │ code1 │ 2020-07-28 21:23:48 │
+│ A000  │ code1 │ 2020-07-28 21:30:00 │
+│ A0002 │ code2 │ 2020-07-28 21:23:48 │
+│ A001  │ code1 │ 2020-07-28 21:23:48 │
+│ A001  │ code2 │ 2020-07-28 21:30:00 │
+└───────┴───────┴─────────────────────┘
+
+-- 强制进行分区合并
+optimize table replac_merge_test FINAL;
+
+-- 再次查询数据
+select * from replac_merge_test;
+┌─id────┬─code──┬─────────create_time─┐
+│ A000  │ code1 │ 2020-07-28 21:30:00 │
+│ A0002 │ code2 │ 2020-07-28 21:23:48 │
+│ A001  │ code1 │ 2020-07-28 21:23:48 │
+│ A001  │ code2 │ 2020-07-28 21:30:00 │
+└───────┴───────┴─────────────────────┘
 ```
 
-常见的做法是在集群的所有计算机上创建类似的分布式表。 它允许在群集的任何计算机上运行分布式查询。 还有一个替代选项可以使用以下方法为给定的SELECT查询创建临时分布式表[远程](https://clickhouse.tech/docs/zh/sql-reference/table-functions/remote/)表功能。
+相关资料：
 
-让我们运行[INSERT SELECT](https://clickhouse.tech/docs/zh/sql-reference/statements/insert-into/)将该表传播到多个服务器。
-
-```sql
-INSERT INTO wxw.hits_all SELECT * FROM wxw.hits_v1;
-```
-
-```
-注意：这种方法不适合大型表的分片。 有一个单独的工具 clickhouse-copier 这可以重新分片任意大表。
-```
-
-正如您所期望的那样，如果计算量大的查询使用3台服务器而不是一个，则运行速度快N倍。
-
-在这种情况下，我们使用了具有3个分片的集群，每个分片都包含一个副本。
-
-为了在生产环境中提供弹性，我们建议每个分片应包含分布在多个可用区或数据中心（或至少机架）之间的2-3个副本。 请注意，ClickHouse支持无限数量的副本。
-
-包含三个副本的一个分片集群的示例配置:
-
-```xml
-<remote_servers>
-    ...
-    <perftest_1shards_3replicas>
-        <shard>
-            <replica>
-                <host>example-perftest01j.yandex.ru</host>
-                <port>9000</port>
-             </replica>
-             <replica>
-                <host>example-perftest02j.yandex.ru</host>
-                <port>9000</port>
-             </replica>
-             <replica>
-                <host>example-perftest03j.yandex.ru</host>
-                <port>9000</port>
-             </replica>
-        </shard>
-    </perftest_1shards_3replicas>
-</remote_servers>
-```
-
-启用本机复制[Zookeeper](https://zookeeper.apache.org/)是必需的。 ClickHouse负责所有副本的数据一致性，并在失败后自动运行恢复过程。建议将ZooKeeper集群部署在单独的服务器上（其中没有其他进程，包括运行的ClickHouse）。
-
-ZooKeeper位置在配置文件中指定:
-
-```xml
-<zookeeper>
-    <node>
-        <host>zoo01.yandex.ru</host>
-        <port>2181</port>
-    </node>
-    <node>
-        <host>zoo02.yandex.ru</host>
-        <port>2181</port>
-    </node>
-    <node>
-        <host>zoo03.yandex.ru</host>
-        <port>2181</port>
-    </node>
-</zookeeper>
-```
-
-此外，我们需要设置宏来识别每个用于创建表的分片和副本:
-
-```xml
-<macros>
-    <shard>01</shard>
-    <replica>01</replica>
-</macros>
-```
-
-如果在创建复制表时没有副本，则会实例化新的第一个副本。 如果已有实时副本，则新副本将克隆现有副本中的数据。 
-
-- 您可以选择首先创建所有复制的表，然后向其中插入数据。 
-- 另一种选择是创建一些副本，并在数据插入之后或期间添加其他副本。
-
-```sql
-CREATE TABLE wxw.hits_replica (...)
-ENGINE = ReplcatedMergeTree(
-    '/clickhouse_perftest/tables/{shard}/hits',
-    '{replica}'
-)
-...
-```
-
-在这里，我们使用[ReplicatedMergeTree](https://clickhouse.tech/docs/zh/engines/table-engines/mergetree-family/replication/)表引擎。 在参数中，我们指定包含分片和副本标识符的ZooKeeper路径。
-
-```sql
-INSERT INTO wxw.hits_replica SELECT * FROM wxw.hits_local;
-```
-
-复制在多主机模式下运行。数据可以加载到任何副本中，然后系统自动将其与其他实例同步。复制是异步的，因此在给定时刻，并非所有副本都可能包含最近插入的数据。至少应该有一个副本允许数据摄入。另一些则会在重新激活后同步数据并修复一致性。请注意，这种方法允许最近插入的数据丢失的可能性很低。
+- https://blog.csdn.net/lcl_xiaowugui/article/details/107772580
 
 #### 1.3 ClickHouse 特性
 
-##### 1.3.1 clickhouse为什么快
+##### 1.3.1 ReplacingMergeTree 引擎
 
-- C写的，可以基于C++可以利用硬件优势
-- 摒弃了hadoop生态
-- 数据底层以列式数据存储
-- 列用单节点的多核并行处理
-- 为数据建立一级、二级 稀疏索引
-- 使用大量的算法处理数据
-- 支持向量化处理 
-- 预先设计运算模型，预先计算
-- 分布式处理数据
+**（1）ReplacingMergeTree的作用** 
+
+ClickHouse中最常用也是最基础的表引擎为MergeTree，在它的功能基础上添加特定功能就构成了MergeTree系列引擎。MergeTree支持主键，但主键主要用来缩小查询范围，且不具备唯一性约束，可以正常写入相同主键的数据。但在一些情况下，可能需要表中没有主键重复的数据。ReplacingMergeTree就是在MergeTree的基础上加入了去重的功能，但它仅会在合并分区时，去删除重复的数据，写入相同数据时并不会引发异常。
+
+该引擎在数据合并的时候会对主键进行去重，合并会在后台执行，执行时间未知，因此你无法预先做出计划，当然你也可以调用OPTIMIZE语句来发起合并计划，但是这种方式是不推荐的，因为OPTIMIZE语句会引发大量的读写请求。
+
+（**2）案例演示** 
+
+ReplacingMergeTree引擎创建规范为：`ENGINE = ReplacingMergeTree([ver])`
+
+其中ver为选填参数，它需要指定一个UInt8/UInt16、Date或DateTime类型的字段，它决定了数据去重时所用的算法，
+
+- 如果没有设置该参数，合并时保留分组内的最后一条数据；
+- 如果指定了该参数，则保留ver字段取值最大的那一行。
+
+> 不指定ver参数
+
+```sql
+-- 创建未指定ver参数ReplacintMergeTree引擎的表
+CREATE TABLE replac_merge_test
+(
+    `id` String, 
+    `code` String, 
+    `create_time` DateTime
+)
+ENGINE = ReplacingMergeTree()
+PARTITION BY toYYYYMM(create_time)
+PRIMARY KEY id
+ORDER BY (id, code)
+
+-- ReplacingMergeTree会根据ORDER BY所声明的表达式去重
+
+-- 在上述表中插入数据
+insert into replac_merge_test values
+('A000', 'code1', now()),
+('A000', 'code1', '2020-07-28 21:30:00'), 
+('A001', 'code1', now()),
+('A001', 'code2', '2020-07-28 21:30:00'),
+('A0002', 'code2', now());
+
+-- 查询当前数据
+select * from replac_merge_test;
+┌─id────┬─code──┬─────────create_time─┐
+│ A000  │ code1 │ 2020-07-28 21:23:48 │
+│ A000  │ code1 │ 2020-07-28 21:30:00 │
+│ A0002 │ code2 │ 2020-07-28 21:23:48 │
+│ A001  │ code1 │ 2020-07-28 21:23:48 │
+│ A001  │ code2 │ 2020-07-28 21:30:00 │
+└───────┴───────┴─────────────────────┘
+
+-- 强制进行分区合并
+optimize table replac_merge_test FINAL;
+
+-- 再次查询数据
+select * from replac_merge_test;
+┌─id────┬─code──┬─────────create_time─┐
+│ A000  │ code1 │ 2020-07-28 21:30:00 │
+│ A0002 │ code2 │ 2020-07-28 21:23:48 │
+│ A001  │ code1 │ 2020-07-28 21:23:48 │
+│ A001  │ code2 │ 2020-07-28 21:30:00 │
+└───────┴───────┴─────────────────────┘
+
+```
+
+通过上面示例可以看到，id、code相同的字段’A000’,'code1’被去重剩余一条数据，由于创建表时没有设置ver参数，故保留分组内的最后一条数据(create_time字段)
+
+```sql
+-- 再次使用insert插入一条数据
+insert into replac_merge_test values ('A001', 'code1', '2020-07-28 21:30:00');
+
+-- 查询表中数据
+select * from replac_merge_test;
+┌─id────┬─code──┬─────────create_time─┐
+│ A000  │ code1 │ 2020-07-28 21:30:00 │
+│ A0002 │ code2 │ 2020-07-28 21:23:48 │
+│ A001  │ code1 │ 2020-07-28 21:23:48 │
+│ A001  │ code2 │ 2020-07-28 21:30:00 │
+└───────┴───────┴─────────────────────┘
+┌─id───┬─code──┬─────────create_time─┐
+│ A001 │ code1 │ 2020-07-28 21:30:00 │
+└──────┴───────┴─────────────────────┘
+```
+
+可以看到，再次插入重复数据时，查询仍然会存在重复。在ClickHouse中，默认一条insert插入的数据为同一个数据分区，不同insert插入的数据为不同的分区，所以ReplacingMergeTree是以分区为单位进行去重的，也就是说:
+
+- 只有在相同的数据分区内，重复数据才可以被删除掉。
+- 只有数据合并完成后，才可以使用引擎特性进行去重。
+
+> 指定ver参数
+
+```sql
+-- 创建指定ver参数ReplacingMergeTree引擎的表
+CREATE TABLE replac_merge_ver_test
+(
+    `id` String, 
+    `code` String, 
+    `create_time` DateTime
+)
+ENGINE = ReplacingMergeTree(create_time)
+PARTITION BY toYYYYMM(create_time)
+PRIMARY KEY id
+ORDER BY (id, code)
+
+-- 插入测试数据
+insert into replac_merge_ver_test values('A000', 'code1', '2020-07-10 21:35:30'),('A000', 'code1', '2020-07-15 21:35:30'),('A000', 'code1', '2020-07-05 21:35:30'),('A000', 'code1', '2020-06-05 21:35:30');
+
+-- 查询数据
+select * from replac_merge_ver_test;
+┌─id───┬─code──┬─────────create_time─┐
+│ A000 │ code1 │ 2020-06-05 21:35:30 │
+└──────┴───────┴─────────────────────┘
+┌─id───┬─code──┬─────────create_time─┐
+│ A000 │ code1 │ 2020-07-10 21:35:30 │
+│ A000 │ code1 │ 2020-07-15 21:35:30 │
+│ A000 │ code1 │ 2020-07-05 21:35:30 │
+└──────┴───────┴─────────────────────┘
+
+-- 强制进行分区合并
+optimize table replac_merge_ver_test FINAL;
+
+-- 查询数据
+select * from replac_merge_ver_test;
+┌─id───┬─code──┬─────────create_time─┐
+│ A000 │ code1 │ 2020-07-15 21:35:30 │
+└──────┴───────┴─────────────────────┘
+┌─id───┬─code──┬─────────create_time─┐
+│ A000 │ code1 │ 2020-06-05 21:35:30 │
+└──────┴───────┴─────────────────────┘
+```
+
+由于上述创建表是以create_time的年月来进行分区的，可以看出不同的数据分区，ReplacingMergeTree并不会进行去重，并且在相同数据分区内，指定ver参数后，会保留同一组数据内create_time时间最大的那一行数据。
+
+**（3）总结** 
+
+- 使用ORDER BY排序键，作为判断数据是否重复的唯一键
+- 只有在合并分区时，才会触发数据的去重逻辑
+- 删除重复数据，是以数据分区为单位。同一个数据分区的重复数据才会被删除，不同数据分区的重复数据仍会保留
+- 在进行数据去重时，由于已经基于ORDER BY排序，所以可以找到相邻的重复数据
+- 数据去重策略为：
+  - 若指定了ver参数，则会保留重复数据中，ver字段最大的那一行
+  - 若未指定ver参数，则会保留重复数据中最末的那一行数据
+
+相关文章
+
+- https://blog.csdn.net/lcl_xiaowugui/article/details/107772580
 
 ### 2.ClickHouse SQL语法
 
@@ -472,6 +522,18 @@ ORDER BY expr
 [SETTINGS name=value, ...]
 ```
 
+> 参数说明
+
+- ENGINE:引擎名和参数。
+  - ver:版本列，类型可以是UInt*,Date,或者DateTime，可选择的参数。 合并的时候ReplacingMergeTree从相同的主键中选择一行保留，如果ver列未指定，则选择最后一条，如果ver列已指定，则选择ver值最大的版本。
+- PARTITION BY：分区键。要按月分区，可以使用表达式 toYYYYMM(date_column) ，这里的 date_column 是一个 Date 类型的列。这里该分区名格式会是 "YYYYMM" 这样。
+- ORDER BY： 表的排序键。可以是一组列或任意的表达式。 例如: ORDER BY (CounterID, EventDate) 。
+- SAMPLE BY ： 抽样的表达式。如果要用抽样表达式，主键中必须包含这个表达式。例如： SAMPLE BY intHash32(UserID) ORDER BY (CounterID, EventDate, intHash32(UserID)) 。
+- SETTINGS ： 影响 MergeTree 性能的额外参数：
+  - index_granularity 索引粒度。即索引中相邻『标记』间的数据行数。默认值，8192 。该列表中所有可用的参数可以从这里查看 MergeTreeSettings.h 。
+  - use_minimalistic_part_header_in_zookeeper — 数据片段头在 ZooKeeper 中的存储方式。如果设置了 use_minimalistic_part_header_in_zookeeper=1，ZooKeeper 会存储更少的数据。
+  - min_merge_bytes_to_use_direct_io 使用直接 I/O 来操作磁盘的合并操作时要求的最小数据量。合并数据片段时，ClickHouse 会计算要被合并的所有数据的总存储空间。如果大小超过了 min_merge_bytes_to_use_direct_io 设置的字节数，则 ClickHouse 将使用直接 I/O 接口（O_DIRECT 选项）对磁盘读写。如果设置 min_merge_bytes_to_use_direct_io = 0 ，则会禁用直接 I/O。默认值：10 * 1024 * 1024 * 1024 字节。
+
 数据库和表都支持本地和分布式两种，分布式方式的创建有以下两种方法：
 
 - 在每台 clickhouse-server 所在机器上都执行创建语句。
@@ -480,6 +542,10 @@ ORDER BY expr
 当使用 clickhouse-client 进行查询时，若在 A 机上查询 B 机的本地表则会报错“Table xxx doesn't exist..”。若希望集群内的所有机器都能查询某张表，推荐使用分布式表。
 
 相关官方文档 [CREATE Queries](https://clickhouse.tech/docs/en/query_language/create/)。
+
+
+
+
 
 ##### 2.3.1 update/delete建表
 
@@ -1340,9 +1406,9 @@ clickhouse是一个完全的分布式列式存储数据库
 
 ##### 5.4.1 `ReplacingMergeTree`引擎 
 
-### 6. 常见问题
+### 6. 总结问题
 
-#### 6.1 clickhouse特性
+#### 6.1 clickhouse实际问题
 
 ##### 6.1.1 关于update
 
@@ -1378,7 +1444,19 @@ CREATE TABLE testdb.testtable on cluster default_cluster (
   ORDER BY id ;
 ```
 
+#### 6.2 常见考点
 
+##### 6.2.1 clickhouse为什么快
+
+- C写的，可以基于C++可以利用硬件优势
+- 摒弃了hadoop生态
+- 数据底层以列式数据存储
+- 列用单节点的多核并行处理
+- 为数据建立一级、二级 稀疏索引
+- 使用大量的算法处理数据
+- 支持向量化处理 
+- 预先设计运算模型，预先计算
+- 分布式处理数据
 
 #### 6.8 bug问题
 
