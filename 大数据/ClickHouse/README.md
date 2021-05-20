@@ -31,7 +31,7 @@ yandex/clickhouse-server:latest
 # 方式二：如果想指定目录启动，这里以clickhouse-test-server命令为例，可以随意写
  mkdir -p /apps/clickhouse/clickhouse-test-db       ## 创建数据文件目录
 # 使用以下路径启动，在外只能访问clickhouse提供的默认9000端口，只能通过clickhouse-client连接server
-docker run -d --name clickhouse-test-server --ulimit nofile=262144:262144 --volume=/spps/clickhouse/clickhouse-test-db:/var/lib/clickhouse yandex/clickhouse-server
+docker run -d --name clickhouse-test-server -p 8123:8123 -p 9009:9009 -p 9000:9000 --ulimit nofile=262144:262144 --volume=/spps/clickhouse/clickhouse-test-db:/var/lib/clickhouse yandex/clickhouse-server
 ```
 
 **1.1.3 启动 client 并连接 clickhouse-client** 
@@ -453,14 +453,23 @@ SELECT * FROM userloginlog;
 ClickHouse 使用 CREATE 语句来完成数据库或表的创建。
 
 ```sql
-CREATE DATABASE [IF NOT EXISTS] db_name [ON CLUSTER cluster] [ENGINE = engine(...)]
-
 CREATE TABLE [IF NOT EXISTS] [db.]table_name [ON CLUSTER cluster]
 (
-   name1 [type1] [DEFAULT|MATERIALIZED|ALIAS expr1] [compression_codec] [TTL expr1],
-   name2 [type2] [DEFAULT|MATERIALIZED|ALIAS expr2] [compression_codec] [TTL expr2],
-   ...
-) ENGINE = engine
+    name1 [type1] [DEFAULT|MATERIALIZED|ALIAS expr1] [TTL expr1],
+    name2 [type2] [DEFAULT|MATERIALIZED|ALIAS expr2] [TTL expr2],
+    ...
+    INDEX index_name1 expr1 TYPE type1(...) GRANULARITY value1,
+    INDEX index_name2 expr2 TYPE type2(...) GRANULARITY value2
+) ENGINE = MergeTree()
+ORDER BY expr
+[PARTITION BY expr]
+[PRIMARY KEY expr]
+[SAMPLE BY expr]
+[TTL expr 
+    [DELETE|TO DISK 'xxx'|TO VOLUME 'xxx' [, ...] ]
+    [WHERE conditions] 
+    [GROUP BY key_expr [SET v1 = aggr_func(v1) [, v2 = aggr_func(v2) ...]] ] ] 
+[SETTINGS name=value, ...]
 ```
 
 数据库和表都支持本地和分布式两种，分布式方式的创建有以下两种方法：
@@ -591,6 +600,14 @@ select array('a1','a2');
 <img src="asserts/image-20210518003241454.png" alt="image-20210518003241454" style="zoom:50%;" /> 
 
 相关官方文档 [array-join](https://clickhouse.tech/docs/zh/sql-reference/statements/select/array-join/) 
+
+##### 2.4.4 聚合查询-groupby
+
+
+
+相关资料
+
+- [聚合查询-groupby](http://saoniuhuo.com/article/detail-87.html) 
 
 #### 2.5 批量写入
 
@@ -758,6 +775,316 @@ ClickHouse 函数有两种类型：常规函数和聚合函数，区别是常规
 | [groupBitmapOr](https://clickhouse.tech/docs/en/query_language/agg_functions/reference/#groupbitmapor) | -                                                            | -                                                            |
 | [groupBitmapXor](https://clickhouse.tech/docs/en/query_language/agg_functions/reference/#groupbitmapxor) | -                                                            | -                                                            |
 
+ 案例分析一：
+
+```sql
+1. 普通的分组:
+Clickhouse> select database,table,count(1) from system.parts where database in ('datasets','system') group by database,table order by database ;
+ 
+SELECT 
+    database,
+    table,
+    count(1)
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─count(1)─┐
+│ datasets │ hits_v1          │        1 │
+│ datasets │ visits_v1        │        1 │
+│ system   │ query_thread_log │       28 │
+│ system   │ trace_log_0      │        2 │
+│ system   │ metric_log_0     │        5 │
+│ system   │ part_log         │        7 │
+│ system   │ metric_log       │       85 │
+│ system   │ query_log        │       25 │
+│ system   │ text_log         │      130 │
+│ system   │ trace_log        │      133 │
+└──────────┴──────────────────┴──────────┘
+ 
+10 rows in set. Elapsed: 0.004 sec. 
+ 
+在某些场合下可以借助于any，max，min等聚合函数查询聚合键之外的信息：
+Clickhouse> select database,table,count(1),any(rows) from system.parts where database in ('datasets','system') group by database,table order by database ;
+ 
+SELECT 
+    database,
+    table,
+    count(1),
+    any(rows)
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─count(1)─┬─any(rows)─┐
+│ datasets │ hits_v1          │        1 │   8873898 │
+│ datasets │ visits_v1        │        1 │   1676861 │
+│ system   │ query_thread_log │       23 │      1080 │
+│ system   │ trace_log_0      │        2 │      1042 │
+│ system   │ metric_log_0     │        5 │    172299 │
+│ system   │ part_log         │        7 │        11 │
+│ system   │ metric_log       │       79 │    112469 │
+│ system   │ query_log        │       20 │      1039 │
+│ system   │ text_log         │      134 │    490972 │
+│ system   │ trace_log        │      135 │     25044 │
+└──────────┴──────────────────┴──────────┴───────────┘
+ 
+10 rows in set. Elapsed: 0.005 sec. 
+ 
+当聚合查询内存在null值则会讲NULL算作一个特殊值处理：
+Clickhouse> select arrayJoin([10,20,20,30,null,null,NULL]) as a group by a;
+ 
+SELECT arrayJoin([10, 20, 20, 30, NULL, NULL, NULL]) AS a
+GROUP BY a
+ 
+┌────a─┐
+│   10 │
+│   20 │
+│ ᴺᵁᴸᴸ │
+│   30 │
+└──────┘
+ 
+4 rows in set. Elapsed: 0.002 sec. 
+ 
+ 
+2.with rollup:
+ 
+Clickhouse> select database,table,count(1) from system.parts where database in ('datasets','system') group by database,table with rollup order by database ;
+ 
+SELECT 
+    database,
+    table,
+    count(1)
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+    WITH ROLLUP
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─count(1)─┐
+│          │                  │      401 │
+│ datasets │                  │        2 │
+│ datasets │ hits_v1          │        1 │
+│ datasets │ visits_v1        │        1 │
+│ system   │                  │      399 │
+│ system   │ query_thread_log │       20 │
+│ system   │ trace_log_0      │        2 │
+│ system   │ metric_log_0     │        5 │
+│ system   │ part_log         │       10 │
+│ system   │ metric_log       │       81 │
+│ system   │ query_log        │       16 │
+│ system   │ text_log         │      132 │
+│ system   │ trace_log        │      133 │
+└──────────┴──────────────────┴──────────┘
+ 
+13 rows in set. Elapsed: 0.004 sec. 
+ 
+ 
+3.with cube
+Clickhouse> select database,table,count(1) from system.parts where database in ('datasets','system') group by database,table with cube order by database ;
+ 
+SELECT 
+    database,
+    table,
+    count(1)
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+    WITH CUBE
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─count(1)─┐
+│          │                  │      400 │
+│          │ metric_log       │       82 │
+│          │ trace_log        │      135 │
+│          │ query_log        │       17 │
+│          │ part_log         │       10 │
+│          │ trace_log_0      │        2 │
+│          │ text_log         │      132 │
+│          │ visits_v1        │        1 │
+│          │ query_thread_log │       15 │
+│          │ metric_log_0     │        5 │
+│          │ hits_v1          │        1 │
+│ datasets │                  │        2 │
+│ datasets │ hits_v1          │        1 │
+│ datasets │ visits_v1        │        1 │
+│ system   │                  │      398 │
+│ system   │ query_thread_log │       15 │
+│ system   │ trace_log_0      │        2 │
+│ system   │ metric_log_0     │        5 │
+│ system   │ part_log         │       10 │
+│ system   │ metric_log       │       82 │
+│ system   │ query_log        │       17 │
+│ system   │ text_log         │      132 │
+│ system   │ trace_log        │      135 │
+└──────────┴──────────────────┴──────────┘
+ 
+23 rows in set. Elapsed: 0.004 sec. 
+ 
+ 
+4.with totals:
+Clickhouse> select database,table,count(1) from system.parts where database in ('datasets','system') group by database,table with totals order by database ;
+ 
+SELECT 
+    database,
+    table,
+    count(1)
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+    WITH TOTALS
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─count(1)─┐
+│ datasets │ hits_v1          │        1 │
+│ datasets │ visits_v1        │        1 │
+│ system   │ query_thread_log │       10 │
+│ system   │ trace_log_0      │        2 │
+│ system   │ metric_log_0     │        5 │
+│ system   │ part_log         │       10 │
+│ system   │ metric_log       │       79 │
+│ system   │ query_log        │       13 │
+│ system   │ text_log         │      130 │
+│ system   │ trace_log        │      135 │
+└──────────┴──────────────────┴──────────┘
+ 
+Totals:
+┌─database─┬─table─┬─count(1)─┐
+│          │       │      386 │
+└──────────┴───────┴──────────┘
+ 
+10 rows in set. Elapsed: 0.005 sec. 
+ 
+ 
+5.having 
+ 
+Clickhouse> select database,table,count(1) cnt from system.parts where database in ('datasets','system') group by database,table having cnt>6 order by database;
+ 
+SELECT 
+    database,
+    table,
+    count(1) AS cnt
+FROM system.parts
+WHERE database IN ('datasets', 'system')
+GROUP BY 
+    database,
+    table
+HAVING cnt > 6
+ORDER BY database ASC
+ 
+┌─database─┬─table────────────┬─cnt─┐
+│ system   │ query_thread_log │   7 │
+│ system   │ metric_log       │  82 │
+│ system   │ text_log         │ 132 │
+│ system   │ trace_log        │ 135 │
+└──────────┴──────────────────┴─────┘
+ 
+4 rows in set. Elapsed: 0.013 sec. 
+ 
+5.order by 子句
+order by 在适用时可以对多个字段进行排序，每个排序字段后可以定义升序 asc或者降序desc，默认为升序asc。
+Clickhouse> select arrayJoin([10,20,30]) as a,arrayJoin(['A','B','C']) as b order by a,b;
+ 
+SELECT 
+    arrayJoin([10, 20, 30]) AS a,
+    arrayJoin(['A', 'B', 'C']) AS b
+ORDER BY 
+    a ASC,
+    b ASC
+ 
+┌──a─┬─b─┐
+│ 10 │ A │
+│ 10 │ B │
+│ 10 │ C │
+│ 20 │ A │
+│ 20 │ B │
+│ 20 │ C │
+│ 30 │ A │
+│ 30 │ B │
+│ 30 │ C │
+└────┴───┘
+ 
+9 rows in set. Elapsed: 0.002 sec. 
+ 
+Clickhouse> select arrayJoin([10,20,30]) as a,arrayJoin(['A','B','C']) as b order by a desc,b desc;
+ 
+SELECT 
+    arrayJoin([10, 20, 30]) AS a,
+    arrayJoin(['A', 'B', 'C']) AS b
+ORDER BY 
+    a DESC,
+    b DESC
+ 
+┌──a─┬─b─┐
+│ 30 │ C │
+│ 30 │ B │
+│ 30 │ A │
+│ 20 │ C │
+│ 20 │ B │
+│ 20 │ A │
+│ 10 │ C │
+│ 10 │ B │
+│ 10 │ A │
+└────┴───┘
+ 
+9 rows in set. Elapsed: 0.002 sec. 
+ 
+ 
+6.NULL值排序：
+clickhouse提供null first 和null last两种排序：
+6.1 NULLs first排序：null--Nan---其他数值
+ 
+Clickhouse> select arrayJoin([2,4,0/0,null,1/0,-1/0]) as a order by a desc nulls last;
+ 
+SELECT arrayJoin([2, 4, 0 / 0, NULL, 1 / 0, -1 / 0]) AS a
+ORDER BY a DESC NULLS LAST
+ 
+┌────a─┐
+│  inf │
+│    4 │
+│    2 │
+│ -inf │
+│  nan │
+│ ᴺᵁᴸᴸ │
+└──────┘
+ 
+6 rows in set. Elapsed: 0.013 sec. 
+ 
+6.2 null last排序：其他值--Nan--null
+ 
+Clickhouse> select arrayJoin([2,4,0/0,null,1/0,-1/0]) as a order by a desc nulls first;
+ 
+SELECT arrayJoin([2, 4, 0 / 0, NULL, 1 / 0, -1 / 0]) AS a
+ORDER BY a DESC NULLS FIRST
+ 
+┌────a─┐
+│ ᴺᵁᴸᴸ │
+│  nan │
+│  inf │
+│    4 │
+│    2 │
+│ -inf │
+└──────┘
+ 
+6 rows in set. Elapsed: 0.002 sec. 
+```
+
+> 出自：https://blog.csdn.net/vkingnew/article/details/107220638 
+
+
+
 #### 2.9 字典
 
 一个字典是一个映射（key -> attributes），能够作为函数被用于查询，相比引用（reference）表`JOIN`的方式更简单和高效
@@ -829,7 +1156,40 @@ ClickHouse 函数有两种类型：常规函数和聚合函数，区别是常规
 
 <img src="asserts/image-20210509163805230.png" alt="image-20210509163805230" style="zoom:50%;" /> 
 
+#### 4.2 ClickHouse 实践验证正确性
 
+##### 4.2.1 验证表引擎特性
+
+- 聚合函数实现数据更新
+- 主键生效时机
+- 聚合函数实现数据去重
+
+> 案例一：
+
+- 建表
+
+  ```sql
+  # AggregatingMergeTree 表引擎支持同一个分区去重，但是必须手动强制分区合并
+  create table user_test(
+      log_id UInt64,
+      reg_date SimpleAggregateFunction(anyLast,DateTime),
+      remark SimpleAggregateFunction(anyLast,String)
+  ) ENGINE = AggregatingMergeTree()
+  PRIMARY KEY (log_id)
+  partition by toYYYYMM(reg_date)
+  order by (log_id,reg_date)
+  
+  # 手动强制分区合并
+  optimize table user_test FINAL;
+  ```
+
+- 插入数据
+
+  ```sql
+  insert into kenan.user_test values (1,toDateTime('2034-12-29 15:40:47'),'测试数据')
+  ```
+
+  
 
 
 
@@ -977,6 +1337,8 @@ clickhouse是一个完全的分布式列式存储数据库
 - 决定数据组织结构
 - 决定是否分块、是否索引、是否持久化、是否可以支持并发读写、是否支持副本、是否支持索引
 - 是否支持分布式
+
+##### 5.4.1 `ReplacingMergeTree`引擎 
 
 ### 6. 常见问题
 

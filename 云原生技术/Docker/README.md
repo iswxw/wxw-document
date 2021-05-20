@@ -169,6 +169,8 @@ docker ps
 - github资源
   - https://github.com/ipwnosx/Docker-OSX
 
+#### 2. 准备环境
+
 ```bash
 ## 拉取镜像
 docker pull sickcodes/docker-osx
@@ -181,8 +183,6 @@ docker run -it \
     -e "DISPLAY=${DISPLAY:-:0.0}" \
     sickcodes/docker-osx:latest
 ```
-
-
 
 
 
