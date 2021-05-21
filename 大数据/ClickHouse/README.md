@@ -267,6 +267,15 @@ select * from replac_merge_test;
 
 #### 1.3 ClickHouse 特性
 
+clickhouse是一个完全的分布式列式存储数据库
+
+**引擎的作用：** 
+
+- 决定数据存储的位置
+- 决定数据组织结构
+- 决定是否分块、是否索引、是否持久化、是否可以支持并发读写、是否支持副本、是否支持索引
+- 是否支持分布式
+
 ##### 1.3.1 ReplacingMergeTree 引擎
 
 **（1）ReplacingMergeTree的作用** 
@@ -725,6 +734,15 @@ ALTER TABLE table-name MODIFY TTL ttl-expression
 ```
 
 相关官方文档 [ALTER](https://clickhouse.tech/docs/en/query_language/alter/)。
+
+##### 2.7.1 添加列
+
+```sql
+# 添加带聚合函数的列
+alter table [db].name add column name [type] [default_expr] [codec] [AFTER name_after]
+```
+
+
 
 #### 2.8 函数
 
@@ -1393,18 +1411,7 @@ select  * from boss_info where row_id ='999988-9';
 1. [clickhouse 稀疏索引](https://my.oschina.net/u/2000675/blog/4655098) 
 2. [clickhouse的索引结构和查询优化](https://blog.csdn.net/h2604396739/article/details/86172756) 
 
-#### 5.4 引擎
 
-clickhouse是一个完全的分布式列式存储数据库
-
-**引擎的作用：** 
-
-- 决定数据存储的位置
-- 决定数据组织结构
-- 决定是否分块、是否索引、是否持久化、是否可以支持并发读写、是否支持副本、是否支持索引
-- 是否支持分布式
-
-##### 5.4.1 `ReplacingMergeTree`引擎 
 
 ### 6. 总结问题
 
