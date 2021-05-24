@@ -552,10 +552,6 @@ ORDER BY expr
 
 相关官方文档 [CREATE Queries](https://clickhouse.tech/docs/en/query_language/create/)。
 
-
-
-
-
 ##### 2.3.1 update/delete建表
 
 ```sql

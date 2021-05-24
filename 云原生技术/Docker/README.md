@@ -119,7 +119,7 @@ sudo systemctl restart docker
 - 通过镜像启动容器
 
   ```bash
-  docker run -itd --name mysql-instance -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+  docker run -itd --name mysql-test -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
   
   参数说明：
      -p 3306:3306 ：映射容器服务的 3306 端口到宿主机的 3306 端口，外部主机可以直接通过 宿主机ip:3306 访问到 MySQL 的服务。
@@ -131,6 +131,29 @@ sudo systemctl restart docker
   ```bash
   docker ps
   ```
+
+- 进入容器
+
+  ```bash
+  docker exec -it mysql bash
+  ```
+
+- 登录mysql
+
+  ```bash
+  #登录mysql
+  mysql -u root -p
+  ALTER USER 'root'@'localhost' IDENTIFIED BY 'Lzslov123!';
+  ```
+
+- 添加远程登录账户
+
+   ```bash
+   CREATE USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '123456';
+   GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+   ```
+
+  
 
 > 控制台演示
 
