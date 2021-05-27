@@ -1059,7 +1059,7 @@ redis 的单线程的。keys 指令会导致线 程阻塞一段时间，线上�
 
 ## Redis 高级应用
 
-### 常用命令
+### 高级命令的使用
 
 #### 1.  Redis scan
 
@@ -1104,18 +1104,45 @@ SCAN cursor [MATCH pattern] [COUNT count]
 ##### （1）scan 相比 keys 具备有以下特点
 
 1. 复杂度虽然也是 O(n)，但是它是通过游标分步进行的，不会阻塞线程; 
-
 2. 提供 limit 参数，可以控制每次返回结果的最大条数，limit 只是一个 hint，返回的 结果可多可少; 
-
 3. 同 keys 一样，它也提供模式匹配功能; 
-
 4. 服务器不需要为游标保存状态，游标的唯一状态就是 scan 返回给客户端的游标整数; 
-
 5. 返回的结果可能会有重复，需要客户端去重复，这点非常重要; 
-
 6. 遍历的过程中如果有数据修改，改动后的数据能不能遍历到是不确定的; 
-
 7. 单次返回的结果是空的并不意味着遍历结束，而要看返回的游标值是否为零
+
+#### 2. Redis Info
+
+> info命令可以查看redis服务相关的信息  [redis 服务 info使用指南](http://doc.redisfans.com/server/info.html) 
+
+- `server` :  Redis 服务器信息
+- `clients` : 已连接客户端信息
+- `memory` : 内存信息
+- `persistence` : `RDB` 和 `AOF` 的相关信息
+- `stats` : 一般统计信息
+- `replication` : 主/从复制信息
+- `cpu` : CPU 计算量统计信息
+- `commandstats` : Redis 命令统计信息
+- `cluster` : Redis 集群信息
+- `keyspace` : 数据库相关的统计信息
+- `all` : 返回所有信息
+- `default` : 返回默认选择的信息
+
+```bash
+127.0.0.1:6379> info
+```
+
+
+
+### Redis性能问题排查
+
+
+
+
+
+相关文章
+
+- [Redis 性能问题排查](https://mp.weixin.qq.com/s/K4EPyDAnAd05A3-bRyqqgg) 
 
 ### 高级数据结构
 

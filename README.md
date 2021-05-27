@@ -17,7 +17,17 @@
 
 ## 目录
 
+### 大数据
 
+- ClickHouse
+- Flink
+- Flume
+- Hbase
+
+### 云原生技术
+
+- Docker
+- Kubernates(K8S)
 
 ### 服务端技术
 
@@ -29,30 +39,59 @@
 
 ### 后端技术
 
-- Javaj基础
+- Java基础
 - 分布式中间件
   - 缓存
+    - Redis
+    - Memcached
+    - Mongodb
   - 搜索引擎
+    - ElasticStack
   - 消息队列
+    - kafka
+    - RabbitMQ
+    - RocketMQ
   - Dubbo
   - Zookeeper
 - 数据库
+  - MySQL
+  - PostGreSQL
+  - SQL Server
+  - MyBatis
 - 微服务
-- Devops
+  - Cloud
 - Spring系列
+  - SpringBoot
+  - SpringCloud
+  - SpringBoot源码学习
 - SpringCloudAlibaba
+  - nacos
+  - seata
+  - Sentinel
 - 开源框架
   - 定时任务
   - Guava
   - Oauth2.0
   - Redission
 - 数据结构与算法
+  - 数据接口与算法基础
+  - 剑指Offer
+  - LeetCode
 
 
 ### 架构技术
 
 - 编码实战
+  - 编码规范
+  - Git
+  - Maven
 - 架构思维
+  - 架构理论
+
+### 运维部署
+
+- 测试工具
+- Jenkinse构建和部署
 
 ### 项目实战
 

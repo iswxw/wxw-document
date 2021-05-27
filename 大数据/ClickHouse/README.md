@@ -1900,5 +1900,3 @@ CREATE TABLE testdb.testtable on cluster default_cluster (
 
 
 
-
-
