@@ -847,6 +847,257 @@ FROM agg_table
 GROUP BY CounterID, StartDate;
 ```
 
+#### 1.4 ClickHouse 物化视图
+
+> 来源：https://clickhouse.tech/docs/en/single/?#sql-reference-statements-create-view-md
+
+##### 1.4.1 物化视图的概念
+
+数据库中的视图（view）是从一张或多张数据库表查询导出的虚拟表，反映基础表中数据的变化，且**本身不存储数据**。那么物化视图（materialized view）是什么呢？
+
+![img](asserts/webp) 
+
+**物化视图是查询结果集的一份持久化存储**，所以它与普通视图完全不同，而非常趋近于表。“查询结果集”的范围很宽泛，可以是基础表中部分数据的一份简单拷贝，也可以是多表join之后产生的结果或其子集，或者原始数据的聚合指标等等。所以，物化视图不会随着基础表的变化而变化，所以它也称为快照（snapshot）。如果要更新数据的话，需要用户手动进行，如周期性执行SQL，或利用触发器等机制。
+
+产生物化视图的过程就叫做“物化”（materialization）。广义地讲，物化视图是数据库中的预计算逻辑+显式缓存，典型的空间换时间思路。所以用得好的话，它可以避免对基础表的频繁查询并复用结果，从而显著提升查询的性能。它当然也可以利用一些表的特性，如索引。
+
+在传统关系型数据库中，Oracle、PostgreSQL、SQL Server等都支持物化视图，作为流处理引擎的Kafka和Spark也支持在流上建立物化视图。下面来聊聊ClickHouse里的物化视图功能。
+
+##### 1.4.2 clickhouse 物化视图
+
+创建一个新视图。有两种类型的视图：普通视图和实体视图
+
+**普通视图** 
+
+```sql
+CREATE [OR REPLACE] VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] AS SELECT ...
+```
+
+普通视图不存储任何数据。他们只是在每次访问时从另一个表中读取数据。换句话说，普通视图仅是一个保存的查询。从视图读取时，此保存的查询在[FROM](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-from-md)子句中用作子查询。
+
+- 假设您已经创建了一个视图
+
+  ```sql
+  CREATE VIEW view AS SELECT ...
+  
+  并写了一个视图查询：
+  SELECT a, b, c FROM view
+  
+  此查询与使用子查询完全等效：
+  SELECT a, b, c FROM (SELECT ...)
+  ```
+
+**物化视图（实体视图）** 
+
+```sql
+CREATE MATERIALIZED VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] [TO[db.]name] [ENGINE = engine] [POPULATE] AS SELECT ...
+```
+
+- 物化视图存储由相应的[SELECT](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-index-md)查询转换的数据。
+- 当创建不带的实例化视图时`TO [db].[table]`，必须指定`ENGINE`–用于存储数据的表引擎。
+- 使用创建实例化视图时`TO [db].[table]`，不得使用`POPULATE`。
+- 实例化视图的实现方式如下：当将数据插入中指定的表中时`SELECT`，此`SELECT`查询将转换部分插入的数据，并将结果插入视图中。
+
+> 注意
+
+ClickHouse中的物化视图的实现更像是插入触发器。如果视图查询中存在某些聚合，则仅将其应用于这批新插入的数据。对源表的现有数据进行的任何更改（例如更新，删除，删除分区等）都不会更改实例化视图。
+
+- 视图看起来与普通表相同。例如，它们在`SHOW TABLES`查询结果中列出。
+- 要删除视图，请使用[DROP VIEW](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-drop-md)。虽然也`DROP TABLE`适用于VIEW。
+
+**实时视图** 
+
+```sql
+CREATE LIVE VIEW [IF NOT EXISTS] [db.]table_name [WITH [TIMEOUT [value_in_sec] [AND]] [REFRESH [value_in_sec]]] AS SELECT ...
+```
+
+实时视图存储相应的[SELECT](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-index-md)查询的结果，并在查询结果更改时随时更新。查询结果以及与新数据结合所需的部分结果都存储在内存中，从而提高了重复查询的性能。当使用[WATCH](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-watch-md)查询更改查询结果时，实时视图可以提供推送通知。
+
+实时视图是通过插入查询中指定的最里面的表来触发的。
+
+- 局限性
+  - 不支持将[表函数](https://clickhouse.tech/docs/en/single/?#sql-reference-table-functions-index-md)用作最里面的表。
+  - 没有插入的表（例如[字典](https://clickhouse.tech/docs/en/single/?#sql-reference-dictionaries-index-md)，[系统表](https://clickhouse.tech/docs/en/single/?#operations-system-tables-index-md)，[普通视图](https://clickhouse.tech/docs/en/single/?#normal)或[实例化视图）](https://clickhouse.tech/docs/en/single/?#materialized)将不会触发实时视图。
+  - 仅查询可以将旧数据的部分结果与新数据的部分结果相结合的查询将起作用。对于需要完整数据集来计算最终结果的查询或必须保留聚合状态的聚合，实时视图将不起作用。
+  - 不适用于在不同节点上执行插入操作的复制表或分布式表。
+  - 不能由多个表触发。
+
+实时视图表的最常见用途包括：
+
+- 提供查询结果更改的推送通知，以避免轮询。
+- 缓存最频繁查询的结果以提供即时查询结果。
+- 监视表更改并触发后续选择查询。
+- 使用定期刷新从系统表监视指标。
+
+##### 1.4.3 案例分析
+
+我们目前只是将CK当作点击流数仓来用，故拿点击流日志表当作基础表。
+
+```sql
+CREATE TABLE IF NOT EXISTS ods.analytics_access_log
+ON CLUSTER sht_ck_cluster_1 (
+  ts_date Date,
+  ts_date_time DateTime,
+  user_id Int64,
+  event_type String,
+  from_type String,
+  column_type String,
+  groupon_id Int64,
+  site_id Int64,
+  site_name String,
+  main_site_id Int64,
+  main_site_name String,
+  merchandise_id Int64,
+  merchandise_name String,
+  -- A lot more other columns......
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/ods/analytics_access_log','{replica}')
+PARTITION BY ts_date
+ORDER BY (ts_date,toStartOfHour(ts_date_time),main_site_id,site_id,event_type,column_type)
+TTL ts_date + INTERVAL 1 MONTH
+SETTINGS index_granularity = 8192,
+use_minimalistic_part_header_in_zookeeper = 1,
+merge_with_ttl_timeout = 86400;
+```
+
+> **w/ SummingMergeTree** 
+
+如果要查询某个站点一天内分时段的商品点击量，写出如下SQL语句。
+
+```sql
+SELECT toStartOfHour(ts_date_time) AS ts_hour,merchandise_id,count() AS pv
+FROM ods.analytics_access_log_all
+WHERE ts_date = today() AND site_id = 10087
+GROUP BY ts_hour,merchandise_id;
+```
+
+这是一个典型的聚合查询。如果各个地域的分析人员都经常执行该类查询（只是改变ts_date与site_id的条件而已），那么肯定有相同的语句会被重复执行多次，每次都会从analytics_access_log_all这张大的明细表取数据，显然是比较浪费资源的。而**通过将CK中的物化视图与合适的MergeTree引擎配合使用，就可以实现预聚合**，从物化视图出数的效率非常好。
+
+下面就根据上述SQL语句的查询条件创建一个物化视图，请注意其语法。
+
+```sql
+CREATE MATERIALIZED VIEW IF NOT EXISTS test.mv_site_merchandise_visit
+ON CLUSTER sht_ck_cluster_1
+ENGINE = ReplicatedSummingMergeTree('/clickhouse/tables/{shard}/test/mv_site_merchandise_visit','{replica}')
+PARTITION BY ts_date
+ORDER BY (ts_date,ts_hour,site_id,merchandise_id)
+SETTINGS index_granularity = 8192, 
+use_minimalistic_part_header_in_zookeeper = 1
+AS SELECT
+  ts_date,
+  toStartOfHour(ts_date_time) AS ts_hour,
+  site_id,
+  merchandise_id,
+  count() AS visit
+FROM ods.analytics_access_log
+GROUP BY ts_date,ts_hour,site_id,merchandise_id;
+```
+
+可见，物化视图与表一样，也可以指定表引擎、分区键、主键和表设置参数。商品点击量是个简单累加的指标，所以我们选择SummingMergeTree作为表引擎（上述是高可用情况，所以用了带复制的ReplicatedSummingMergeTree）。该引擎支持以主键分组，对数值型指标做自动累加。每当表的parts做后台merge的时候，主键相同的所有记录会被加和合并成一行记录，大大节省空间。
+
+用户在创建物化视图时，通过`AS SELECT ...`子句从基础表中查询需要的列，十分灵活。在默认情况下，物化视图刚刚创建时没有数据，随着基础表中的数据批量写入，物化视图的计算结果也逐渐填充起来。如果需要从历史数据初始化，在`AS SELECT`子句的前面加上`POPULATE`关键字即可。需要注意，在`POPULATE`填充历史数据的期间，新进入的这部分数据会被忽略掉，所以如果对准确性要求非常高，应慎用。
+
+执行完上述`CREATE MATERIALIZED VIEW`语句后，通过`SHOW TABLES`语句查询，会发现有一张名为`.inner.[物化视图名]`的表，这就是持久化物化视图数据的表，当然我们是不会直接操作它的。
+
+```sql
+SHOW TABLES
+
+┌─name─────────────────────────────┐
+│ .inner.mv_site_merchandise_visit │
+│ mv_site_merchandise_visit        │
+└──────────────────────────────────┘
+```
+
+基础表、物化视图与物化视图的underlying table的关系如下简图所示。
+
+![img](asserts/webp-20210527235501587) 
+
+当然，在物化视图上也可以建立分布式表。
+
+```sql
+CREATE TABLE IF NOT EXISTS test.mv_site_merchandise_visit_all
+ON CLUSTER sht_ck_cluster_1
+AS test.mv_site_merchandise_visit
+ENGINE = Distributed(sht_ck_cluster_1,test,mv_site_merchandise_visit,rand());
+```
+
+查询物化视图的风格与查询普通表没有区别，返回的就是预聚合的数据了。
+
+```sql
+SELECT ts_hour,merchandise_id,sum(visit) AS visit_sum
+FROM test.mv_site_merchandise_visit_all
+WHERE ts_date = today() AND site_id = 10087
+GROUP BY ts_hour,merchandise_id;
+```
+
+> **w/ AggregatingMergeTree** 
+
+SummingMergeTree只能处理累加的情况，如果不只有累加呢？物化视图还可以配合更加通用的AggregatingMergeTree引擎使用，用户能够通过聚合函数（aggregate function）来自定义聚合指标。举个例子，假设我们要按各城市的页面来按分钟统计PV和UV，就可以创建如下的物化视图。
+
+```sql
+CREATE MATERIALIZED VIEW IF NOT EXISTS dw.main_site_minute_pv_uv
+ON CLUSTER sht_ck_cluster_1
+ENGINE = ReplicatedAggregatingMergeTree('/clickhouse/tables/{shard}/dw/main_site_minute_pv_uv','{replica}')
+PARTITION BY ts_date
+ORDER BY (ts_date,ts_minute,main_site_id)
+SETTINGS index_granularity = 8192, use_minimalistic_part_header_in_zookeeper = 1
+AS SELECT
+  ts_date,
+  toStartOfMinute(ts_date_time) as ts_minute,
+  main_site_id,
+  sumState(1) as pv,
+  uniqState(user_id) as uv
+FROM ods.analytics_access_log
+GROUP BY ts_date,ts_minute,main_site_id;
+```
+
+利用AggregatingMergeTree产生物化视图时，实际上是记录了被聚合指标的状态，所以需要在原本的聚合函数名（如sum、uniq）之后加上"State"后缀。
+
+创建分布式表的步骤就略去了。而从物化视图查询时，相当于将被聚合指标的状态进行合并并产生结果，所以需要在原本的聚合函数名（如sum、uniq）之后加上"Merge"后缀。`-State`和`-Merge`语法都是CK规定好的，称为聚合函数的组合器（combinator）。
+
+```sql
+SELECT ts_date,formatDateTime(ts_minute,'%H:%M') AS hour_minute,sumMerge(pv) AS pv,uniqMerge(uv) AS uv
+FROM dw.main_site_minute_pv_uv_all
+WHERE ts_date = today() AND main_site_id = 10029
+GROUP BY ts_date,hour_minute
+ORDER BY hour_minute ASC;
+```
+
+我们也可以通过查询system.parts系统表来查看物化视图实际占用的parts信息。
+
+```sql
+SELECT 
+    partition, 
+    name, 
+    rows, 
+    bytes_on_disk, 
+    modification_time, 
+    min_date, 
+    max_date, 
+    engine
+FROM system.parts
+WHERE (database = 'dw') AND (table = '.inner.main_site_minute_pv_uv')
+
+┌─partition──┬─name───────────────┬─rows─┬─bytes_on_disk─┬───modification_time─┬───min_date─┬───max_date─┬─engine─────────────────────────┐
+│ 2020-05-19 │ 20200519_0_169_18  │ 9162 │       4540922 │ 2020-05-19 20:33:29 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_170_179_2 │  318 │        294479 │ 2020-05-19 20:37:18 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_170_184_3 │  449 │        441282 │ 2020-05-19 20:40:24 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_170_189_4 │  696 │        594995 │ 2020-05-19 20:47:40 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_180_180_0 │   40 │         33416 │ 2020-05-19 20:37:58 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_181_181_0 │   70 │         34200 │ 2020-05-19 20:38:44 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_182_182_0 │   83 │         35981 │ 2020-05-19 20:39:32 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_183_183_0 │   77 │         35786 │ 2020-05-19 20:39:32 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_184_184_0 │   81 │         35766 │ 2020-05-19 20:40:19 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_185_185_0 │   42 │         32859 │ 2020-05-19 20:41:54 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_186_186_0 │   83 │         35750 │ 2020-05-19 20:43:30 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_187_187_0 │   79 │         34272 │ 2020-05-19 20:46:45 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_188_188_0 │   75 │         33917 │ 2020-05-19 20:46:45 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+│ 2020-05-19 │ 20200519_189_189_0 │   81 │         35712 │ 2020-05-19 20:47:35 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
+└────────────┴────────────────────┴──────┴───────────────┴─────────────────────┴────────────┴────────────┴────────────────────────────────┘
+```
+
+
+
 
 
 相关文章
