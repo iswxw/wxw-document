@@ -849,7 +849,10 @@ GROUP BY CounterID, StartDate;
 
 #### 1.4 ClickHouse 物化视图
 
-> 来源：https://clickhouse.tech/docs/en/single/?#sql-reference-statements-create-view-md
+> 来源
+
+- https://clickhouse.tech/docs/en/single/?#sql-reference-statements-create-view-md
+- https://clickhouse.tech/docs/en/sql-reference/statements/create/view/
 
 ##### 1.4.1 物化视图的概念
 
@@ -859,7 +862,7 @@ GROUP BY CounterID, StartDate;
 
 **物化视图是查询结果集的一份持久化存储**，所以它与普通视图完全不同，而非常趋近于表。“查询结果集”的范围很宽泛，可以是基础表中部分数据的一份简单拷贝，也可以是多表join之后产生的结果或其子集，或者原始数据的聚合指标等等。所以，物化视图不会随着基础表的变化而变化，所以它也称为快照（snapshot）。如果要更新数据的话，需要用户手动进行，如周期性执行SQL，或利用触发器等机制。
 
-产生物化视图的过程就叫做“物化”（materialization）。广义地讲，物化视图是数据库中的预计算逻辑+显式缓存，典型的空间换时间思路。所以用得好的话，它可以避免对基础表的频繁查询并复用结果，从而显著提升查询的性能。它当然也可以利用一些表的特性，如索引。
+产生物化视图的过程就叫做“物化”（materialization）。广义地讲，物化视图是数据库中的预计算逻辑+显式缓存，典型的**空间换时间思路**。所以用得好的话，它**可以避免对基础表的频繁查询并复用结果，从而显著提升查询的性能**。它当然也可以利用一些表的特性，如索引。
 
 在传统关系型数据库中，Oracle、PostgreSQL、SQL Server等都支持物化视图，作为流处理引擎的Kafka和Spark也支持在流上建立物化视图。下面来聊聊ClickHouse里的物化视图功能。
 
@@ -873,9 +876,9 @@ GROUP BY CounterID, StartDate;
 CREATE [OR REPLACE] VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] AS SELECT ...
 ```
 
-普通视图不存储任何数据。他们只是在每次访问时从另一个表中读取数据。换句话说，普通视图仅是一个保存的查询。从视图读取时，此保存的查询在[FROM](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-from-md)子句中用作子查询。
+**普通视图不存储任何数据。他们只是在每次访问时从另一个表中读取数据**。换句话说，普通视图仅是一个保存的查询。从视图读取时，此保存的查询在[FROM](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-from-md)子句中用作子查询。
 
-- 假设您已经创建了一个视图
+- 假设您已经创建了一个普通视图
 
   ```sql
   CREATE VIEW view AS SELECT ...
@@ -893,8 +896,8 @@ CREATE [OR REPLACE] VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] AS SELECT 
 CREATE MATERIALIZED VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] [TO[db.]name] [ENGINE = engine] [POPULATE] AS SELECT ...
 ```
 
-- 物化视图存储由相应的[SELECT](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-index-md)查询转换的数据。
-- 当创建不带的实例化视图时`TO [db].[table]`，必须指定`ENGINE`–用于存储数据的表引擎。
+- **物化视图存储**由相应的[SELECT](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-select-index-md)查询转换的数据。
+- 当创建实例化视图时`TO [db].[table]`，必须指定`ENGINE`–用于存储数据的表引擎。
 - 使用创建实例化视图时`TO [db].[table]`，不得使用`POPULATE`。
 - 实例化视图的实现方式如下：当将数据插入中指定的表中时`SELECT`，此`SELECT`查询将转换部分插入的数据，并将结果插入视图中。
 
@@ -903,7 +906,7 @@ CREATE MATERIALIZED VIEW [IF NOT EXISTS] [db.]table_name [ON CLUSTER] [TO[db.]na
 ClickHouse中的物化视图的实现更像是插入触发器。如果视图查询中存在某些聚合，则仅将其应用于这批新插入的数据。对源表的现有数据进行的任何更改（例如更新，删除，删除分区等）都不会更改实例化视图。
 
 - 视图看起来与普通表相同。例如，它们在`SHOW TABLES`查询结果中列出。
-- 要删除视图，请使用[DROP VIEW](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-drop-md)。虽然也`DROP TABLE`适用于VIEW。
+- 要删除视图，请使用[DROP VIEW](https://clickhouse.tech/docs/en/single/?#sql-reference-statements-drop-md)。虽然`DROP TABLE`也适用于VIEW。
 
 **实时视图** 
 
@@ -1095,8 +1098,6 @@ WHERE (database = 'dw') AND (table = '.inner.main_site_minute_pv_uv')
 │ 2020-05-19 │ 20200519_189_189_0 │   81 │         35712 │ 2020-05-19 20:47:35 │ 2020-05-19 │ 2020-05-19 │ ReplicatedAggregatingMergeTree │
 └────────────┴────────────────────┴──────┴───────────────┴─────────────────────┴────────────┴────────────┴────────────────────────────────┘
 ```
-
-
 
 
 
