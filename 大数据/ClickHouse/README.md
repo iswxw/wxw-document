@@ -847,6 +847,10 @@ FROM agg_table
 GROUP BY CounterID, StartDate;
 ```
 
+相关文章
+
+1. [ClickHouse表引擎到底怎么选](https://blog.csdn.net/A1373712651/article/details/103608340) 
+
 #### 1.4 ClickHouse 物化视图
 
 > 来源
@@ -1099,11 +1103,9 @@ WHERE (database = 'dw') AND (table = '.inner.main_site_minute_pv_uv')
 └────────────┴────────────────────┴──────┴───────────────┴─────────────────────┴────────────┴────────────┴────────────────────────────────┘
 ```
 
-
-
 相关文章
 
-1. [ClickHouse表引擎到底怎么选](https://blog.csdn.net/A1373712651/article/details/103608340) 
+1. [ClickHouse物化视图](https://www.jianshu.com/p/3f385e4e7f95)  
 
 ### 2.ClickHouse SQL语法
 
