@@ -1,0 +1,648 @@
+
+
+## 前言
+
+K8S主要讲的就是Kubernetes，首先Kubernetes首字母为K，末尾为s，中间一共有8个字母，所以简称K8s
+
+- 官方文章：https://kubernetes.io/zh/docs
+- Kuberantes 中文社区：https://www.kubernetes.org.cn/
+
+- 视频资源
+  - k8s由浅入深：https://www.bilibili.com/video/BV1GT4y1A756
+- 笔记：
+  - K8S 蘑栖：http://moxi159753.gitee.io/learningnotes/#/./K8S
+
+## K8S基础
+
+### 1. Kubernates初识
+
+#### 1.1 kubernates 概述
+
+Kubernetes是一个开源的，用于管理云平台中多个主机上的容器化的应用，Kubernetes的目标是让部署容器化的应用简单并且高效（powerful），Kubernetes提供了应用部署、规划、更新、维护的一种机制。
+
+在所有的容器编排工具中（类似的还有 docker swarm / mesos等），Kubernetes的生态系统更大、增长更快，有更多的支持、服务和工具可供用户选择。
+
+Kubernetes是Google开源的容器集群管理系统。最初源于谷歌内部的Borg，是Google基于Borg开源的容器编排调度引擎。它构建在Docker技术之上，为跨主机的容器化应用提供资源调度、服务发现、高可用管理和弹性伸缩等一整套功能，它提供完善的管理工具，涵盖开发、部署测试、运维监控等各个环节。
+
+它的目标不仅仅是一个编排系统，而是提供一个规范，可以让你来描述集群的架构，定义服务的最终状态，Kubernetes可以帮你将系统自动的达到和维持在这个状态。
+
+**重点：跨机器、跨平台；协调资源使用** 
+
+#### 1.2 kubernates特性
+
+- 自动化部署：yaml部署到K8S，会根据应用程序计算资源需求，自动分配到node。
+- 系统自愈：重启已经停机的容器；替换、kill 那些不满足自定义健康检查条件的容器；在容器就绪之前，避免调用者发现该容器。
+- 水平扩展：HPA周期调度RC的副本数量，将用户定义的resource值匹配。
+- 服务发现和负载均衡：内置服务发现功能。可以通过 DNS 名称或 IP 地址暴露容器的访问方式；并且可以在同组容器内分发负载以实现负载均衡。
+- 存储编排：可以自动挂载指定的存储系统，例如 local stroage/nfs/云存储等。
+- 自动更新和回滚：可以在 K8S 中声明你期望应用程序容器应该达到的状态，Kubernetes将以合适的速率调整容器的实际状态，并逐步达到最终期望的结果，不会同时杀掉应用。更新出错，自动恢复到原先状态。
+
+
+
+## K8S设计架构
+
+Kubernetes集群包含有节点代理kubelet和Master组件(APIs, scheduler, etc)，一切都基于分布式的存储系统。下面这张图是Kubernetes的架构图。
+
+![img](asserts/1395193-20200728000104130-198092273.png) 
+
+在这张系统架构图中，我们把服务分为运行在工作节点上的服务和组成集群级别控制板的服务。
+
+Kubernetes节点有运行应用容器必备的服务，而这些都是受Master的控制。
+
+每次个节点上当然都要运行Docker。Docker来负责所有具体的映像下载和容器运行。
+
+**核心组件组成** 
+
+- etcd保存了整个集群的状态；
+- apiserver提供了资源操作的唯一入口，并提供认证、授权、访问控制、API注册和发现等机制；
+- controller manager负责维护集群的状态，比如故障检测、自动扩展、滚动更新等；
+- scheduler负责资源的调度，按照预定的调度策略将Pod调度到相应的机器上；
+- kubelet负责维护容器的生命周期，同时也负责Volume（CVI）和网络（CNI）的管理；
+- Container runtime负责镜像管理以及Pod和容器的真正运行（CRI）；
+- kube-proxy负责为Service提供cluster内部的服务发现和负载均衡；
+
+除了核心组件，还有一些推荐的Add-ons：
+
+- kube-dns负责为整个集群提供DNS服务
+- Ingress Controller为服务提供外网入口
+- Heapster提供资源监控
+- Dashboard提供GUI
+- Federation提供跨可用区的集群
+- Fluentd-elasticsearch提供集群日志采集、存储与查询
+
+### 1.  节点
+
+#### 1.1  master节点
+
+<img src="asserts/14791969222306-2361797.png" alt="img" style="zoom: 25%;" /> 
+
+- Master：集群控制节点，负责整个集群的管理和控制。
+
+- API Server：提供接口，资源增删改查入口。并提供认证、授权、访问控制、API注册和发现等机制。
+
+- Controller Manager：所有资源对象的自动化控制中心；负责维护集群的状态，比如故障检测、自动扩展、滚动更新等。
+
+- Scheduler：负责资源调度，按照预定的调度策略将Pod调度到相应的机器上。
+
+- Etcd：保存整个集群的状态。
+
+#### 1.2 Node节点
+
+<img src="asserts/14791969311297-20210530173736488.png" alt="img" style="zoom: 33%;" />    
+
+- Node：工作节点，听从master的工作分配
+
+- Kubelet：Pod容器创建、启停、集群管理等任务；同时也负责Volume（CVI）和网络（CNI）的管理。
+
+- Kube-proxy：实现service的通信与负载均衡组件。
+
+- Docker：docker引擎，负责本机容器的创建和管理工作。
+
+### 2. 分层架构
+
+Kubernetes设计理念和功能其实就是一个类似Linux的分层架构，如下图所示
+
+<img src="asserts/14937095836427.jpg" alt="img" style="zoom: 67%;" /> 
+
+- 核心层：Kubernetes最核心的功能，对外提供API构建高层的应用，对内提供插件式应用执行环境
+- 应用层：部署（无状态应用、有状态应用、批处理任务、集群应用等）和路由（服务发现、DNS解析等）
+- 管理层：系统度量（如基础设施、容器和网络的度量），自动化（如自动扩展、动态Provision等）以及策略管理（RBAC、Quota、PSP、NetworkPolicy等）
+- 接口层：kubectl命令行工具、客户端SDK以及集群联邦
+- 生态系统：在接口层之上的庞大容器集群管理调度的生态系统，可以划分为两个范畴
+  - Kubernetes外部：日志、监控、配置管理、CI、CD、Workflow、FaaS、OTS应用、ChatOps等
+  - Kubernetes内部：CRI、CNI、CVI、镜像仓库、Cloud Provider、集群自身的配置和管理等
+
+从K8s的系统架构、技术概念和设计理念，我们可以看到K8s系统最核心的两个设计理念：一个是**容错性**，一个是**易扩展性**。容错性实际是保证K8s系统稳定性和安全性的基础，易扩展性是保证K8s对变更友好，可以快速迭代增加新功能的基础。
+
+## K8S核心技术
+
+### 1.Kubectl 命令行工具
+
+kubectl是Kubernetes集群的命令行工具，通过kubectl能够对集群本身进行管理，并能够在集群上进行容器化应用的安装和部署
+
+```powershell
+kubectl [command] [type] [name] [flags]
+
+参数
+  - command：指定要对资源执行的操作，例如create、get、describe、delete
+  - type：指定资源类型，资源类型是大小写敏感的，开发者能够以单数 、复数 和 缩略的形式
+  - name：指定资源的名称，名称也是大小写敏感的，如果省略名称，则会显示所有的资源
+  - flags：指定可选的参数，例如，可用 -s 或者 -server参数指定Kubernetes API server的地址和端口
+  
+例如：
+kubectl get pod pod1
+kubectl get pods pod1
+kubectl get po pod1
+```
+
+![image-20201114095544185](http://moxi159753.gitee.io/learningnotes/K8S/6_Kubernetes%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7kubectl/images/image-20201114095544185.png) 
+
+#### 1.1 help 查看帮助信息
+
+```powershell
+# 获取kubectl的命令
+kubectl --help
+
+# 获取某个命令的介绍和使用
+kubectl get --help
+```
+
+#### 1.2 常见命令
+
+##### 1.2.1 基础命令
+
+| 命令    | 介绍                                           |
+| ------- | ---------------------------------------------- |
+| create  | 通过文件名或标准输入创建资源                   |
+| expose  | 将一个资源公开为一个新的Service                |
+| run     | 在集群中运行一个特定的镜像                     |
+| set     | 在对象上设置特定的功能                         |
+| get     | 显示一个或多个资源                             |
+| explain | 文档参考资料                                   |
+| edit    | 使用默认的编辑器编辑一个资源                   |
+| delete  | 通过文件名，标准输入，资源名称或标签来删除资源 |
+
+##### 1.2.2 部署命令
+
+| 命令           | 介绍                                               |
+| -------------- | -------------------------------------------------- |
+| rollout        | 管理资源的发布                                     |
+| rolling-update | 对给定的复制控制器滚动更新                         |
+| scale          | 扩容或缩容Pod数量，Deployment、ReplicaSet、RC或Job |
+| autoscale      | 创建一个自动选择扩容或缩容并设置Pod数量            |
+
+##### 1.2.3 集群管理命令
+
+| 命令         | 介绍                           |
+| ------------ | ------------------------------ |
+| certificate  | 修改证书资源                   |
+| cluster-info | 显示集群信息                   |
+| top          | 显示资源(CPU/M)                |
+| cordon       | 标记节点不可调度               |
+| uncordon     | 标记节点可被调度               |
+| drain        | 驱逐节点上的应用，准备下线维护 |
+| taint        | 修改节点taint标记              |
+
+##### 1.2.4 故障和调试命令
+
+| 命令         | 介绍                                                         |
+| ------------ | ------------------------------------------------------------ |
+| describe     | 显示特定资源或资源组的详细信息                               |
+| logs         | 在一个Pod中打印一个容器日志，如果Pod只有一个容器，容器名称是可选的 |
+| attach       | 附加到一个运行的容器                                         |
+| exec         | 执行命令到容器                                               |
+| port-forward | 转发一个或多个                                               |
+| proxy        | 运行一个proxy到Kubernetes API Server                         |
+| cp           | 拷贝文件或目录到容器中                                       |
+| auth         | 检查授权                                                     |
+
+##### 1.2.5 其它命令
+
+| 命令         | 介绍                                                |
+| ------------ | --------------------------------------------------- |
+| apply        | 通过文件名或标准输入对资源应用配置                  |
+| patch        | 使用补丁修改、更新资源的字段                        |
+| replace      | 通过文件名或标准输入替换一个资源                    |
+| convert      | 不同的API版本之间转换配置文件                       |
+| label        | 更新资源上的标签                                    |
+| annotate     | 更新资源上的注释                                    |
+| completion   | 用于实现kubectl工具自动补全                         |
+| api-versions | 打印受支持的API版本                                 |
+| config       | 修改kubeconfig文件（用于访问API，比如配置认证信息） |
+| help         | 所有命令帮助                                        |
+| plugin       | 运行一个命令行插件                                  |
+| version      | 打印客户端和服务版本信息                            |
+
+#### 1.3 目前使用命令
+
+```bash
+# 创建一个nginx镜像
+kubectl create deployment nginx --image=nginx
+
+# 对外暴露端口
+kubectl expose deployment nginx --port=80 --type=NodePort
+
+# 查看资源
+kubectl get pod, svc
+```
+
+### 2. 资源编排（YAML文件）
+
+K8S有两种创建资源的方式：kubectl 命令和 yaml 配置文件。
+
+- kubectl命令行：最为简单，一条命令就OK，但缺点也很明显，你并不知道这条命令背后到底做了哪些事!
+- yaml配置文件：提供了一种让你知其然更知其所以然的方式。优势如下：
+  - 完整性：配置文件描述了一个资源的完整状态，可以很清楚地知道一个资源的创建背后究竟做了哪些事；
+  - 灵活性：配置文件可以创建比命令行更复杂的结构；
+  - 可维护性：配置文件提供了创建资源对象的模板，能够重复使用；
+  - 可扩展性：适合跨环境、规模化的部署。
+
+k8s 集群中对资源管理和资源对象编排部署都可以通过声明样式（YAML）文件来解决，也就是可以把需要对资源对象操作编辑到YAML 格式文件中，我们把这种文件叫做资源清单文件，通过kubectl 命令直接使用资源清单文件就可以实现对大量的资源对象进行编排部署了。一般在我们开发的时候，都是通过配置YAML文件来部署集群的。
+
+YAML文件：就是资源清单文件，用于资源编排
+
+#### 2.1 Y AML基本语法
+
+- 缩进的空格数目不重要，只要相同层级的元素左侧对齐即可
+- 低版本缩进时不允许使用Tab 键，只允许使用空格
+- 使用#标识注释，从这个字符一直到行尾，都会被解释器忽略
+- 使用 --- 表示新的yaml文件开始
+
+#### 2.2 YAML 数据结构
+
+##### 2.2.1 对象
+
+键值对的集合，又称为映射(mapping) / 哈希（hashes） / 字典（dictionary）
+
+```yaml
+# 对象类型：对象的一组键值对，使用冒号结构表示
+name: Tom
+age: 18
+
+# yaml 也允许另一种写法，将所有键值对写成一个行内对象
+hash: {name: Tom, age: 18}
+```
+
+##### 2.2.2 数组
+
+```yaml
+# 数组类型：一组连词线开头的行，构成一个数组
+People
+- Tom
+- Jack
+
+# 数组也可以采用行内表示法
+People: [Tom, Jack]
+```
+
+#### 2.3 YAML组成部分
+
+主要分为了两部分，一个是控制器的定义 和 被控制的对象
+
+> 字段说明
+
+<img src="asserts/image-20210530164056356-2364058.png" alt="image-20210530164056356" style="zoom: 25%;" /> 
+
+#### 2.4 如何快速编写YAML文件
+
+一般来说，我们很少自己手写YAML文件，因为这里面涉及到了很多内容，我们一般都会借助工具来创建
+
+- 使用kubectl create命令生成YAML文件
+- 使用kubectl get命令导出已有的yaml文件
+
+##### 2.4.1  kubectl create命令生成
+
+这种方式一般用于资源没有部署的时候，我们可以直接创建一个YAML配置文件
+
+```bash
+# 尝试运行,并不会真正的创建镜像
+kubectl create deployment web --image=nginx -o yaml --dry-run
+
+# 或者我们可以输出到一个文件中
+kubectl create deployment web --image=nginx -o yaml --dry-run > hello.yaml
+```
+
+然后我们就在文件中直接修改即可
+
+##### 2.4.2  kubectl get命令导出
+
+可以首先查看一个目前已经部署的镜像
+
+```bash
+kubectl get deploy
+```
+
+![image-20201114113115649](asserts/image-20201114113115649-2364363.png) 
+
+然后我们导出 nginx的配置
+
+```powershell
+kubectl get deploy nginx -o=yaml --export > nginx.yaml
+```
+
+然后会生成一个 `nginx.yaml` 的配置文件
+
+![image-20201114184538797](asserts/image-20201114184538797-2364412.png) 
+
+#### 2.5 案例分析
+
+##### 2.5.1 YAML创建pod
+
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube100-site
+  labels:
+    app: web
+spec:
+  containers:
+    - name: front-end
+      image: nginx
+      ports:
+        - containerPort: 80
+    - name: flaskapp-demo
+      image: jcdemo/flaskapp
+      ports:
+        - containerPort: 5000
+```
+
+上面定义了一个普通的Pod文件，简单分析下文件内容：
+
+- apiVersion：此处值是v1，这个版本号需要根据安装的Kubernetes版本和资源类型进行变化，记住不是写死的。
+- kind：此处创建的是Pod，根据实际情况，此处资源类型可以是Deployment、Job、Ingress、Service等。
+- metadata：包含Pod的一些meta信息，比如名称、namespace、标签等信息。
+- spe：包括一些container，storage，volume以及其他Kubernetes需要的参数，以及诸如是否在容器失败时重新启动容器的属性。可在特定Kubernetes API找到完整的Kubernetes Pod的属性。
+  
+
+### 3. Pod
+
+*Pod* 是可以在 Kubernetes 中创建和管理的、最小的可部署的计算单元。
+
+> 出自：https://kubernetes.io/zh/docs/concepts/workloads/pods/
+
+#### 3.1 Pod 概述
+
+一个[**Pod**](https://www.kubernetes.org.cn/tags/pod)（就像一群鲸鱼，或者一个豌豆夹）相当于一个共享context的配置组，在同一个context下，应用可能还会有独立的cgroup隔离机制，一个Pod是一个容器环境下的“逻辑主机”，它可能包含一个或者多个紧密相连的应用，这些应用可能是在同一个物理主机或虚拟机上。每一个Pod都有一个特殊的被称为 “根容器”的Pause容器。Pause容器对应的镜像属于Kubernetes平台的一部分，除了Pause容器，每个Pod还包含一个或多个紧密相关的用户业务容器。
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114185528215.png" alt="image-20201114185528215" style="zoom: 33%;" /> 
+
+> Pod 存在的意义
+
+- 创建容器使用docker，一个docker 对应一个容器，一个容器有进程，一个容器运行一个应用程序
+- Pod是多进程设计，可以运行多个应用程序
+  - 一个Pod包含多个容器，每个容器里面可以运行一个应用程序
+- Pod 存在可以支持pod内部，两个应用之间的交互和网络频繁调用
+
+#### 3.2 Pod 实现机制
+
+主要有以下两大机制
+
+- 共享网络
+- 共享存储
+
+##### 3.2.1 共享网络
+
+容器之间本身是相互隔离的，一般是通过 **namespace** 和 **group** 进行隔离，那么Pod里面的容器如何实现通信？
+
+- 首先需要满足前提条件，也就是容器都在同一个**namespace**之间
+
+关于Pod实现原理，首先会在Pod会创建一个根容器： `pause容器`，然后我们在创建业务容器 【nginx，redis 等】，在我们创建业务容器的时候，会把它添加到 `info容器` 中，而在 `info容器` 中会独立出 ip地址，mac地址，port 等信息，然后实现网络的共享
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114190913859.png" alt="image-20201114190913859" style="zoom:67%;" /> 
+
+完整步骤如下
+
+- 通过 Pause 容器，把其它业务容器加入到Pause容器里，让所有业务容器在同一个名称空间中，可以实现网络共享
+
+##### 3.2.2 共享存储
+
+Pod持久化数据，专门存储到某个地方中
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114193124160.png" alt="image-20201114193124160" style="zoom:50%;" /> 
+
+使用 Volumn数据卷进行共享存储，案例如下所示
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114193341993.png" alt="image-20201114193341993" style="zoom: 67%;" />   
+
+#### 3.3 Pod镜像拉取策略
+
+我们以具体实例来说，拉取策略就是 `imagePullPolicy`
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114193605230.png" alt="image-20201114193605230" style="zoom:67%;" /> 
+
+> 支持三种ImagePullPolicy
+
+- Always：不管镜像是否存在都会进行一次拉取。
+- Never：不管镜像是否存在都不会进行拉取
+- IfNotPresent：只有镜像不存在时，才会进行镜像拉取。
+
+注意：
+
+- 默认为`IfNotPresent`，但`:latest`标签的镜像默认为`Always`。
+- 拉取镜像时docker会进行校验，如果镜像中的MD5码没有变，则不会拉取镜像数据。
+- 生产环境中应该尽量避免使用`:latest`标签，而开发环境中可以借助`:latest`标签自动拉取最新的镜像。
+
+#### 3.4 Pod 资源限制
+
+也就是我们Pod在进行调度的时候，可以对调度的资源进行限制，
+
+例如：我们限制 Pod调度是使用的资源是 2C4G，那么在调度对应的node节点时，只会占用对应的资源，对于不满足资源的节点，将不会进行调度
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114194057920.png" alt="image-20201114194057920" style="zoom:67%;" />  
+
+我们在下面的地方 **进行资源的限制**  配置
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114194245517.png" alt="image-20201114194245517" style="zoom:67%;" />  
+
+这里分了两个部分
+
+- request：表示调度所需的资源
+- limits：表示最大所占用的资源
+
+#### 3.5 Pod 重启机制
+
+因为Pod中包含了很多个容器，假设某个容器出现问题了，那么就会触发Pod重启机制
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114194722125.png" alt="image-20201114194722125" style="zoom:67%;" />  
+
+重启策略主要分为以下三种
+
+- Always：当容器终止退出后，总是重启容器，默认策略 【nginx等，需要不断提供服务】
+- OnFailure：当容器异常退出（退出状态码非0）时，才重启容器。
+- Never：当容器终止退出，从不重启容器 【批量任务】
+
+#### 3.6 Pod 健康检查
+
+通过容器检查，原来我们使用下面的命令来检查
+
+```bash
+kubectl get pod
+```
+
+但是有的时候，程序可能出现了 **Java** 堆内存溢出，程序还在运行，但是不能对外提供服务了，这个时候就不能通过 容器检查来判断服务是否可用了
+
+这个时候就可以使用应用层面的检查
+
+```bash
+# 存活检查，如果检查失败，将杀死容器，根据Pod的restartPolicy【重启策略】来操作
+livenessProbe
+
+# 就绪检查，如果检查失败，Kubernetes会把Pod从Service endpoints中剔除
+readinessProbe
+```
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114195807564.png" alt="image-20201114195807564" style="zoom:50%;" />  
+
+Probe支持以下三种检查方式
+
+- http Get：发送HTTP请求，返回200 - 400 范围状态码为成功
+- exec：执行Shell命令返回状态码是0为成功
+- tcpSocket：发起TCP Socket建立成功
+
+#### 3.7 Pod 调度策略
+
+##### 3.7.1 创建 pod 的流程
+
+- 首先创建一个pod，然后创建一个API Server 和 Etcd【把创建出来的信息存储在etcd中】
+- 然后创建 Scheduler，监控API Server是否有新的Pod，如果有的话，会通过调度算法，把pod调度某个node上
+- 在node节点，会通过 `kubelet -- apiserver` 读取etcd 拿到分配在当前node节点上的pod，然后通过docker创建容器
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114201611308.png" alt="image-20201114201611308" style="zoom: 67%;" />   
+
+
+
+##### 3.7.2 影响Pod调度的属性
+
+**Pod资源限制对Pod的调度会有影响** 
+
+- 根据request找到足够node节点进行调度
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114194245517.png" alt="image-20201114194245517" style="zoom: 67%;" />  
+
+**节点选择器标签影响Pod调度** 
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114202456151.png" alt="image-20201114202456151" style="zoom:50%;" />   
+
+关于节点选择器，其实就是有两个环境，然后环境之间所用的资源配置不同
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114202643905.png" alt="image-20201114202643905" style="zoom:50%;" />  
+
+我们可以通过以下命令，给我们的节点新增标签，然后节点选择器就会进行调度了
+
+```bash
+kubectl label node node1 env_role=prod
+```
+
+##### 3.7.3 节点亲和性
+
+节点亲和性 **nodeAffinity** 和 之前nodeSelector 基本一样的，根据节点上标签约束来决定Pod调度到哪些节点上
+
+- 硬亲和性：约束条件必须满足
+- 软亲和性：尝试满足，不保证
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114203433939.png" alt="image-20201114203433939" style="zoom: 50%;" /> 
+
+- 支持常用操作符：in、NotIn、Exists、Gt、Lt、DoesNotExists
+
+- 反亲和性：就是和亲和性刚刚相反，如 NotIn、DoesNotExists等
+
+#### 3.8 污点和污点容忍
+
+nodeSelector 和 NodeAffinity，都是Prod调度到某些节点上，属于Pod的属性，是在调度的时候实现的。
+
+Taint 污点：节点不做普通分配调度，是节点属性
+
+> 场景
+
+- 专用节点【限制ip】
+- 配置特定硬件的节点【固态硬盘】
+- 基于Taint驱逐【在node1不放，在node2放】
+
+##### 3.8.1 查看污点情况
+
+```bash
+kubectl describe node k8smaster | grep Taint
+```
+
+![image-20201114204124819](http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114204124819.png) 
+
+污点值有三个
+
+- NoSchedule：一定不被调度
+- PreferNoSchedule：尽量不被调度【也有被调度的几率】
+- NoExecute：不会调度，并且还会驱逐Node已有Pod
+
+##### 3.8.2 末节点添加污点
+
+```bash
+kubectl taint node [node] key=value:污点的三个值
+
+举例
+kubectl taint node k8snode1 env_role=yes:NoSchedule
+```
+
+##### 3.8.3 删除污点
+
+```bash
+kubectl taint node k8snode1 env_role:NoSchedule-
+```
+
+![image-20201114210022883](http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114210022883.png) 
+
+> 我们现在创建多个Pod，查看最后分配到Node上的情况
+
+```bash
+## 首先我们创建一个 nginx 的pod
+kubectl create deployment web --image=nginx
+
+## 然后使用命令查看
+kubectl get pods -o wide
+```
+
+![image-20201114204917548](http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114204917548.png) 
+
+我们可以非常明显的看到，这个Pod已经被分配到 k8snode1 节点上了
+
+- 下面我们把pod复制5份，在查看情况pod情况
+
+```bash
+kubectl scale deployment web --replicas=5
+```
+
+我们可以发现，因为master节点存在污点的情况，所以节点都被分配到了 node1 和 node2节点上
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114205135282.png" alt="image-20201114205135282" style="zoom: 67%;" /> 
+
+我们可以使用下面命令，把刚刚我们创建的pod都删除
+
+```bash
+kubectl delete deployment web
+
+## 现在给了更好的演示污点的用法，我们现在给 node1节点打上污点
+kubectl taint node k8snode1 env_role=yes:NoSchedule
+
+## 然后我们查看污点是否成功添加
+kubectl describe node k8snode1 | grep Taint
+```
+
+ ![image-20201114205516154](http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114205516154.png) 
+
+```bash
+## 然后我们在创建一个 pod
+
+# 创建nginx pod
+kubectl create deployment web --image=nginx
+# 复制五次
+kubectl scale deployment web --replicas=5
+
+# 然后我们在进行查看
+kubectl get pods -o wide
+```
+
+我们能够看到现在所有的pod都被分配到了 k8snode2上，因为刚刚我们给node1节点设置了污点
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114205654867.png" alt="image-20201114205654867" style="zoom:67%;" /> 
+
+```bash
+## 最后我们可以删除刚刚添加的污点
+kubectl taint node k8snode1 env_role:NoSchedule-
+```
+
+#####  3.8.4 污点容忍
+
+污点容忍就是某个节点可能被调度，也可能不被调度
+
+<img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114210146123.png" alt="image-20201114210146123" style="zoom: 67%;" />   
+
+
+
+
+
+
+
+
+
+
+
