@@ -1541,7 +1541,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 
 ##### （2）解决方案与分析
 
-- 对于第一种需要根据jdk分析工具，找对应的代码分析，具体方案可以参考 [文章](https://blog.csdn.net/qq_41893274/article/details/108901595) 
+- 对于第一种需要根据jdk分析工具，找对应的代码分析，具体方案可以参考 [详情文章](https://blog.csdn.net/qq_41893274/article/details/108901595) 
 - 第二种问题处理方案：我们手工扩大JVM堆的参数设置
 
 **Jvm 堆的设置**： 是指Java程序运行过程中JVM可以调配使用的内存空间的设置

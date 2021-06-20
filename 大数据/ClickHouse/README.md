@@ -5,6 +5,9 @@
 ClickHouse是一个用于联机分析(OLAP)的列式数据库管理系统(DBMS)
 
 - 官方文档：https://clickhouse.tech/docs/zh/
+- 学习资料：
+  - 腾讯云
+    - [cliclhouse的秘密基地](https://cloud.tencent.com/developer/column/84496) 
 
 #### 1.1 Clickhouse 环境构建
 
@@ -265,7 +268,7 @@ select * from replac_merge_test;
 
 - https://blog.csdn.net/lcl_xiaowugui/article/details/107772580
 
-#### 1.3 ClickHouse 表引擎和库引擎
+#### 1.3 ClickHouse 表引擎
 
 clickhouse是一个完全的分布式列式存储数据库，以下重点介绍MergeTree、ReplacingMergeTree、CollapsingMergeTree、VersionedCollapsingMergeTree、SummingMergeTree、AggregatingMergeTree引擎。
 
@@ -851,6 +854,109 @@ GROUP BY CounterID, StartDate;
 
 1. [ClickHouse表引擎到底怎么选](https://blog.csdn.net/A1373712651/article/details/103608340) 
 
+##### 1.3.7 表引擎的选择
+
+> 主题
+
+- **ORDER BY** 决定了每个分区中数据的排序规则;**PRIMARY KEY** 决定了一级索引(primary.idx);**ORDER BY** 可以指代**PRIMARY KEY**, 通常只用声明**ORDER BY** 即可。
+- 数据去重
+- 数据更新/删除
+- 数据预聚合——物化视图
+
+在没有特殊要求的场合，使用基础的MergeTree表引擎即可，它不仅拥有高效的性能，也提供了所有MergeTree共有的基础功能，包括列存、数据分区、分区索引、一级索引、二级索引、TTL、多路径存储等等。
+
+<img src="asserts/image-20210530224354104.png" alt="image-20210530224354104" style="zoom: 33%;" /> 
+
+与此同时，它也定义了整个MergeTree家族的基调，例如：
+
+- **ORDER BY** 决定了每个分区中数据的排序规则;
+
+- **PRIMARY KEY** 决定了一级索引(primary.idx);
+
+- **ORDER BY** 可以指代**PRIMARY KEY**, 通常只用声明**ORDER BY** 即可。
+
+接下来将要介绍的其他表引擎，除开ReplicatedMergeTree系列外，都是在Merge合并动作时添加了各自独有的逻辑。
+
+- **数据去重** 
+
+通过刚才的说明，大家应该明白，MergeTree的主键（PRIMARY KEY）只是用来生成一级索引（primary.idx）的，并没有唯一性约束这样的语义。
+
+一些朋友在使用MergeTree的时候，用传统数据库的思维来理解MergeTree就会出现问题。
+
+如果业务上不允许数据重复，遇到这类场景就可以使用ReplacingMergeTree，如下图所示:
+
+<img src="asserts/image-20210530224611550.png" alt="image-20210530224611550" style="zoom: 33%;" /> 
+
+ReplacingMergeTree通过ORDER BY，表示判断唯一约束的条件。当分区合并之时，根据ORDER BY排序后，相邻重复的数据会被排除。
+
+> 由此，可以得出几点结论:
+
+1. 使用**ORDER BY**作为特殊判断标识，而不是PRIMARY KEY。关于这一点网上有一些误传，但是如果理解了**ORDER BY**与**PRIMARY KEY**的作用，以及合并逻辑之后，都能够推理出应该是由ORDER BY决定。
+   1. **ORDER BY的作用** ， 负责分区内数据排序;
+   2. **Merge**的逻辑， 分区内数据排序后，找到相邻的数据，做特殊处理。
+2. 只有在触发合并之后，才能触发特殊逻辑。以去重为例，在没有合并的时候，还是会出现重复数据。
+3. 只对同一分区内的数据有效。以去重为例，只有属于**相同分区**的数据才能去重，跨越不同分区的重复数据不能去重。
+
+**上述几点结论，适用于包含ReplacingMergeTree在内的6种MergeTree，所以后面不在赘述。**
+
+- **预聚合(数据立方体)** -**物化视图** 
+
+有这么一类场景，它的查询主题是非常明确的，也就是说聚合查询的维度字段是固定，并且没有明细数据的查询需求，这类场合就可以使用**Summing**MergeTree或是**Aggregating**MergeTree，如下图所示：
+
+<img src="asserts/image-20210530224951193.png" alt="image-20210530224951193" style="zoom: 33%;" /> 
+
+可以看到，在新分区合并后，在同一分区内，**ORDER BY**条件相同的数据会进行合并。如此一来，首先表内的数据行实现了有效的减少，其次度量值被预先聚合，进一步减少了后续计算开销。
+
+聚合类MergeTree通常可以和表引擎协同使用，如下图所示：
+
+<img src="asserts/image-20210530225044062.png" alt="image-20210530225044062" style="zoom: 33%;" /> 
+
+可以将 **物化视图** 设置成聚合类MergeTree，将其作为固定主题的查询表使用。
+
+> 值得一提的是
+
+通常只有在使用SummingMergeTree或AggregatingMergeTree的时候，才需要同时设置**ORDER BY**与**PRIMARY KEY。**
+
+显式的设置**PRIMARY KEY，**是为了将主键和排序键设置成不同的值，是进一步优化的体现。
+
+例如：某个场景的查询需求如下:
+
+```bash
+聚合条件，GROUP BY A，B，C
+过滤条件，WHERE A
+
+此时，如下设置将会是一种较优的选择:
+
+GROUP BY A，B，C
+PRIMARY KEY A
+
+BTW，如果ORDER BY与PRIMARY KEY不同，PRIMARY KEY必须是ORDER BY的前缀(为了保证分区内数据和主键的有序性)。
+```
+
+- **数据更新** 
+
+数据的更新在ClickHouse中有多种实现手段，例如按照分区Partition重新写入、使用Mutation的DELETE和UPDATE查询。
+
+使用CollapsingMergeTree或VersionedCollapsingMergeTree也能实现数据更新，这是一种使用标记位，以增代删的数据更新方法，如下图所示：
+
+<img src="asserts/image-20210530225403821.png" alt="image-20210530225403821" style="zoom:50%;" /> 
+
+通过增加一个标志字段(例如图中的sigh字段)，作为数据有效性的判断依据。
+
+可以看到，在新分区合并后，在同一分区内，**ORDER BY**条件相同的数据，其标志值为1和-1的数据行会进行抵消。
+
+下图是另外一种便于理解的视角，就如同挤压瓦楞纸一般，数据被抵消了:
+
+<img src="asserts/image-20210530225455030.png" alt="image-20210530225455030" style="zoom:50%;" /> 
+
+**CollapsingMergeTree和VersionedCollapsingMergeTree的区别又是什么呢?**
+
+- **CollapsingMergeTree**对数据**写入的顺序是敏感的**，它要求标志位需要按照正确的顺序排序。例如按照1，-1的写入顺序是正确的; 而如果按照-1，1的错误顺序写入，CollapsingMergeTree就无法正确抵消。
+
+试想，如果在一个多线程并行的写入场景，我们是无法保证这种顺序写入的，此时就需要使用VersionedCollapsingMergeTree了。
+
+- **VersionedCollapsingMergeTree**在CollapsingMergeTree基础之上，额外要求指定一个version字段，在分区Merge合并时，它会自动将version字段追加到ORERY BY的末尾，从而保证了标志位的有序性。
+
 #### 1.4 ClickHouse 物化视图
 
 > 来源
@@ -1107,6 +1213,113 @@ WHERE (database = 'dw') AND (table = '.inner.main_site_minute_pv_uv')
 
 1. [ClickHouse物化视图](https://www.jianshu.com/p/3f385e4e7f95)  
 
+#### 1.5 clickhouse 分布式
+
+ClickHouse 提供了本地表（Local）与分布式表（Distributed）概念，**本地表** 等同一份数据分片，**分布式表** 本身不存储任何数据，只作为本地表的访问代理（类似分库的中间件），以支持访问多个数据分片进行分布式查询。
+
+- 集群部署流程：https://clickhouse.tech/docs/en/getting-started/tutorial/#cluster-deployment
+- 分布式查询流程：https://clickhouse.tech/docs/en/development/architecture/#distributed-query-execution
+
+##### 1.5.1 集群部署流程
+
+1. 在集群的所有机器上安装 ClickHouse 服务器
+2. 在配置文件中设置集群配置
+3. 在每个实例上创建本地表
+4. 创建[分布式表](https://clickhouse.tech/docs/en/engines/table-engines/special/distributed/) 
+
+[分布式表](https://clickhouse.tech/docs/en/engines/table-engines/special/distributed/)实际上是一种对 ClickHouse 集群本地表的“视图”。来自分布式表的 SELECT 查询使用所有集群分片的资源执行。您可以为多个集群指定配置并创建多个分布式表，为不同的集群提供视图。
+
+> 具有三个分片的集群的示例配置，每个分片一个副本：
+
+```xml
+<remote_servers>
+    <perftest_3shards_1replicas>
+        <shard>
+            <replica>
+                <host>example-perftest01j.yandex.ru</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+        <shard>
+            <replica>
+                <host>example-perftest02j.yandex.ru</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+        <shard>
+            <replica>
+                <host>example-perftest03j.yandex.ru</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+    </perftest_3shards_1replicas>
+</remote_servers>
+```
+
+##### 1.5.2 CK 分布式表与本地表
+
+- **分布式表**：一个逻辑上的表, 可以理解为数据库中的视图, 一般查询都查询分布式表. 分布式表引擎会将我们的查询请求路由本地表进行查询, 然后进行汇总最终返回给用户
+
+- **本地表：** 实际存储数据的表
+
+> zookeeper在clickhouse中的作用
+
+分布式实例部署过程中，在ZK中存储大量数据，包括且不限于表结构信息、元数据、操作日志、副本状态、数据块校验值、数据part merge过程中的选主信息等等。可见，ZK在复制表机制下扮演了元数据存储、日志框架、分布式协调服务三重角色，任务很重，所以需要额外保证ZK集群的可用性以及资源（尤其是硬盘资源）。
+
+##### 1.5.3 本地表（分片）写入流程
+
+>  副本（复制表）执行插入流程是：
+
+​      先写入一个副本(**本地表之一** )，再通过config.xml中配置的interserver HTTP port端口（默认是9009）将数据复制到其他实例上去，同时更新ZK集群上记录的信息。
+
+<img src="asserts/webp-3999028." alt="img" style="zoom:50%;" /> 
+
+ 
+
+##### 1.5.4 分布式表 查询流程
+
+ClickHouse分布式表的本质并不是一张表，而是一些本地物理表（分片）的分布式视图，本身并不存储数据。
+
+- 支持分布式表的引擎是Distributed，建表DDL语句示例如下，`_all`只是分布式表名比较通用的后缀而已。
+
+```sql
+CREATE TABLE IF NOT EXISTS test.events_all ON CLUSTER sht_ck_cluster_1 AS test.events_local
+ENGINE = Distributed(sht_ck_cluster_1,test,events_local,rand());
+```
+
+> 发出查询时，查询分布式表，然后各个实例之间会交换自己持有的分片的表数据，最终汇总到同一个实例上返回给用户
+
+<img src="asserts/webp-20210618145519830" alt="img" style="zoom:50%;" /> 
+
+而在写入时，我们有两种选择：
+
+- 写分布式表
+- 写本地表
+
+**优势和劣势对比** 
+
+- 直接写分布式表的**优点**：自然是可以让ClickHouse控制数据到分片的路由
+- **缺点** 
+  - 数据是先写到一个分布式表的实例中并缓存起来，再逐渐分发到各个分片上去，实际是双写了数据（写入放大），浪费资源
+  - 数据写入默认是异步的，短时间内可能造成不一致；
+  - 目标表中会产生较多的小parts，使merge（即compaction）过程压力增大。
+
+**直接写本地表是同步操作，更快，parts的大小也比较合适，但是就要求应用层额外实现sharding和路由逻辑，如轮询或者随机等。** 
+
+<img src="asserts/webp-20210618145952390" alt="img" style="zoom:50%;" /> 
+
+应用层路由并不是什么难事，所以如果条件允许，在生产环境中总是推荐**写本地表、读分布式表**。 
+
+##### 1.5.5 分布式表特殊场景
+
+
+
+相关文章
+
+1. [clickhouse架构](https://zhuanlan.zhihu.com/p/263469908) 
+2. [Clickhouse 分布式表和本地表](https://www.cnblogs.com/yisany/p/13524018.html) 
+3. [ClickHouse复制表、分布式表机制与使用方法](https://www.jianshu.com/p/ab811cceb856) 
+
 ### 2.ClickHouse SQL语法
 
 > 来源：https://clickhouse.tech/docs/zh/sql-reference/syntax/
@@ -1357,13 +1570,11 @@ select array('a1','a2');
 
 ##### 2.4.4 聚合查询-groupby
 
-
-
 相关资料
 
 - [聚合查询-groupby](http://saoniuhuo.com/article/detail-87.html) 
 
-#### 2.5 批量写入
+#### 2.5 新增数据
 
 ClickHouse 使用 INSERT INTO 语句来完成数据写入。
 
@@ -1373,6 +1584,10 @@ INSERT INTO [db.]table [(c1, c2, c3)] SELECT ...
 ```
 
 相关官方文档 [INSERT](https://clickhouse.tech/docs/en/query_language/insert_into/)。
+
+##### 2.5.1 upsert(新增或更新) 
+
+
 
 #### 2.6 删除数据
 
@@ -1389,6 +1604,9 @@ DROP [TEMPORARY] TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
 
 ## 删除表 只删除表数据
 TRUNCATE TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
+
+## 举例：
+truncate table kenan.parse_detail ON cluster test
 ```
 
 #### 2.7 修改表数据
@@ -1420,6 +1638,8 @@ ALTER TABLE table-name MODIFY TTL ttl-expression
 # 添加带聚合函数的列
 alter table [db].name add column name [type] [default_expr] [codec] [AFTER name_after]
 ```
+
+##### 2.7.2 修改数据
 
 
 
@@ -1846,6 +2066,14 @@ ORDER BY a DESC NULLS FIRST
 
 > 出自：https://blog.csdn.net/vkingnew/article/details/107220638 
 
+##### 2.8.3 IN/ **GLOBAL** **IN**(1)  
+
+> 出自：https://clickhouse.tech/docs/zh/sql-reference/operators/in
+
+- 使用常规 IN 时，查询被发送到远程服务器，每个服务器都运行`IN`or`JOIN`子句中的子查询。
+
+- 使用`GLOBAL IN`/ 时`GLOBAL JOINs`，首先为`GLOBAL IN`/运行所有子查询`GLOBAL JOINs`，并将结果收集在临时表中。然后将临时表发送到每个远程服务器，在那里使用这些临时数据运行查询。
+
 
 
 #### 2.9 字典
@@ -1860,6 +2088,28 @@ ORDER BY a DESC NULLS FIRST
 相关资料
 
 1. [ClickHouse SQL 语法](https://cloud.tencent.com/document/product/589/43506)  [腾讯云] 
+
+#### 2.10 OrderBy 排序
+
+
+
+- **ORDER BY** 决定了每个分区中数据的排序规则;
+- **PRIMARY KEY**  决定了一级索引(primary.idx);
+- **ORDER BY** 可以指代**PRIMARY KEY**, 通常只用声明**ORDER BY** 即可。
+
+#### 2.11 更新数据
+
+```sql
+-- delete
+ALTER TABLE [db.]table DELETE WHERE filter_expr
+
+-- update
+ALTER TABLE [db.]table UPDATE column1 = expr1 [, ...] WHERE filter_expr
+
+-- 案例演示
+-- 一次更新一天的数据。
+alter table test update status=1 where status=0 and day='2020-04-01'
+```
 
 
 
@@ -1919,38 +2169,222 @@ ORDER BY a DESC NULLS FIRST
 
 <img src="asserts/image-20210509163805230.png" alt="image-20210509163805230" style="zoom:50%;" /> 
 
-#### 4.2 ClickHouse 实践验证正确性
+#### 4.2 ClickHouse 快速实现同比/环比分析
 
-##### 4.2.1 验证表引擎特性
+> 出自：https://cloud.tencent.com/developer/article/1612576
 
-- 聚合函数实现数据更新
-- 主键生效时机
-- 聚合函数实现数据去重
+同比、环比分析是一对常见的分析指标，其增长率公式如下：
 
-> 案例一：
+- **同比增长率 =（本期数 - 同期数) / 同期数** 
+- **环比增长率 =（本期数 - 上期数) /上期数** 
 
-- 建表
+在一些提供了开窗函数的数据库中(如Oracle、Hive)，可以利用lag()、lead()函数配合over()，非常方便的实现同比和环比的查询。
 
-  ```sql
-  # AggregatingMergeTree 表引擎支持同一个分区去重，但是必须手动强制分区合并
-  create table user_test(
-      log_id UInt64,
-      reg_date SimpleAggregateFunction(anyLast,DateTime),
-      remark SimpleAggregateFunction(anyLast,String)
-  ) ENGINE = AggregatingMergeTree()
-  PRIMARY KEY (log_id)
-  partition by toYYYYMM(reg_date)
-  order by (log_id,reg_date)
-  
-  # 手动强制分区合并
-  optimize table user_test FINAL;
-  ```
+大家知道，ClickHose目前是没有提供对应的over()函数的，但是借助一些特殊的函数，也能变相实现开窗的效果。
 
-- 插入数据
+**今天就在此抛砖引玉，向大家介绍如何利用 neighbor 函数，快速实现同比、环比分析。**
 
-  ```sql
-  insert into kenan.user_test values (1,toDateTime('2034-12-29 15:40:47'),'测试数据')
-  ```
+> ` neighbor  `  获取某一列前后相邻的数据，第二个参数控制前后相邻的距离
+
+- 官网原文：https://clickhouse.tech/docs/en/sql-reference/functions/other-functions/#neighbor
+
+```sql
+neighbor(column, offset[, default_value])
+
+其中:
+column 是指定字段;
+offset 是偏移量，例如 1 表示curr_row + 1，即每次向前获取一位; -1 表示curr_row - 1 ，即每次向后获取一位;
+default_value 是默认值，如果curr_row +/- 1 超过了返回结果集的边界，则使用默认值。选填参数，在默认情况下，会使用column字段数据类型的默认值。
+
+## 案例
+SELECT a, neighbor( a,-1 ) from (SELECT arrayJoin( [1,2,3,6,34,3,11] ) as a,'u' as  b)  
+```
+
+> 案例分析
+
+假设有一份销售数据如下所示:
+
+```sql
+ch7.nauu.com :) WITH toDate('2019-01-01') AS start_date
+:-] SELECT
+:-]     toStartOfMonth(start_date + (number * 32)) AS date_time,
+:-]     (number+1) * 100 AS money
+:-] FROM numbers(16);
+
+WITH toDate('2019-01-01') AS start_date
+SELECT 
+    toStartOfMonth(start_date + (number * 32)) AS date_time, 
+    (number + 1) * 100 AS money
+FROM numbers(16)
+
+┌──date_time─┬─money─┐
+│ 2019-01-01 │   100 │
+│ 2019-02-01 │   200 │
+│ 2019-03-01 │   300 │
+│ 2019-04-01 │   400 │
+│ 2019-05-01 │   500 │
+│ 2019-06-01 │   600 │
+│ 2019-07-01 │   700 │
+│ 2019-08-01 │   800 │
+│ 2019-09-01 │   900 │
+│ 2019-10-01 │  1000 │
+│ 2019-11-01 │  1100 │
+│ 2019-12-01 │  1200 │
+│ 2020-01-01 │  1300 │
+│ 2020-02-01 │  1400 │
+│ 2020-03-01 │  1500 │
+│ 2020-04-01 │  1600 │
+└────────────┴───────┘
+
+16 rows in set. Elapsed: 0.002 sec.
+```
+
+这份数据逐月记录了19年1月 至 20年4月的销售额。
+
+**现在我们看看 neighbor 函数有什么作用** 
+
+在刚才的查询中，我们添加neighbor函数，并将offset设为-12，意思是向上取第12行的money值，即取上一年度同月份的money数:
+
+```sql
+neighbor(money, -12) AS prev_year
+```
+
+再次观察结果:
+
+```sql
+WITH toDate('2019-01-01') AS start_date
+SELECT 
+    toStartOfMonth(start_date + (number * 32)) AS date_time, 
+    (number + 1) * 100 AS money, 
+    neighbor(money, -12) AS prev_year
+FROM numbers(16)
+
+┌──date_time─┬─money─┬─prev_year─┐
+│ 2019-01-01 │   100 │         0 │ <===================-|
+│ 2019-02-01 │   200 │         0 │ <=============-|     |
+│ 2019-03-01 │   300 │         0 │ <=======-|     |     |
+│ 2019-04-01 │   400 │         0 │ <=-|     |     |     |
+│ 2019-05-01 │   500 │         0 │    |     |     |     |
+│ 2019-06-01 │   600 │         0 │    |     |     |     |
+│ 2019-07-01 │   700 │         0 │    |     |     |     |
+│ 2019-08-01 │   800 │         0 │    |     |     |     |
+│ 2019-09-01 │   900 │         0 │    |     |     |     |
+│ 2019-10-01 │  1000 │         0 │    |     |     |     |
+│ 2019-11-01 │  1100 │         0 │    |     |     |     |
+│ 2019-12-01 │  1200 │         0 │    |     |     |     |
+│ 2020-01-01 │  1300 │       100 │    |     |     |====-|
+│ 2020-02-01 │  1400 │       200 │    |     |====-|
+│ 2020-03-01 │  1500 │       300 │    |====-|
+│ 2020-04-01 │  1600 │       400 │ ==-|
+└────────────┴───────┴───────────┘
+
+16 rows in set. Elapsed: 0.002 sec.
+```
+
+可以看到，prev_year即表示**同期数**。
+
+现在，进一步完善SQL语句
+
+```sql
+## 首先按照同比公式计算比率并取整:
+round((money-prev_year) / prev_year, 2))
+
+## 接着，使用-999代号表示没有同比数据的情况：
+if(prev_year=0, -999, round((money-prev_year) / prev_year, 2)) AS year_over_year
+```
+
+至此，我们就完成了同比增长率的计算。
+
+接下来看**环比计算**，与同比类似，只是将offset设置成 -1 即可：
+
+```sql
+## 此处的prev_month即表示上期数。
+neighbor(money, -1) AS prev_month
+```
+
+所以，最终的SQL语句如下所示：
+
+```sql
+WITH toDate('2019-01-01') AS start_date
+SELECT 
+    toStartOfMonth(start_date + (number * 32)) AS date_time, 
+    (number + 1) * 100 AS money, 
+    neighbor(money, -12) AS prev_year, 
+    neighbor(money, -1) AS prev_month, 
+    if(prev_year = 0, -999, round((money - prev_year) / prev_year, 2)) AS year_over_year, 
+    if(prev_month = 0, -999, round((money - prev_month) / prev_month, 2)) AS month_over_month
+FROM numbers(16)
+
+┌──date_time─┬─money─┬─prev_year─┬─prev_month─┬─year_over_year─┬─month_over_month─┐
+│ 2019-01-01 │   100 │         0 │          0 │           -999 │             -999 │
+│ 2019-02-01 │   200 │         0 │        100 │           -999 │                1 │
+│ 2019-03-01 │   300 │         0 │        200 │           -999 │              0.5 │
+│ 2019-04-01 │   400 │         0 │        300 │           -999 │             0.33 │
+│ 2019-05-01 │   500 │         0 │        400 │           -999 │             0.25 │
+│ 2019-06-01 │   600 │         0 │        500 │           -999 │              0.2 │
+│ 2019-07-01 │   700 │         0 │        600 │           -999 │             0.17 │
+│ 2019-08-01 │   800 │         0 │        700 │           -999 │             0.14 │
+│ 2019-09-01 │   900 │         0 │        800 │           -999 │             0.12 │
+│ 2019-10-01 │  1000 │         0 │        900 │           -999 │             0.11 │
+│ 2019-11-01 │  1100 │         0 │       1000 │           -999 │              0.1 │
+│ 2019-12-01 │  1200 │         0 │       1100 │           -999 │             0.09 │
+│ 2020-01-01 │  1300 │       100 │       1200 │             12 │             0.08 │
+│ 2020-02-01 │  1400 │       200 │       1300 │              6 │             0.08 │
+│ 2020-03-01 │  1500 │       300 │       1400 │              4 │             0.07 │
+│ 2020-04-01 │  1600 │       400 │       1500 │              3 │             0.07 │
+└────────────┴───────┴───────────┴────────────┴────────────────┴──────────────────┘
+
+16 rows in set. Elapsed: 0.006 sec. 
+
+## 案例二
+
+WITH toDateTime('2016-06-15 23:00:00') AS start_date
+SELECT 
+    toStartOfMinute(start_date + (number * 32)) AS date_time, 
+    (number + 1) * 100 AS money, 
+    neighbor(money, -4320) AS prev_month, 
+    neighbor(money, -1440) AS prev_day, 
+    neighbor(money, -60) AS prev_hour, 
+    neighbor(money, -1) AS prev_minute, 
+    if(prev_month = 0, -999, round((money - prev_month) / prev_month, 2)) AS month_over_month,
+    if(prev_day = 0, -999, round((money - prev_day) / prev_day, 2)) AS day_over_day,
+    if(prev_hour = 0, -999, round((money - prev_hour) / prev_hour, 2)) AS hour_over_hour,
+    if(prev_hour = 0, -999, round((money - prev_minute) / prev_minute, 2)) AS minute_over_minute
+FROM numbers(10000)
+
+## 执行结果
+
+date_time          |money |prev_month|prev_day|prev_hour|prev_minute|month_over_month|day_over_day|hour_over_hour|minute_over_minute|
+-------------------+------+----------+--------+---------+-----------+----------------+------------+--------------+------------------+
+2016-06-16 07:00:00|   100|         0|       0|        0|          0|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:00:00|   200|         0|       0|        0|        100|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:01:00|   300|         0|       0|        0|        200|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:01:00|   400|         0|       0|        0|        300|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:02:00|   500|         0|       0|        0|        400|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:02:00|   600|         0|       0|        0|        500|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:03:00|   700|         0|       0|        0|        600|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:03:00|   800|         0|       0|        0|        700|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:04:00|   900|         0|       0|        0|        800|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:04:00|  1000|         0|       0|        0|        900|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:05:00|  1100|         0|       0|        0|       1000|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:05:00|  1200|         0|       0|        0|       1100|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:06:00|  1300|         0|       0|        0|       1200|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:06:00|  1400|         0|       0|        0|       1300|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:07:00|  1500|         0|       0|        0|       1400|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:08:00|  1600|         0|       0|        0|       1500|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:08:00|  1700|         0|       0|        0|       1600|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:09:00|  1800|         0|       0|        0|       1700|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:09:00|  1900|         0|       0|        0|       1800|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:10:00|  2000|         0|       0|        0|       1900|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:10:00|  2100|         0|       0|        0|       2000|          -999.0|      -999.0|        -999.0|            -999.0|
+2016-06-16 07:11:00|  2200|         0|       0|        0|       2100|          -999.0|      -999.0|        -999.0|            -999.0|
+```
+
+- 1年=12月=365天=365x24小时=365x24x60分钟
+
+##### 4.2.1 精确到时分的环比案例
+
+
 
 ### 5.生产环境
 

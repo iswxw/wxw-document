@@ -6,7 +6,6 @@ K8S主要讲的就是Kubernetes，首先Kubernetes首字母为K，末尾为s，�
 
 - 官方文章：https://kubernetes.io/zh/docs
 - Kuberantes 中文社区：https://www.kubernetes.org.cn/
-
 - 视频资源
   - k8s由浅入深：https://www.bilibili.com/video/BV1GT4y1A756
 - 笔记：
@@ -37,7 +36,57 @@ Kubernetes是Google开源的容器集群管理系统。最初源于谷歌内部�
 - 存储编排：可以自动挂载指定的存储系统，例如 local stroage/nfs/云存储等。
 - 自动更新和回滚：可以在 K8S 中声明你期望应用程序容器应该达到的状态，Kubernetes将以合适的速率调整容器的实际状态，并逐步达到最终期望的结果，不会同时杀掉应用。更新出错，自动恢复到原先状态。
 
+#### 1.3 常用安装工具
 
+> 来源：https://kubernetes.io/zh/docs/tasks/tools/
+
+##### 1.3.1 kubectl 命令行工具
+
+Kubernetes 命令行工具，[kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/)，使得你可以对 Kubernetes 集群运行命令。 你可以使用 kubectl 来部署应用、监测和管理集群资源以及查看日志。
+
+有关更多信息，包括 kubectl 操作的完整列表，请参见[`kubectl` 参考文件](https://kubernetes.io/zh/docs/reference/kubectl/)
+
+- 命令使用指南：https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands 
+
+kubectl 可安装在各种 Linux 平台、 macOS 和 Windows 上。 在下面找到你喜欢的操作系统。
+
+- [在 Linux 上安装 kubectl](https://kubernetes.io/zh/docs/tasks/tools/install-kubectl-linux)
+- [在 macOS 上安装 kubectl](https://kubernetes.io/zh/docs/tasks/tools/install-kubectl-macos)
+- [在 Windows 上安装 kubectl](https://kubernetes.io/zh/docs/tasks/tools/install-kubectl-windows) 
+
+使用指南：
+
+##### 1.3.2 kind 支持本地安装k8s
+
+> [查看 kind 的快速入门指南](https://kind.sigs.k8s.io/docs/user/quick-start/)   
+
+[`kind`](https://kind.sigs.k8s.io/docs/) 让你能够在本地计算机上运行 Kubernetes。 `kind` 要求你安装并配置好 [Docker](https://docs.docker.com/get-docker/)。
+
+kind [快速入门](https://kind.sigs.k8s.io/docs/user/quick-start/)页面展示了 开始使用 `kind` 所需要完成的操作。
+
+##### 1.3.3  minkube 类似kind
+
+> [查看 minikube 快速入门指南](https://minikube.sigs.k8s.io/docs/start/) 
+
+与 `kind` 类似，[`minikube`](https://minikube.sigs.k8s.io/)， 能让你在本地运行 Kubernetes。 `minikube` 在你本地的个人计算机（包括 Windows、macOS 和 Linux PC）运行一个单节点的 Kubernetes 集群，以便你来尝试 Kubernetes 或者开展每天的开发工作。
+
+如果你关注如何安装此工具，可以按官方的 [Get Started!](https://minikube.sigs.k8s.io/docs/start/)指南操作。
+
+当你拥有了可工作的 `minikube` 时，就可以用它来 [运行示例应用](https://kubernetes.io/zh/docs/tutorials/hello-minikube/)了。
+
+##### 1.3.4 kubeadm 管理集群
+
+> [查看 kubeadm 安装指南](https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)  
+
+你可以使用 [kubeadm](https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/) 工具来 创建和管理 Kubernetes 集群。 该工具能够执行必要的动作并用一种用户友好的方式启动一个可用的、安全的集群。
+
+[安装 kubeadm](https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/install-kubeadm/) 展示了如何安装 kubeadm 的过程。 一旦安装了 kubeadm，你就可以使用它来 [创建一个集群](https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)。
+
+### 2. K8S 环境
+
+- [Centos7.6部署k8s v1.16.4高可用集群(主备模式)](https://www.kubernetes.org.cn/6632.html) 
+
+#### 2.1 centos 安装k8s集群
 
 ## K8S设计架构
 
@@ -354,7 +403,6 @@ spec:
 - kind：此处创建的是Pod，根据实际情况，此处资源类型可以是Deployment、Job、Ingress、Service等。
 - metadata：包含Pod的一些meta信息，比如名称、namespace、标签等信息。
 - spe：包括一些container，storage，volume以及其他Kubernetes需要的参数，以及诸如是否在容器失败时重新启动容器的属性。可在特定Kubernetes API找到完整的Kubernetes Pod的属性。
-  
 
 ### 3. Pod
 
@@ -635,6 +683,324 @@ kubectl taint node k8snode1 env_role:NoSchedule-
 污点容忍就是某个节点可能被调度，也可能不被调度
 
 <img src="http://moxi159753.gitee.io/learningnotes/K8S/8_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFPod/images/image-20201114210146123.png" alt="image-20201114210146123" style="zoom: 67%;" />   
+
+### 4. Controller
+
+#### 4.1 什么是controller?
+
+Controller是在集群上管理和运行容器的对象，Controller是实际存在的，Pod是虚拟机的。
+
+#### 4.2 Pod和Controller的关系
+
+- Pod是通过Controller实现应用的运维，比如弹性伸缩，滚动升级等
+
+- Pod 和 Controller之间是通过label标签来建立关系，同时Controller又被称为控制器工作负载
+
+<img src="asserts/image-20201116092431237.png" alt="image-20201116092431237" style="zoom:50%;" /> 
+
+#### 4.3 Deployment控制器应用场景
+
+> Deployment过程就是控制器controller在操作
+
+- Deployment 控制器可以部署无状态应用
+- 管理Pod和ReplicaSet
+- 部署，滚动升级等功能
+- 应用场景：web服务，微服务
+
+Deployment表示用户对K8S集群的一次更新操作。Deployment是一个比RS( Replica Set, RS) 应用模型更广的 API 对象，可以是创建一个新的服务，更新一个新的服务，也可以是滚动升级一个服务。滚动升级一个服务，实际是创建一个新的RS，然后逐渐将新 RS 中副本数增加到理想状态，将旧RS中的副本数减少到0的复合操作。
+
+#### 4.4 Deployment 应用部署
+
+之前我们也使用Deployment部署过应用，如下代码所示
+
+```bash
+kubectrl create deployment web --image=nginx
+```
+
+但是上述代码指令不能很好的进行复用，因为每次我们都需要重新输入代码指令，所以我们都是通过YAML进行配置
+
+但是我们可以尝试使用上面的代码创建一个镜像【只是尝试，不会创建】
+
+```bash
+# 使用尝试的方式 先生成 相关的yml文件内容
+kubectl create deployment web --image=nginx --dry-run -o yaml > nginx.yaml
+```
+
+然后输出一个yaml配置文件 `nginx.yml` ，配置文件如下所示
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  ## 控制器的label标签
+  labels:
+    app: web
+  name: web
+spec:
+  replicas: 1
+  ## selector 在controller（工作负载）中的选择器
+  selector:
+    matchLabels:
+      app: web
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: web
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}
+```
+
+我们看到的 selector 和 label 就是我们Pod 和 Controller之间建立关系的桥梁
+
+> **使用 ` ymal ` 创建pod** 
+
+通过刚刚的代码，我们已经生成了YAML文件，下面我们就可以使用该配置文件快速创建Pod镜像了
+
+```bash
+# 创建pod 部署
+kubectl apply -f nginx.yaml
+```
+
+![img](asserts/image-20201116094046007.png) 
+
+但是因为这个方式创建的，我们只能在集群内部进行访问，所以我们还需要对外暴露端口
+
+```bash
+# 对外暴露端口
+kubectl expose deployment web --port=80 --type=NodePort --target-port=80 --name=web1
+
+## 关于上述命令，有几个参数
+--port：就是我们内部的端口号
+--target-port：就是暴露外面访问的端口号
+--name：名称
+--type：类型
+```
+
+同理，我们一样可以导出对应的配置文件
+
+```bash
+# 导出对应的配置文件
+kubectl expose deployment web --port=80 --type=NodePort --target-port=80 --name=web1 -o yaml > web1.yaml
+```
+
+得到的web1.yaml如下所示
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-11-16T02:26:53Z"
+  ## 标签
+  labels:
+    app: web
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          .: {}
+          f:app: {}
+      f:spec:
+        f:externalTrafficPolicy: {}
+        f:ports:
+          .: {}
+          k:{"port":80,"protocol":"TCP"}:
+            .: {}
+            f:port: {}
+            f:protocol: {}
+            f:targetPort: {}
+            # 选择器
+        f:selector:
+          .: {}
+          f:app: {}
+        f:sessionAffinity: {}
+        f:type: {}
+    manager: kubectl
+    operation: Update
+    time: "2020-11-16T02:26:53Z"
+  name: web2
+  namespace: default
+  resourceVersion: "113693"
+  selfLink: /api/v1/namespaces/default/services/web2
+  uid: d570437d-a6b4-4456-8dfb-950f09534516
+spec:
+  clusterIP: 10.104.174.145
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 32639
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    # web选择器
+  selector:
+    app: web
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
+
+```
+
+然后我们可以通过下面的命令来查看对外暴露的服务
+
+```bash
+# 查看对外暴露的服务 svc是service简写
+kubectl get pods,svc
+```
+
+![image-20201116104021357](asserts/image-20201116104021357.png) 
+
+然后我们访问对应的url，即可看到 nginx了 `http://192.168.177.130:32639/`
+
+![image-20201116104131968](asserts/image-20201116104131968.png) 
+
+#### 4.6 升级回滚和弹性伸缩
+
+- 升级： 假设从版本为1.14 升级到 1.15 ，这就叫应用的升级【升级可以保证服务不中断】
+- 回滚：从版本1.15 变成 1.14，这就叫应用的回滚
+- 弹性伸缩：我们根据不同的业务场景，来改变Pod的数量对外提供服务，这就是弹性伸缩
+
+（1）**应用（镜像）升级**   
+
+- **应用升级或者镜像升级过程中不中断应用提供服务**  
+
+> 下面以nginx升级回滚为例
+
+首先我们先创建一个 1.14版本的Pod
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: web
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: web
+    spec:
+      containers:
+      - image: nginx:1.14
+        name: nginx
+        resources: {}
+status: {}
+```
+
+我们先指定版本为1.14，然后开始创建我们的Pod
+
+```bash
+## 创建我们的Pod
+kubectl apply -f nginx.yaml
+```
+
+同时，我们使用docker images命令，就能看到我们成功拉取到了一个 1.14版本的镜像
+
+![image-20201116105710966](https://gitee.com/moxi159753/LearningNotes/raw/master/K8S/9_Kubernetes%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AFController/images/image-20201116105710966.png) 
+
+**我们使用下面的命令，可以将nginx从 1.14 升级到 1.15** 
+
+```bash
+## nginx从 1.14 升级到 1.15
+kubectl set image deployment web nginx=nginx:1.15
+```
+
+在我们执行完命令后，能看到升级的过程
+
+![image-20201116105847069](asserts/image-20201116105847069.png) 
+
+- 首先是开始的nginx 1.14版本的Pod在运行，然后 1.15版本的在创建
+- 然后在1.15版本创建完成后，就会暂停1.14版本
+- 最后把1.14版本的Pod移除，完成我们的升级
+
+我们在下载 1.15版本，容器就处于ContainerCreating状态，然后下载完成后，就用 1.15版本去替换1.14版本了，这么做的好处就是：升级可以保证服务不中断
+
+<img src="asserts/image-20201116111614085.png" alt="image-20201116111614085" style="zoom:50%;" />  
+
+我们到我们的node2节点上，查看我们的 docker images;
+
+![image-20201116111315000](asserts/image-20201116111315000.png) 
+
+能够看到，我们已经成功拉取到了 1.15版本的nginx了
+
+- 查看升级状态
+
+  ```bash
+  ## 查看升级状态
+  kubectl rollout status deployment web
+  ```
+
+  ![image-20201116112139645](asserts/image-20201116112139645.png) 
+
+- 查看历史版本
+
+  ```bash
+  ## 查看历史版本 
+  kubectl rollout history deployment web
+  ```
+
+**（2）应用（镜像）回滚** 
+
+- **应用（镜像）回滚过程中不中断应用提供服务**  
+
+> 下面以nginx回滚为例
+
+我们可以使用下面命令，完成回滚操作，也就是回滚到上一个版本
+
+```bash
+## rollout 回滚到上一个版本
+kubectl rollout undo deployment web
+```
+
+然后我们就可以查看状态
+
+![image-20201116112524601](asserts/image-20201116112524601.png) 
+
+**同时我们还可以回滚到指定版本** 
+
+```bash
+## 回滚到指定版本
+kubectl rollout undo deployment web --to-revision=2
+```
+
+**（3）弹性伸缩** 
+
+>  弹性伸缩，也就是我们通过命令一下创建多个副本
+
+```bash
+## replicas 副本后面的值代表 副本数
+kubectl scale deployment web --replicas=10
+```
+
+能够清晰看到，我们一下创建了10个副本，并且正在运行
+
+![image-20201117092841865](asserts/image-20201117092841865.png) 
+
+
+
+### 5. Service 
+
+
+
+
+
+
 
 
 
