@@ -1606,7 +1606,10 @@ DROP [TEMPORARY] TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
 TRUNCATE TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
 
 ## 举例：
+## 删除分布式表数据
 truncate table kenan.parse_detail ON cluster test
+## 删除分布式表数据
+truncate table kenan.parse_detail_local ON cluster test
 ```
 
 #### 2.7 修改表数据
