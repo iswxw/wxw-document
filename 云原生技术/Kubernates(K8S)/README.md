@@ -161,9 +161,13 @@ Kubernetes设计理念和功能其实就是一个类似Linux的分层架构，�
 
 从K8s的系统架构、技术概念和设计理念，我们可以看到K8s系统最核心的两个设计理念：一个是**容错性**，一个是**易扩展性**。容错性实际是保证K8s系统稳定性和安全性的基础，易扩展性是保证K8s对变更友好，可以快速迭代增加新功能的基础。
 
+### 3. K8S 核心概念
+
+- Pod：最小部署单元、一组容器的集合、共享网络、生命周期短暂
+- Controller：确保预期的pod副本数量（有/无状态部署）、确保所有的Node运行同一个Pod/一次性任务/定时任务
+- Service：定义一组Pod 的访问规则
+
 ## K8S核心技术
-
-
 
 ### 1.Kubectl 命令行工具
 
@@ -992,7 +996,79 @@ kubectl scale deployment web --replicas=10
 
 ![image-20201117092841865](asserts/image-20201117092841865.png) 
 
+#### 4.7 Controller部署有状态应用
 
+##### 4.7.1 有状态和无状态
+
+- 无状态（controller  deployment应用部署）
+  - 认为pod 都是一样的
+  - 没有顺序要求
+  - 不用考虑在哪个node运行
+  - 可以随意进行伸缩和扩展
+- 有状态（controller stateful set 应用部署）
+  - 上面因素都需要考虑到
+  - 每个pod都是独立的，保证pod启动顺序和唯一性
+  - pod之间有序性，比如：mysql的主存
+
+##### 4.7.2 部署有状态应用
+
+> 无头Service
+
+```bash
+ClusterIP:none
+```
+
+- StatefulSet 部署有状态应用
+
+  ```yaml
+  ## 创建无状态的Service
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: nginx
+    labels:
+      app: nginx
+  spec:
+    ports:
+    - port: 80
+      name: web
+    #表示 无头service
+    clusterID: None
+    selector:
+        app: nginx
+        
+  -----
+  apiVersion: apps/v1
+  ## 有状态部署
+  kind: StatefulSet
+  metadata:
+    name: nginx-statefulset
+    namespace: default
+  spec:
+    serviceName: nginx
+    replicas: 3
+    selector:
+      matchLabels:
+        app: nginx
+    template:
+      metadata:
+        labels:
+          app: nginx
+      spec:
+        containers:
+          name: nginx
+        - image: nginx:1.14
+          ports:
+          - containerPort: 80 
+  ```
+
+##### 4.7.3 部署守护进程DaemonSet
+
+在每个node上运行一个pod,新加入的node也同样运行在一个pod里面
+
+##### 4.7.4 Job(一次性任务)和cronJob(定时任务)
+
+> Yaml 脚本
 
 ### 5. Service 
 
@@ -1106,19 +1182,664 @@ node一般是在内网进行部署，而外网一般是不能访问到的，那�
 
 如果我们使用LoadBalancer，就会有负载均衡的控制器，类似于nginx的功能，就不需要自己添加到nginx上
 
+### 6. 配置管理
+
+#### 6.1 Secret
+
+作用：主要是将加密数据存入Etcd,让pod容器以挂载volume方式访问，比如作为一种凭证
+
+- 创建Secret加密数据
+
+  ```yaml
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: mysecret
+    type: Opaque
+    data:
+      username:Ymisanis$sd=
+      password:MSINAINUSydh
+  ```
+
+  <img src="asserts/image-20210627084021610.png" alt="image-20210627084021610" style="zoom:50%;" /> 
+
+（1）**以变量的形式挂在到pod容器中** 
+
+> secret-val.yaml
+
+```yaml
+apiVersion: v1
+kind: pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    env:
+     -name: SECRET_USERNAME
+     valueFrom:
+       secretKeyRef: 
+         name: mysecret
+         key: username
+     -name: SECRET_PASSWORD
+      valueFrom:
+        secretKeyRef: 
+          name: mysecret
+          key: password
+```
+
+<img src="asserts/image-20210627085009296.png" alt="image-20210627085009296" style="zoom:50%;" /> 
+
+- 进入容器查看变量
+
+<img src="asserts/image-20210627085117598.png" alt="image-20210627085117598" style="zoom:50%;" /> 
+
+**（2）以volume形式挂载到pod容器中** 
+
+> Secret-vol.yaml
+
+```yaml
+apiVersion: v1
+kind: pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+     -name: foo
+      mountpath: "/etc/foo"
+      readOnly: true
+    volume:
+    - name: foo
+      secret:
+       secretName: mysecret
+```
+
+- 创建Secret-vol.yaml
+
+<img src="asserts/image-20210627090059659.png" alt="image-20210627090059659" style="zoom:50%;" /> 
+
+- 进入容器查看
+
+<img src="asserts/image-20210627090125901.png" alt="image-20210627090125901" style="zoom:50%;" /> 
+
+#### 6.2 ConfigMap
+
+作用：存储不加密数据到etcd,让pod以变量或者volume挂载到容器中
+
+（1）创建一个配置文件
+
+> ` redis.properties `
+
+```properties
+redis.host=127.0.0.1
+redis.port=6379
+redis.password=123456
+```
+
+（2）创建configmap
+
+<img src="asserts/image-20210627091305519.png" alt="image-20210627091305519" style="zoom:50%;" /> 
+
+（3）以` volume ` 形式挂载到pod 容器中
+
+> `configmap.yaml` 
+
+```yaml
+apiVersion: v1
+kind: pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["bin/sh","-c","cat /etc/config/redis.properties"]
+    volumeMounts:
+     -name: config-valume
+      mountpath: /etc/config
+    volume:
+    - name: config-valume
+      configMap:
+       name: redis-config
+    restartPolicy: Never
+```
+
+- 创建 configmap.yaml
+
+<img src="asserts/image-20210627092242377.png" alt="image-20210627092242377" style="zoom:50%;" /> 
+
+- 查看pod,已完成后无法进入容器查看数据，但是可以根据日志查看
+
+<img src="asserts/image-20210627092327828.png" alt="image-20210627092327828" style="zoom:50%;" /> 
+
+- 根据日志查看configmap文件数据
+
+<img src="asserts/image-20210627092448020.png" alt="image-20210627092448020" style="zoom:50%;" /> 
+
+### 7. 集群安全机制
+
+#### 7.1 概述
+
+（1）访问k8s集群时，需要经过三步之后，才能访问具体内容
+
+- 第一步：认证
+- 第二步： 鉴权（授权）
+- 第三步：准入控制
+
+进行访问的时候，需要经过ApiServer,由APiServer 做统一协调；
+
+- 访问过程中需要证书、token或者用户名/密码
+- 如果访问pod需要ServiceAccount;
+
+#### 7.2 认证
+
+对外不暴露8080端口，只能内部访问，对外使用的端口6443
+
+客户端身份认证常用方式
+
+- https证书认证，基于ca证书
+- http token认证，通过token来识别用户
+- http基本认证，用户名 + 密码认证
+
+#### 7.3 鉴权
+
+基于RBAC进行鉴权操作
+
+基于角色访问控制
+
+#### 7.4 准入控制
+
+就是准入控制器的列表，如果列表有请求内容就通过，没有的话 就拒绝
+
+#### 7.5 RBAC访问控制
+
+**基于角色的访问控制**，为某个角色设置访问内容，然后用户分配该角色后，就拥有该角色的访问权限
+
+<img src="asserts/image-20201118093949893.png" alt="image-20201118093949893" style="zoom:50%;" /> 
+
+k8s中有默认的几个角色
+
+- role：特定命名空间访问权限
+- ClusterRole：所有命名空间的访问权限
+
+角色绑定
+
+- roleBinding：角色绑定到主体
+- ClusterRoleBinding：集群角色绑定到主体
+
+主体
+
+- user：用户
+- group：用户组
+- serviceAccount：服务账号
+
+> RBAC 实现鉴权
+
+- 创建命名空间
+
+```bash
+## 首先查看已经存在的命名空间
+kubectl get namespace
+```
+
+<img src="asserts/image-20201118094516426.png" alt="image-20201118094516426"  /> 
+
+```bash
+## 创建一个自己的命名空间 roledemo
+kubectl create ns roledemo
+```
+
+- 命名空间创建Pod
+
+```bash
+## 为什么要创建命名空间？因为如果不创建命名空间的话，默认是在default下
+kubectl run nginx --image=nginx -n roledemo
+```
+
+- 创建角色
+
+通过 rbac-role.yaml进行创建
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ctnrs
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+```
+
+> 注意：这个角色只对pod 有 get、list权限
+
+```bash
+## 通过 yaml创建我们的role
+
+# 创建
+kubectl apply -f rbac-role.yaml
+# 查看
+kubectl get role -n roledemo
+```
+
+![image-20201118095141786](asserts/image-20201118095141786.png) 
+
+- 创建角色绑定
+
+我们还是通过 role-rolebinding.yaml 的方式，来创建我们的角色绑定
+
+<img src="asserts/image-20201118095248052.png" alt="image-20201118095248052" style="zoom: 67%;" /> 
+
+```yaml
+# 创建角色绑定
+kubectl apply -f rbac-rolebinding.yaml
+# 查看角色绑定
+kubectl get role, rolebinding -n roledemo
+```
+
+![image-20201118095357067](asserts/image-20201118095357067.png) 
+
+- 使用证书识别身份
+
+我们首先得有一个 rbac-user.sh 证书脚本
+
+![image-20201118095541427](asserts/image-20201118095541427.png) 
+
+![image-20201118095627954](asserts/image-20201118095627954.png) 
+
+这里包含了很多证书文件，在TSL目录下，需要复制过来
+
+通过下面命令执行我们的脚本
+
+```
+./rbac-user.sh
+```
+
+最后我们进行测试
+
+```bash
+# 用get命令查看 pod 【有权限】
+kubectl get pods -n roledemo
+# 用get命令查看svc 【没权限】
+kubectl get svc -n roledmeo
+```
+
+![image-20201118100051043](asserts/image-20201118100051043.png) 
+
+### 8. Ingress
+
+原来我们需要将端口号对外暴露，通过 ip + 端口号就可以进行访问
+
+原来是使用Service中的NodePort来实现
+
+- 在每个节点上都会启动端口
+- 在访问的时候通过任何节点，通过ip + 端口号就能实现访问
+
+但是NodePort还存在一些缺陷
+
+- 因为端口不能重复，所以每个端口只能使用一次，一个端口对应一个应用
+- 实际访问中都是用域名，根据不同域名跳转到不同端口服务中
+
+#### 8.1 Ingress和pod 的关系
+
+pod 和 ingress 是通过service进行关联的，而ingress作为统一入口，由service关联一组pod中
+
+<img src="asserts/image-20201118102637839.png" alt="image-20201118102637839" style="zoom:50%;" /> 
+
+- 首先service就是关联我们的pod
+- 然后ingress作为入口，首先需要到service，然后发现一组pod
+- 发现pod后，就可以做负载均衡等操作
+
+#### 8.2 Ingress工作流程
+
+在实际的访问中，我们都是需要维护很多域名， a.com 和 b.com
+
+然后不同的域名对应的不同的Service，然后service管理不同的pod
+
+<img src="asserts/image-20201118102858617.png" alt="image-20201118102858617" style="zoom:50%;" /> 
+
+需要注意，ingress不是内置的组件，需要我们单独的安装
+
+#### 8.3 使用Ingress
+
+使用步骤如下所示
+
+- 部署ingress Controller【需要下载官方的】
+- 创建ingress规则【对哪个Pod、名称空间配置规则】
+
+**（1）创建Nginx pod**
+
+创建一个nginx应用，然后对外暴露端口
+
+```bash
+# 创建pod
+kubectl create deployment web --image=nginx
+# 查看
+kubectl get pods
+
+# 对外暴露端口
+kubectl expose deployment web --port=80 --target-port=80 --type:NodePort
+```
+
+#### 8.4 部署ingress Controller
+
+下面我们来通过yaml的方式，部署我们的ingress，配置文件如下所示
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    app.kubernates.io/name: ingress-nginx
+    app.kubernates.io/part-of: ingress-nginx
+    
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-configuration
+  namespace: ingress-nginx
+  labels:
+    app.kubernates.io/name: ingress-nginx
+    app.kubernates.io/part-of: ingress-nginx
+    
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-service
+  namespace: ingress-nginx
+  labels:
+    app.kubernates.io/name: ingress-nginx
+    app.kubernates.io/part-of: ingress-nginx
+```
+
+这个文件里面，需要注意的是 hostNetwork: true，改成ture是为了让后面访问到
+
+```bash
+kubectl apply -f ingress-con.yaml
+
+## 通过这种方式，其实我们在外面就能访问，这里还需要在外面添加一层
+kubectl apply -f ingress-con.yaml
+```
+
+<img src="asserts/image-20201118111256631.png" alt="image-20201118111256631" style="zoom: 67%;" /> 
+
+最后通过下面命令，查看是否成功部署 ingress
+
+```bash
+kubectl get pods -n ingress-nginx
+```
+
+![image-20201118111424735](asserts/image-20201118111424735.png) 
+
+#### 8.5 创建Ingress规则文件
+
+创建ingress规则文件，ingress-h.yaml
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+spec:
+ rules:
+ - host: example.ingressdemo.com. ## 域名
+   http: 
+     paths:
+     - path: /
+       backend: 
+         serviceName: web
+         ervicePort: 80     ##访问的Service端口号
+```
+
+- 添加域名访问规则
+
+在windows 的 hosts文件，添加域名访问规则【因为我们没有域名解析，所以只能这样做】
+
+![image-20201118112029820](asserts/image-20201118112029820.png) 
+
+最后通过域名就能访问
+
+<img src="asserts/image-20201118112212519.png" alt="image-20201118112212519" style="zoom:50%;" /> 
+
+### 9.  Helm
+
+### 10. 持久存储
 
 
 
 
 
+## K8S集群
+
+### 1. 集群资源监控
+
+### 2. 高可用集群搭建
+
+### 3. 集群项目部署
+
+#### 3.1 k8s 容器交付流程
+
+> ` k8s部署项目流程 ` 
+
+![image-20210627204120040](asserts/image-20210627204120040.png) 
+
+> 如何在k8s集群中部署Java项目
+
+#### 3.2 k8s部署java项目流程
+
+<img src="asserts/image-20210627211318449.png" alt="image-20210627211318449" style="zoom:67%;" />  
+
+- 制作镜像【Dockerfile】
+- 上传到镜像仓库【Dockerhub、阿里云、网易】
+- 控制器部署镜像【Deployment】
+- 对外暴露应用【Service、Ingress】
+- 运维【监控、升级】
+
+#### 3.3 k8s 部署Java项目
+
+**（1）准备Java项目** 
+
+- 第一步，准备java项目，把java进行打包【jar包或者war包】
+
+<img src="asserts/image-20201121213239222.png" alt="image-20201121213239222" style="zoom: 67%;" /> 
+
+**（2）依赖环境**
+
+在打包java项目的时候，我们首先需要两个环境
+
+- java环境【JDK】
+- maven环境
+
+```bash
+## 把java项目打包成jar包
+ mvn clean install
+```
+
+<img src="asserts/image-20210627205013693.png" alt="image-20210627205013693" style="zoom:50%;" /> 
+
+**（3）编写docker file 文件** 
+
+> Dockerfile 内容如下所示
+
+```dockerfile
+FROM openjdk:8-jdk-alpine
+VOLUME /tmp
+ADD ./target/demojenkins.jar demojenkins.jar
+ENTRYPOINT ["java","-jar","/demojenkins.jar", "&"]
+```
+
+**（4）制作镜像** 
+
+在我们创建好Dockerfile文件后，我们就可以制作镜像了。我们首先将我们的项目，放到我们的服务器上，然后执行下面命令打包镜像
+
+```bash
+docker build -t java-demo-01:latest .
+```
+
+等待一段后，即可制作完成我们的镜像
+
+![image-20201121214701015](asserts/image-20201121214701015.png) 
+
+最后通过下面命令，即可查看我们的镜像了
+
+```bash
+## 查看镜像
+docker images
+```
+
+**（5）启动镜像** 
+
+在我们制作完成镜像后，我们就可以启动我们的镜像了
+
+```bash
+## 启动一个镜像的运行容器
+docker run -d -p 8111:8111 java-demo-01:latest -t
+```
+
+启动完成后，我们通过浏览器进行访问，即可看到我们的java程序
+
+- ```
+  http://192.168.177.130:8111/user
+  ```
+
+**（6）推送镜像** 
+
+下面我们需要将我们制作好的镜像，上传到镜像服务器中【阿里云、DockerHub】
+
+首先我们需要到 阿里云 [容器镜像服务](https://cr.console.aliyun.com/cn-hangzhou/instances/repositories)，然后开始创建镜像仓库
+
+- 阿里云镜像仓库地址：https://cr.console.aliyun.com/cn-qingdao/instance/source
+
+<img src="asserts/image-20201121223435851.png" alt="image-20201121223435851" style="zoom: 67%;" /> 
+
+然后选择本地仓库
+
+<img src="asserts/image-20201121223516789.png" alt="image-20201121223516789" style="zoom:67%;" /> 
 
 
 
+我们点击我们刚刚创建的镜像仓库，就能看到以下的信息
 
+<img src="asserts/image-20201121224233092.png" alt="image-20201121224233092" style="zoom:67%;" /> 
 
+**（7）登录 镜像服务** 
 
+```bash
+## 使用命令登录,然后输入刚刚我们开放时候的注册的密码
+docker login --username=XXXXXXX@163.com registry.cn-shenzhen.aliyuncs.com
 
+## 镜像添加版本号
 
+# 实例
+docker tag [ImageId] registry.cn-shenzhen.aliyuncs.com/mogublog/java-project-01:[镜像版本号]
+
+# 举例
+docker tag 33f11349c27d registry.cn-shenzhen.aliyuncs.com/mogublog/java-project-01:1.0.0
+```
+
+操作完成后
+
+![image-20201121224609890](asserts/image-20201121224609890.png) 
+
+**（8）推送镜像服务** 
+
+在我们添加版本号信息后，我们就可以推送我们的镜像到阿里云了
+
+```bash
+docker push registry.cn-shenzhen.aliyuncs.com/mogublog/java-project-01:1.0.0
+```
+
+![image-20201121224714068](asserts/image-20201121224714068.png) 
+
+操作完成后，我们在我们的阿里云镜像服务，就能看到推送上来的镜像了
+
+<img src="asserts/image-20201121224858651.png" alt="image-20201121224858651" style="zoom:67%;" />  
+
+**（8）控制器部署镜像** 
+
+在我们推送镜像到服务器后，就可以通过控制器部署镜像了，首先我们需要根据刚刚的镜像，导出yaml
+
+```bash
+# 导出yaml
+kubectl create deployment  javademo1 
+       --image=registry.cn-shenzhen.aliyuncs.com/mogublog/java-project-01:1.0.0 --dry-run -o yaml > javademo1.yaml
+```
+
+导出后的 javademo1.yaml 如下所示
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: javademo1
+  name: javademo1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: javademo1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: javademo1
+    spec:
+      containers:
+      - image: registry.cn-shenzhen.aliyuncs.com/mogublog/java-project-01:1.0.0
+        name: java-project-01
+        resources: {}
+status: {}
+```
+
+然后通过下面命令，通过yaml创建我们的deployment
+
+```bash
+# 创建
+kubectl apply -f javademo1.yaml
+# 查看 pods
+```
+
+![image-20201121225413122](asserts/image-20201121225413122.png) 
+
+或者我们可以进行扩容，多创建几个副本
+
+```bash
+## 扩容，多创建几个副本
+kubectl scale deployment javademo1 --replicas=3
+```
+
+![image-20201121225600554](asserts/image-20201121225600554.png) 
+
+然后我们还需要对外暴露端口【通过service 或者 Ingress】
+
+```bash
+# 对外暴露端口
+kubectl expose deployment javademo1 --port=8111  --target-port=8111 --type=NodePort
+# 查看对外端口号
+kubectl get svc
+```
+
+![image-20201121225818003](asserts/image-20201121225818003.png) 
+
+然后通过下面的地址访问
+
+```bash
+# 对内访问
+curl http://10.106.103.242:8111/user
+# 对外访问
+http://192.168.177.130:32190/user
+```
 
 
 
