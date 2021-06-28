@@ -1801,12 +1801,6 @@ kubect exec -it nginx-dep1 bash
 
 > 导读：文件参考 [此处](https://gitee.com/moxi159753/LearningNotes/tree/master/K8S/18_Kubernetes%E6%90%AD%E5%BB%BA%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4) 
 
-
-
-
-
-
-
 ### 3. 集群项目部署
 
 #### 3.1 k8s 容器交付流程
