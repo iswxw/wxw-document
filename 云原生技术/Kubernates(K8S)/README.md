@@ -6,8 +6,28 @@ K8S主要讲的就是Kubernetes，首先Kubernetes首字母为K，末尾为s，�
 
 - 官方文章：https://kubernetes.io/zh/docs
 - Kuberantes 中文社区：https://www.kubernetes.org.cn/
+- k8s相关教程
+  - Kubernetes(k8s)中文教程：https://www.orchome.com/kubernetes/index
 - 视频资源
-  - [k8s由浅入深](https://www.bilibili.com/video/BV1GT4y1A756)    
+  1. [k8s由浅入深](https://www.bilibili.com/video/BV1GT4y1A756)   
+
+### 1.1 Kubernetes周边生态
+
+- [docker](https://www.orchome.com/docker/index) 是软件开发者用容器构建、运行和共享应用程序的平台。
+
+- [helm](https://www.orchome.com/helm/index) 是为 kubernetes 提供发现，共享和构建应用的最佳方式。
+
+- [kubeflow](https://www.orchome.com/kubeflow/index) 让机器学习（ML）模型尽可能简单地将它们部署到生产中
+
+- [istio](https://www.orchome.com/istio/index)是一个完全开源的服务网格（service mesh），可以透明地分层到现有的分布式应用程序上。
+
+- [kubeadm](https://www.orchome.com/kubeadm/index) 是一个工具，它提供了 `kubeadm init` 以及 `kubeadm join` 这两个命令来快速创建 [kubernetes](https://www.orchome.com/kubernetes/index) 集群。
+
+- [kompose](https://www.orchome.com/kompose/index)   帮助用户把docker-compose的转移到Kubernetes上的工具。
+
+- [kubebiz](/fwd?link=https://www.kubebiz.com)  yaml格式的各种开源中间件软件管理
+
+- [katacoda](/fwd?link=https://www.katacoda.com/courses/kubernetes)  k8s在线练习 
 
 ## K8S基础
 
