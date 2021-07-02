@@ -1,178 +1,531 @@
-### 大数据技术之HBase
+## wxw-hbase
 
-HBase 是一个分布式，可扩展，面向列的适合存储海量数据的NoSQL数据库，其最主要的功能是解决海量数据下的实时随机读写的问题。 HBase 依赖 **HDFS** 做为底层分布式文件系统。
+如果这是您第一次涉足分布式计算的奇妙世界，那么您将迎来一段有趣的时光。首先，分布式系统很难。使分布式系统嗡嗡作响需要跨越系统（硬件和软件）和网络的不同技能组合。
 
-### 1. 业务背景
+> 导读
 
-#### 1.1 为什么要使用 HBase？
+- 官网学习：http://hbase.apache.org/book.html
 
-> 使用以下组件不行么？
+## Hbase 基础
 
-- **MySQL**？MySQL数据库我们是算用得最多了的吧？但众所周知，MySQL是**单机**的。MySQL能存储多少数据，取决于那台服务器的硬盘大小。以现在互联网的数据量，很多时候MySQL是没法存储那么多数据的。比如我这边有个系统，一天就能产生1TB的数据，这数据是不可能存MySQL的。（如此大的量数据，我们现在的做法是先写到Kafka，然后落到Hive中）
-- **Kafka**？Kafka我们主要用来处理消息的（解耦异步削峰）。数据到Kafka，Kafka会将数据持久化到硬盘中，并且Kafka是分布式的（很方便的扩展），理论上Kafka可以存储很大的数据。但是Kafka的数据我们**不会「单独」取出来**。持久化了的数据，最常见的用法就是重新设置offset，做「回溯」操作
-- **Redis**？Redis是缓存数据库，所有的读写都在内存中，速度贼快。AOF/RDB存储的数据都会加载到内存中，Redis不适合存大量的数据（因为内存太贵了！）。
-- **Elasticsearch**？Elasticsearch是一个分布式的搜索引擎，主要用于检索。理论上Elasticsearch也是可以存储海量的数据（毕竟分布式），我们也可以将数据用『索引』来取出来，似乎已经是非常完美的中间件了。但是如果我们的数据**没有经常「检索」的需求**，其实不必放到Elasticsearch，数据写入Elasticsearch需要分词，无疑会浪费资源。
-- **HDFS**？显然HDFS是可以存储海量的数据的，它就是为海量数据而生的。它也有明显的缺点：不支持随机修改，查询效率低，对小文件支持不友好。
+### 1. hbase快速入门
 
-### 2. HBase 简介
+#### 1.1 环境准备
 
-#### 2.1 Hbase 特性
+##### 1.1.1 普通安装hbase
 
-- 强读写一致，但是不是**最终一致性**的数据存储，这使得它非常适合高速的计算聚合
-- 自动分片，通过Region分散在集群中，当行数增长的时候，Region也会自动的切分和再分配
-- 自动的故障转移
-- Hadoop/HDFS集成，和HDFS开箱即用
-- 丰富、简洁、高效的API
-- 块缓存，布隆过滤器，可以高效的列查询优化
-- 操作管理，Hbase提供了内置的web界面来操作
+- 安装教程：http://hbase.apache.org/book.html
+- 下载地址：https://mirrors.tuna.tsinghua.edu.cn/apache/hbase/
 
-#### 2.2 什么时候使用Hbase?
+##### 1.1.2 Docker 安装hbase
 
-Hbase不适合解决所有的问题：
+- 下载安装hbase镜像
 
-- 首先数据库量要足够多，如果有十亿及百亿行数据，那么Hbase是一个很好的选择，如果只有几百万行甚至不到的数据量，RDBMS是一个很好的选择。因为数据量小的话，真正能工作的机器量少，剩余的机器都处于空闲的状态。
-- 其次，如果不需要辅助索引，静态类型的列，事务等特性，一个已经用RDBMS的系统想要切换到Hbase，则需要重新设计系统。
-- 最后，保证硬件资源足够，每个HDFS集群在少于5个节点的时候，都不能表现的很好。因为HDFS默认的复制数量是3，再加上一个NameNode。
+  ```bash
+  ##  查找Hbase
+  docker search hbase 
+  
+  ## 拉取制定版本的镜像
+  docker pull harisekhon/hbase:1.3
+  ```
 
-### 3. HBase 入门
+  注意：不要安装最新版本的，不稳定 (我安装的是1.3)
 
-HBase（Hadoop DataBase），是一种非关系型分布式数据库（NoSQL），支持海量数据存储（官方：单表支持百亿行百万列）。HBase 采用经典的主从架构，底层依赖于 HDFS，并借助 ZooKeeper 作为协同服务，其架构大致如下：
+- 运行Hbase(运行时指定主机名，端口映射等)
 
-![saas](https://imgconvert.csdnimg.cn/aHR0cDovL3AzLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlL2JmNDkzNDgwNzdjOTQ3YWE4MDFlZTM4YTNkZGVmZjEy?x-oss-process=image/format,png)
+  ```bash
+  # 大写p,主机随机分配端口与宿主机上的端口进行映射
+  docker run -d --name wxw-hbase -P harisekhon/hbase:1.3
+  
+  ## 或,小写P指定主机的端口 16010映射到宿主机上(容器)的开放端口 16010（[服务器(宿主机)开放端口]:[docker服务端口]）
+  docker run -d --name wxw-hbase -p 16010:16010 harisekhon/hbase:1.3
+  
+  ## 推荐使用这种 -d 后台运行 -h 守护进程连接的host 
+  docker run -d -h wxw-hbase -p 2181:2181 -p 8085:8085 -p 9090:9090 -p 9095:9095 -p 16000:16000 -p 16010:16010 -p 16201:16201 -p 16301:16301 --name hbase harisekhon/hbase:1.3
+  ```
 
-其中：
+  注意：hbase60010端口无法访问web页面，web端访问的接口变更为16010
 
-- **Master**：HBase 管理节点。管理 Region Server，分配 Region 到 Region Server，提供负载均衡能力；执行创建表等 DDL 操作。
-- **Region Server**：HBase 数据节点。管理 Region，一个 Region Server 可包含多个 Region，Region 相当于表的分区。客户端可直接与 Region Server 通信，实现数据增删改查等 DML 操作。
-- **ZooKeeper**：协调中心。负责 Master 选举，节点协调，存储 hbase:meta 等元数据。
-- **HDFS**：底层存储系统。负责存储数据，Region 中的数据通过 HDFS 存储。
+- 修改虚拟机 `etc/hosts`  文件
 
-对 HBase 全局有了基本理解后，我认为有几个比较重要的点值得关注：HBase 数据模型、Region 的概念、数据路由。
+  ```bash
+  # 查看docker IP
+  docker inspect [containerId]
+  
+  # 修改hosts
+  sudo vi /etc/hosts
+  
+  # 添加 docker IP  hostname
+  即：192.168.99.100  wxw-hbase
+  
+  -------
+  # 如果是wins系统,在本地的C:\Windows\System32\drivers\etc下修改hosts文件
+  # 添加 192.168.99.100  启动hbase时设置的主机名
+   即：192.168.99.100  wxw-hbase
+  ```
 
-#### 3.1 HBase 数据模型
+- 浏览器查看Hbase的web界面：
 
-> HBase 如何管理数据？（逻辑层）
+  ```bash
+  http://docker IP:宿主机上(容器)的开放端口 16010对应的指定主机的端口/master-status
+  
+  例：http://172.23.65.208:16010/master-status
+  ```
 
-HBase 的数据模型和 MySQL 等关系型数据库有比较大的区别，其是一种 ”Schema-Flexiable“ 的理念。
+  <img src="asserts/image-20210701132752708.png" alt="image-20210701132752708" style="zoom:50%;" />  
 
-1. 在表的维度，其包含若干行，每一行以 RowKey 来区分。
-2. 在行的维度，其包含若干列族，列族类似列的归类，但不只是逻辑概念，底层物理存储也是以列族来区分的（一个列族对应不同 Region 中的一个 Store）。
-3. 在列族的维度，其包含若干列，列是动态的。与其说是列，不如说是一个个键值对，Key 是列名，Value 是列值。
+- 进入到hbase容器
 
- HBase 地表结构如下：
+  ```bash
+  ## 进入hbase容器
+  docker exec -it  bash
+  
+  ## 然后执行连接到正在运行的 HBase 实例
+  hbase shell 
+  ```
 
-![给大家分享  HBase 初探：架构 + 原理 + 对比 + 实践](https://imgconvert.csdnimg.cn/aHR0cDovL3AxLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlLzU2NThkNGFkZjM0OTQ5YTg5ODhiZjRkNjFiOTY5Nzk3?x-oss-process=image/format,png)
+  <img src="asserts/image-20210701133638618.png" alt="image-20210701133638618" style="zoom:50%;" /> 
 
-- RowKey（行键）：RowKey 是字典有序的，HBase 基于 RowKey 实现索引；
-- Column Family（列族）：纵向切割，一行可有多个列族，一个列族可有任意个列；
-- Key-Value（键值对）：每一列存储的是一个键值对，Key 是列名，Value 是列值；
-- Byte（数据类型）：数据在 HBase 中以 Byte 存储，实际的数据类型交由用户转换；
-- Version（多版本）：每一列都可配置相应的版本，获取指定版本的数据（默认返回最新版本）；
-- 稀疏矩阵：行与行之间的列数可以不同，但只有实际的列才会占用存储空间。
+#### 1.2 单机Hbase 使用
 
-####  3.2 Region
+> *首次使用 HBase*
 
-> HBase 如何管理数据？（物理层）
+使用`hbase shell`位于HBase 安装的*bin/*目录中的命令连接到正在运行的 HBase 实例
 
-Region 是 HBase 中的概念，类似 RDBMS 中的分区。
+```bash
+## 键入help 并按 Enter，以显示 HBase Shell 的一些基本用法信息, 请注意，表名、行、列都必须用引号引起来。
+hbase(main):001:0> help
+HBase Shell, version 1.3.2, r1bedb5bfbb5a99067e7bc54718c3124f632b6e17, Mon Mar 19 18:47:19 UTC 2018
+Type 'help "COMMAND"', (e.g. 'help "get"' -- the quotes are necessary) for help on a specific command.
+Commands are grouped. Type 'help "COMMAND_GROUP"', (e.g. 'help "general"') for help on a command group.
 
-1. Region 是表的横向切割，一个表由一个或多个 Region 组成，Region 被分配到各个 Region Server；
-2. 一个 Region 根据列族分为多个 Store，每个 Store 由 MemStore 和 StoreFile 组成；数据写入 MemStore，MemStore 类似输入缓冲区，持久化后为 StoreFile；数据写入的同时会更新日志 WAL，WAL 用于发生故障后的恢复，保障数据读写安全；
-3. 一个 StoreFile 对应一个 HFile，HFile 存储在 HDFS 。
+COMMAND GROUPS:
+  Group name: general
+  Commands: status, table_help, version, whoami
 
-下面是我梳理的大致模型：
+  Group name: ddl
+  Commands: alter, alter_async, alter_status, create, describe, disable, disable_all, drop, drop_all, enable, enable_all, exists, get_table, is_disabled, is_enabled, list, locate_region, show_filters
 
-![ saas](https://imgconvert.csdnimg.cn/aHR0cDovL3AxLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlLzJkZGJiMWY5ZTc5NDQ2NTRhZmIyZWYxOWE5NDNjZGFj?x-oss-process=image/format,png)
+  Group name: namespace
+  Commands: alter_namespace, create_namespace, describe_namespace, drop_namespace, list_namespace, list_namespace_tables
 
-- **Region 是一个 RowKey Range** 
+  Group name: dml
+  Commands: append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, truncate, truncate_preserve
 
-每个 Region 实际上是一个 RowKey Range，比如 Region A 存放的 RowKey 区间为 [aaa,bbb)，Region B 存放的 RowKey 区间为 [bbb,ccc) ，以此类推。Region 在 Region Server 中存储也是有序的，Region A 必定在 Region B 前面。
+  Group name: tools
+  Commands: assign, balance_switch, balancer, balancer_enabled, catalogjanitor_enabled, catalogjanitor_run, catalogjanitor_switch, close_region, compact, compact_rs, flush, major_compact, merge_region, move, normalize, normalizer_enabled, normalizer_switch, split, splitormerge_enabled, splitormerge_switch, trace, unassign, wal_roll, zk_dump
 
-**注**：这里将 RowKey 设计为 aaa，而不是 1001 这样的数字，是为了强调 RowKey 并非只能是数字，只要能进行字典排序的字符都是可以的，如：abc-123456 。
+  Group name: replication
+  Commands: add_peer, append_peer_tableCFs, disable_peer, disable_table_replication, enable_peer, enable_table_replication, get_peer_config, list_peer_configs, list_peers, list_replicated_tables, remove_peer, remove_peer_tableCFs, set_peer_tableCFs, show_peer_tableCFs
 
-![](https://imgconvert.csdnimg.cn/aHR0cDovL3AxLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlLzJkYTE1ODIxMzMwNDQzNzJhNGFmMWRjZTlhODc2Y2Iy?x-oss-process=image/format,png)
+  Group name: snapshots
+  Commands: clone_snapshot, delete_all_snapshot, delete_snapshot, delete_table_snapshots, list_snapshots, list_table_snapshots, restore_snapshot, snapshot
 
--  **数据被路由到各个 Region** 
+  Group name: configuration
+  Commands: update_all_config, update_config
 
-表由一个或多个 Region 组成（逻辑），Region Server 包含一个或多个 Region（物理）。数据的路由首先要定位数据存储在哪张表的哪个 Region，表的定位直接根据表名，Region 的定位则根据 RowKey（因为每个 Region 都是一个 RowKey Range，因此根据 RowKey 很容易知道其对应的 Region）。
+  Group name: quotas
+  Commands: list_quotas, set_quota
 
-**注：** Master 默认采用 DefaultLoadBalancer 策略分配 Region 给 Region Server，类似轮询方式，可保证每个 Region Server 拥有相同数量的 Region（这里只是 Region 的数量相同，但还是有可能出现热点聚集在某个 Region，从而导致热点聚集在某个 Region Server 的情况）。
+  Group name: security
+  Commands: grant, list_security_capabilities, revoke, user_permission
 
-![](https://imgconvert.csdnimg.cn/aHR0cDovL3AxLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlL2ExYTBhNzRjNTAxMDQ4NzRiM2RiYmY4OTkyMTgwNzkx?x-oss-process=image/format,png)
+  Group name: procedures
+  Commands: abort_procedure, list_procedures
 
-- **当一个表太大时，Region 将自动分裂** 
+  Group name: visibility labels
+  Commands: add_labels, clear_auths, get_auths, list_labels, set_auths, set_visibility
 
-  - 自动分裂
+SHELL USAGE:
+Quote all names in HBase Shell such as table and column names.  Commas delimit
+command parameters.  Type <RETURN> after entering a command to run it.
+Dictionaries of configuration used in the creation and alteration of tables are
+Ruby Hashes. They look like this:
 
-    - 0.94 版本之前，Region 分裂策略为 ConstantSizeRegionSplitPolicy ，根据一个固定值触发分裂。
-    - 0.94 版本之后，分裂策略默认为 IncreasingToUpperBoundRegionSplitPolicy，该策略会根据 Region 数量和 StoreFile 的最大值决策。当 Region 的数量小于 9 且 StoreFile 的最大值小于某个值时，分裂 Region；当Region数量大于9 时，采用 ConstantSizeRegionSplitPolicy 
+  {'key1' => 'value1', 'key2' => 'value2', ...}
 
-  - 手动分裂
+and are opened and closed with curley-braces.  Key/values are delimited by the
+'=>' character combination.  Usually keys are predefined constants such as
+NAME, VERSIONS, COMPRESSION, etc.  Constants do not need to be quoted.  Type
+'Object.constants' to see a (messy) list of all constants in the environment.
 
-    - 在 ConstantSizeRegionSplitPolicy 下，通过设置 hbase.hregion.max.filesize 控制 Region 分裂
+If you are using binary keys or values and need to enter them in the shell, use
+double-quote'd hexadecimal representation. For example:
 
-      ![](https://imgconvert.csdnimg.cn/aHR0cDovL3AzLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlLzgyMGU3NTJkYzc0NjRhOGRiODUzZWI2MGJiZmZhMGFh?x-oss-process=image/format,png) 
+  hbase> get 't1', "key\x03\x3f\xcd"
+  hbase> get 't1', "key\003\023\011"
+  hbase> put 't1', "test\xef\xff", 'f1:', "\x01\x33\x40"
 
-#### 3.3  数据路由 hbase:meta
+The HBase shell is the (J)Ruby IRB with the above HBase-specific commands added.
+For more on the HBase Shell, see http://hbase.apache.org/book.html
+```
 
-> HBase 是分布式数据库，那数据怎么路由？
+##### 1.2.0 hbase shell 和hbase实例连接
 
-数据路由借助 hbase:meta 表完成，hbase:meta 记录的是所有 Region 的元数据信息，hbase:meta 的位置记录在 ZooKeeper 。
+```bash
+# hbase连接到hbase实例
+hbase shell;
+```
 
-**注：** 一些比较老的文章可能会提到 .root 和 .meta 两个表。事实上， .root 和 .meta 两个表是 HBase 0.96 版本之前的设计。在 0.96 版本后，.root 表已经被移除，.meta 表更名为 hbase：meta。
+##### 1.2.1 创建一个表
 
-hbase:meta 表的格式如下：
+使用该`create`命令创建一个新表。您必须指定表名称和 ColumnFamily 名称。
 
-![](https://imgconvert.csdnimg.cn/aHR0cDovL3AxLnBzdGF0cC5jb20vbGFyZ2UvcGdjLWltYWdlLzQ1M2M1MTRmM2ZlYzQ2YzNiZTgyNzc5MTljNGE0NDhj?x-oss-process=image/format,png) 
+```bash
+hbase(main):001:0> create 'wxw-hbase-table', 'cf'
+0 row(s) in 0.4170 seconds
 
-其中，
+=> Hbase::Table - test
+```
 
-- table：表名；
-- region start key：Region 中的第一个 RowKey，如果 region start key 为空，表示该 Region 是第一个 Region；
-- region id：Region 的 ID，通常是 Region 创建时的 timestamp；
-- regioninfo：该 Region 的 HRegionInfo 的序列化值；
-- server：该 Region 所在的 Region Server 的地址；
-- serverstartcode：该 Region 所在的 Region Server 的启动时间。
+##### 1.2.2 查看创建的表
 
+使用`list`命令确认你的表存在
 
+```bash
+hbase(main):002:0> list 'test'
+TABLE
+test
+1 row(s) in 0.0180 seconds
 
-### 4. HBase 进阶
+=> ["test"]
+```
 
-#### 4.1 HBase 架构原理
+##### 1.2.3 查看表的详细信息
 
-![61813987458](assets/1618139874584.png) 
+使用`describe`命令查看详细信息，包括配置默认值
 
-**zookeeper：**开源分布式协调服务框架，主要解决分布式系统中的一致性和数据管理问题。本质上是分布式文件系统，做 HMaster 选举，关键信息如 meta-region 地址，Replication 进度，Regionserver 地址与端口等存储。
+```bash
+hbase(main):003:0> describe 'test'
+Table test is ENABLED
+test
+COLUMN FAMILIES DESCRIPTION
+{NAME => 'cf', VERSIONS => '1', EVICT_BLOCKS_ON_CLOSE => 'false', NEW_VERSION_BEHAVIOR => 'false', KEEP_DELETED_CELLS => 'FALSE', CACHE_DATA_ON_WRITE =>
+'false', DATA_BLOCK_ENCODING => 'NONE', TTL => 'FOREVER', MIN_VERSIONS => '0', REPLICATION_SCOPE => '0', BLOOMFILTER => 'ROW', CACHE_INDEX_ON_WRITE => 'f
+alse', IN_MEMORY => 'false', CACHE_BLOOMS_ON_WRITE => 'false', PREFETCH_BLOCKS_ON_OPEN => 'false', COMPRESSION => 'NONE', BLOCKCACHE => 'true', BLOCKSIZE
+ => '65536'}
+1 row(s)
+Took 0.9998 seconds
+```
 
-**HMaster：** 是一个轻量级进程，负责所有 DDL 操作，负载均衡， region 信息管理，并在宕机恢复中起主导作用。
+##### 1.2.4 写入数据
 
-**HRegionServer：** 管理 HRegion，与客户端点对点通信，负责实时数据的读写（DML操作）。RegionServer要实时的向HMaster报告信息。HMaster知道全局的RegionServer运行情况，可以控制RegionServer的故障转移和Region的切分。
+要将数据放入表中，请使用该`put`命令。
 
-**HRegion：**Hbase表的分片，HBase表会根据RowKey值被切分成不同的Region存储在RegionServer中，在一个RegionServer中可以有多个不同的Region。
+```bash
+hbase(main):003:0> put 'test', 'row1', 'cf:a', 'value1'
+0 row(s) in 0.0850 seconds
 
-**Store：**一个Store对应HBase表中的一个列族(Column Family)。
+hbase(main):004:0> put 'test', 'row2', 'cf:b', 'value2'
+0 row(s) in 0.0110 seconds
 
-**StoreFile** ：保存实际数据的物理文件，StoreFile 以 HFile 的形式存储在HDFS上。每个Store会有一个或多个StoreFile（HFIle）,数据在每个Store File z中都是有序的。
+hbase(main):005:0> put 'test', 'row3', 'cf:c', 'value3'
+0 row(s) in 0.0100 seconds
+```
 
-**MemStore： ** 写缓存，由于HFile 中的数据要求是有序的，所以数据是先存储在 MemStore 中，排好序后，等到达刷写时机才会刷写到HFile 中，每次刷写都会形成一个 HFile文件。
+在这里，我们插入三个值，一次一个。第一个插入是 at `row1`, column `cf:a`，值为`value1`。HBase 中的列由列族前缀组成，`cf`在本例中，后跟冒号，然后是列限定符后缀，`a`在本例中。
 
-**HFile：**在磁盘上保存原始数据的实际的物理文件，是实际的存储文件。StoreFile是以Hfile的形式存储在HDFS的。
+##### 1.2.5 查看表中所有数据
 
-**HDFS：**Hbase运行的底层文件系统。
+从 HBase 获取数据的方法之一是扫描。使用该`scan`命令扫描表中的数据。您可以限制扫描，但目前，所有数据都已获取。
 
-**Write-Ahead logs（WAL）：** 由于数据要经过MemStore 排序后才会刷写到HFile 中，但把数据保存在内存中会有很高的概率导致数据丢失，为了解决这个问题，数据为先写入一个叫Write-Ahead logs 的文件中，然后再写入 MemStore中，所以在系统出现故障的时候，数据可以根据这个日志文件重建。比如下面情况：
+```bash
+hbase(main):006:0> scan 'test'
+ROW                                      COLUMN+CELL
+ row1                                    column=cf:a, timestamp=1421762485768, value=value1
+ row2                                    column=cf:b, timestamp=1421762491785, value=value2
+ row3                                    column=cf:c, timestamp=1421762496210, value=value3
+3 row(s) in 0.0230 seconds
+```
 
-- HBase的修改记录，当对HBase读写数据的时候，数据不是直接写进磁盘，它会在内存中保留一段时间（时间以及数据量阈值可以设定）。但把数据保存在内存中可能有更高的概率引起数据丢失，
+##### 1.2.6 查看表中单行数据
 
+要一次获取一行数据，请使用该`get`命令。
 
+```bash
+hbase(main):007:0> get 'test', 'row1'
+COLUMN                                   CELL
+ cf:a                                    timestamp=1421762485768, value=value1
+1 row(s) in 0.0350 seconds
+```
 
-#### 4.2 HBase 数据写入流程
+##### 1.2.7 禁用表
 
+如果要删除表或更改其设置，以及在某些其他情况下，您需要先使用该`disable`命令禁用该表。您可以使用该`enable`命令重新启用它。
 
+```bash
+hbase(main):008:0> disable 'test'
+0 row(s) in 1.1820 seconds
 
-**相关文章** 
+hbase(main):009:0> enable 'test'
+0 row(s) in 0.1770 seconds
+```
 
-1. [Java 3y 我终于看懂 Hbase了](https://zhuanlan.zhihu.com/p/145551967)  
-2. [HBase 技术详细笔记](https://cloud.tencent.com/developer/article/1006043) 
-3. [Infoq-Hbase详解](https://xie.infoq.cn/article/a3e345a6dcb2a626cb8a40648) 
-4. [HBase 初探：架构 + 原理 + 对比 + 实践](https://blog.csdn.net/m0_46757769/article/details/105797288) 
+##### 1.2.8 删除表
+
+要删除（删除）表，请使用该`drop`命令。
+
+```bash
+hbase(main):011:0> drop 'test'
+0 row(s) in 0.1370 seconds
+```
+
+##### 1.2.9 退出hbase shell
+
+要退出 HBase Shell 并与集群断开连接，请使用该`quit`命令。HBase 仍在后台运行
+
+#### 1.3 hbase伪分布式
+
+在完成[快速入门](http://hbase.apache.org/book.html#quickstart)独立模式后，您可以重新配置 HBase 以在伪分布式模式下运行。伪分布式模式意味着 HBase 仍然完全运行在单个主机上，但每个 HBase 守护进程（HMaster、HRegionServer 和 ZooKeeper）作为一个单独的进程运行：在独立模式下，所有守护进程都在一个 jvm 进程/实例中运行。默认情况下，除非您`hbase.rootdir`按照[快速入门中的说明](http://hbase.apache.org/book.html#quickstart)配置该属性 ，否则您的数据仍存储在*/tmp/ 中*。
+
+相关文章
+
+1. 快速入门单机hbase：http://hbase.apache.org/book.html
+
+#### 1.4 hbase运行模式
+
+- 单机
+- 分布式
+
+##### 1.4.1 单机hbase
+
+这是默认模式。独立模式是[快速入门](http://hbase.apache.org/book.html#quickstart)部分中描述的内容。在独立模式下，HBase 不使用 HDFS——而是使用本地文件系统——并且它在同一个 JVM 中运行所有 HBase 守护进程和本地 ZooKeeper。ZooKeeper 绑定到一个众所周知的端口，因此客户端可以与 HBase 通信。
+
+- hdfs上独立的hbase
+
+独立 hbase 的一个有时有用的变体让所有守护进程在一个 JVM 内运行，但不是持久化到本地文件系统，而是持久化到 HDFS 实例。
+
+要配置此独立变体，请编辑*hbase-site.xml* 设置*hbase.rootdir* 以指向 HDFS 实例中的目录，然后将*hbase.cluster.distributed*设置 为*false*。例如：
+
+```xml
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    <value>hdfs://namenode.example.org:8020/hbase</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>false</value>
+  </property>
+</configuration>
+```
+
+##### 1.4.2 分布式hbase
+
+- 伪分布式模式只是在单个主机上运行的完全分布式模式，可以针对本地文件系统运行，也可以针对*Hadoop 分布式文件系统*(HDFS)的实例运行。
+- 完全分布式模式只能在 HDFS 上运行
+
+### 2. hbase 数据模型
+
+> 导读
+
+#### 2.1 概念视图
+
+按照惯例，列名由其列族前缀和*限定符组成*。例如，列*contents:html*由列族`contents`和`html`限定符组成。冒号字符 ( `:`) 将列族与列族*限定符分隔开*。
+
+> webtable
+
+| 行键              | 时间戳 | 列族 `contents`         | 列族 `anchor`                | 列族 `people`         |
+| :---------------- | :----- | :---------------------- | :--------------------------- | :-------------------- |
+| “com.cnn.www”     | t9     |                         | 锚点：cnnsi.com = "CNN"      |                       |
+| “com.cnn.www”     | t8     |                         | 主播：my.look.ca = "CNN.com" |                       |
+| “com.cnn.www”     | t6     | 内容：html = "<html>… " |                              |                       |
+| “com.cnn.www”     | t5     | 内容：html = "<html>… " |                              |                       |
+| “com.cnn.www”     | t3     | 内容：html = "<html>… " |                              |                       |
+| “com.example.www” | t5     | 内容：html = "<html>… " |                              | 人：作者 =“约翰·多伊” |
+
+此表中看起来为空的单元格不占用空间，或者实际上存在于 HBase 中。这就是 HBase“稀疏”的原因。
+
+- 表格视图不是查看 HBase 中数据的唯一可能方式，甚至不是最准确的方式。
+
+以下表示与多维地图相同的信息。这只是用于说明目的的模型，可能并不完全准确。
+
+```json
+{
+  "com.cnn.www": {
+    contents: {
+      t6: contents:html: "<html>..."
+      t5: contents:html: "<html>..."
+      t3: contents:html: "<html>..."
+    }
+    anchor: {
+      t9: anchor:cnnsi.com = "CNN"
+      t8: anchor:my.look.ca = "CNN.com"
+    }
+    people: {}
+  }
+  "com.example.www": {
+    contents: {
+      t5: contents:html: "<html>..."
+    }
+    anchor: {}
+    people: {
+      t5: people:author: "John Doe"
+    }
+  }
+}
+```
+
+#### 2.2 物理视图
+
+尽管在概念级别表可能被视为一组稀疏的行，但它们在物理上是按列族存储的。可以随时将新的列限定符 (column_family:column_qualifier) 添加到现有列族中。
+
+> table anchor
+
+| 行键          | 时间戳 | 列族 `anchor`                   |
+| :------------ | :----- | :------------------------------ |
+| “com.cnn.www” | t9     | `anchor:cnnsi.com = "CNN"`      |
+| “com.cnn.www” | t8     | `anchor:my.look.ca = "CNN.com"` |
+
+> table  contents
+
+| 行键          | 时间戳 | 列族 `contents:`        |
+| :------------ | :----- | :---------------------- |
+| “com.cnn.www” | t6     | 内容：html = "<html>… " |
+| “com.cnn.www” | t5     | 内容：html = "<html>… " |
+| “com.cnn.www” | t3     | 内容：html = "<html>… " |
+
+概念视图中显示的空单元格根本没有存储。因此，
+
+- 对`contents:html`时间戳列的值的请求`t8`将不返回任何值。
+- 对`anchor:my.look.ca`时间戳值的请求`t9`不会返回任何值。
+
+但是，如果未提供时间戳，则将返回特定列的最新值。给定多个版本，最新的也是第一个找到的，因为时间戳是按降序存储的。
+
+因此，`com.cnn.www`如果未指定时间戳，则对行中所有列的值的请求将是：
+
+- `contents:html`from timestamp`t6`的值
+- `anchor:cnnsi.com`from timestamp`t9`的值
+- `anchor:my.look.ca`from timestamp的值`t8`。
+
+#### 2.3 命名空间
+
+命名空间是表的逻辑分组，类似于关系数据库系统中的数据库。这种抽象为即将到来的多租户相关功能奠定了基础：
+
+##### 2.3.1 命名空间管理
+
+可以创建、删除或更改命名空间。命名空间成员资格在表创建期间通过指定以下形式的完全限定表名来确定：
+
+```xml
+<table namespace>:<table qualifier>
+```
+
+```bash
+#Create a namespace-创建命名空间
+create_namespace 'my_ns'
+
+#create my_table in my_ns namespace 在指定命名空间建表
+create 'my_ns:my_table', 'fam'
+
+#drop namespace-删除命名空间
+drop_namespace 'my_ns'
+
+#alter namespace - 修改命名空间
+alter_namespace 'my_ns', {METHOD => 'set', 'PROPERTY_NAME' => 'PROPERTY_VALUE'}
+```
+
+- **预定义命名空间** 
+
+有两个预定义的特殊命名空间：
+
+- hbase - 系统命名空间，用于包含 HBase 内部表
+- default - 没有明确指定命名空间的表将自动落入这个命名空间
+
+```bash
+#namespace=foo and table qualifier=bar
+create 'foo:bar', 'fam'
+
+#namespace=default and table qualifier=bar
+create 'bar', 'fam'
+```
+
+#### 2.4 操作数据模型
+
+The four primary data model operations are Get, Put, Scan, and Delete. Operations are applied via [Table](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Table.html) instances.
+
+##### 2.4.1 get
+
+[Get](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Get.html) returns attributes for a specified row. Gets are executed via [Table.get](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Table.html#get-org.apache.hadoop.hbase.client.Get-) 
+
+##### 2.4.2 put
+
+[Put](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Put.html) either adds new rows to a table (if the key is new) or can update existing rows (if the key already exists). Puts are executed via [Table.put](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Table.html#put-org.apache.hadoop.hbase.client.Put-) (non-writeBuffer) or [Table.batch](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Table.html#batch-java.util.List-java.lang.Object:A-) (non-writeBuffer) 
+
+##### 2.4.3 scans
+
+[Scan](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html) allow iteration over multiple rows for specified attributes.
+
+The following is an example of a Scan on a Table instance. Assume that a table is populated with rows with keys "row1", "row2", "row3", and then another set of rows with the keys "abc1", "abc2", and "abc3". 
+
+The following example shows how to set a Scan instance to return the rows beginning with "row". 
+
+```java
+public static final byte[] CF = "cf".getBytes();
+public static final byte[] ATTR = "attr".getBytes();
+...
+
+Table table = ...      // instantiate a Table instance
+
+Scan scan = new Scan();
+scan.addColumn(CF, ATTR);
+scan.setRowPrefixFilter(Bytes.toBytes("row"));
+ResultScanner rs = table.getScanner(scan);
+try {
+  for (Result r = rs.next(); r != null; r = rs.next()) {
+    // process result...
+  }
+} finally {
+  rs.close();  // always close the ResultScanner!
+}
+```
+
+Note that generally the easiest way to specify a specific stop point for a scan is by using the [InclusiveStopFilter](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/filter/InclusiveStopFilter.html) class.
+
+##### 2.4.4 delete
+
+[Delete](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Delete.html) removes a row from a table. Deletes are executed via [Table.delete](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Table.html#delete-org.apache.hadoop.hbase.client.Delete-).
+
+HBase does not modify data in place, and so deletes are handled by creating new markers called *tombstones*. These tombstones, along with the dead values, are cleaned up on major compactions.
+
+See [version.delete](http://hbase.apache.org/book.html#version.delete) for more information on deleting versions of columns, and see [compaction](http://hbase.apache.org/book.html#compaction) for more information on compactions. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
