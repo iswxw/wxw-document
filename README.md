@@ -17,10 +17,11 @@
 
 ## 目录
 
-### 大数据
+### 大数据技术
 
 - ClickHouse
 - Flink
+- Doris
 - Flume
 - Hbase
 
@@ -58,8 +59,6 @@
   - PostGreSQL
   - SQL Server
   - MyBatis
-- 微服务
-  - Cloud
 - Spring系列
   - SpringBoot
   - SpringCloud
@@ -90,13 +89,4 @@
 
 ### 运维部署
 
-- 测试工具
 - Jenkinse构建和部署
-
-### 项目实战
-
-- 分布式算法
-- 服务治理
-- 功能设计
-- 项目案例
-- 项目总结
