@@ -72,6 +72,62 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 - **Leader：** 每个分区副本的 "主"，生产者发送数据的对象，以及消费者消费消息的对象都是Leader.
 - **Follower：** 每个分区多个副本的 “从节点” ，实时从Leader中同步数据，保持和Leader数据的同步。Leader发生故障时，某个Follower会成为新的Leader.
 
+#### 1.1.3 Consumer
+
+根据 KafkaConsumer 类上的注释上来看 KafkaConsumer 具有如下特征：
+
+- 在 Kafka 中 KafkaConsumer 是线程不安全的。
+
+- 消息偏移量与消费偏移量(消息消费进度)
+
+  Kafka 为分区中的每一条消息维护一个偏移量，即消息偏移量。这个偏移量充当该分区内记录的唯一标识符。消费偏移量(消息消费进度)存储的是消费组当前的处理进度。消息消费进度的提交在 kafka 中可以定时自动提交也可以手动提交。手动提交可以调用 commitSync() 或 commitAsync 方法。
+
+- 消费组 与 订阅关系
+
+  多个消费者可以同属于一个消费组，消费组内的所有消费者共同消费主题下的所有消息。一个消费组可以订阅多个主题。
+
+- 队列负载机制
+
+  既然同一个消费组内的消费者共同承担主题下所有队列的消费，那他们如何进行分工呢？默认情况下采取平均分配，例如一个消费组有两个消费者c1、c2，一个 topic 的分区数为6，那 c1 会负责3个分区的消费，同样 c2 会负责另外3个分区的分配。
+
+  那如果其中一个消费者宕机或新增一个消费者，那队列能动态调整吗？答案是会重新再次平衡，例如如果新增一个消费者 c3，则c1,c2,c3都会负责2个分区的消息消费。
+
+- 消费者故障检测机制
+
+  当通过 subscribe 方法订阅某些主题时，此时该消费者还未真正加入到订阅组，只有当 consumeer#poll 方法被调用后，并且会向 broker 定时发送心跳包，如果 broker 在 session.timeout.ms 时间内未收到心跳包，则 broker 会任务该消费者已宕机，会将其剔除，并触发消费端的分区重平衡。
+
+  消费者也有可能遇到“活体锁”的情况，即它继续发送心跳，但没有任何进展。在这种情况下，为了防止消费者无限期地占用它的分区，可以使用max.poll.interval.ms 设置提供了一个活性检测机制。基本上，如果您调用轮询的频率低于配置的最大间隔，那么客户机将主动离开组，以便另一个消费者可以接管它的分区。当这种情况发生时,您可能会看到一个偏移提交失败(由调用{@link #commitSync()}抛出的{@link CommitFailedException}表示)。
+
+- kafka 对 poll loop 行为的控制参数
+
+  Kafka 提供了如下两个参数来控制 poll 的行为：
+
+  ```bash
+  ## 允许 两次调用 poll 方法的最大间隔，即设置每一批任务最大的处理时间。
+  max.poll.interval.ms
+  
+  ## 每一次 poll 最大拉取的消息条数。
+  max.poll.records
+  ```
+
+  对于消息处理时间不可预测的情况下上述两个参数可能不够用，那将如何是好呢？
+
+  通常的建议将消息拉取与消息消费分开，一个线程负责 poll 消息，处理这些消息使用另外的线程，这里就需要手动提交消费进度。为了控制消息拉起的过快，您可能会需要用到 Consumer#pause(Collection) 方法，暂时停止向该分区拉起消息。RocketMQ 的推模式就是采用了这种策略。
+
+#### 1.1.4 ConsumerGroup（CG）
+
+> 导读：http://kafka.apache.org/documentation/#basic_ops_consumer_group
+
+- RocketMQ：不同的消费组消费同一个Topic，可以同时收到消息
+
+  位于不同consumerGroup组的 consumer端，可以同时消费相同topic的消息。若是消费组相同，则相当于负载，每条消息只能一个consumer端消费！
+
+
+
+相关文章
+
+1. [初始 Kafka Consumer 消费者](https://mp.weixin.qq.com/s/DaUcyjTqHIRhyWXb2v2ryg) 
+
 ### 1.2 kafka 快速入门
 
 > 来源 CSDN：https://blog.csdn.net/qq_41893274/article/details/115562660
@@ -398,11 +454,22 @@ ZooKeeper的连接超时时间
 zookeeper.sync.time.ms =2000
 ```
 
+### 1.3 应用场景
+
+> 概述
+
+- **消息系统**：发布-订阅，解耦生产者和消费者，缓存消息等
+- **存储系统**：充当中间数据的存储系统，是一种高性能、低延迟、具备日志存储、备份和传播功能的分布式文件系统。
+- **日志收集**：一个公司可以用Kafka可以收集各种服务的log，通过kafka以统一接口服务的方式开放给各种consumer，例如hadoop、Hbase、Solr等
+- **运营指标**：用来记录运营监控数据。包括收集各种分布式应用的数据，生产各种操作的集中反馈，比如报警和报告。
+- **用户活动跟踪**：Kafka经常被用来记录web用户或者app用户的各种活动，如浏览网页、搜索、点击等活动，这些活动信息被各个服务器发布到kafka的topic中，然后订阅者通过订阅这些topic来做实时的监控分析，或者装载到hadoop、数据仓库中做离线分析和挖掘。
+- **流处理**：比如spark streaming, Strom和 Flink
+
+
+
 ## 2. kafka 核心知识
 
-
-
-#### 4.1 kafka 工作流程
+### 2.1 kafka 工作流程
 
 ![61812609751](asserts/1618126097515.png) 
 
@@ -412,7 +479,7 @@ Kafka 中消息是以 **topic** 进行分类的，生产者生产消息，消费
 
 topic 是逻辑上的概念，而partition 是物理上的概念，每个partition 对应一个log文件，该log文件中存储的就是 Producer 生产的数据，Producer 生产的数据会不断的追加到该log 文件的末端，且每条数据都有自己的offset。消费者组中的每个消费者都会实时记录自己消费到了哪个 offset,以便出错恢复时，从上次的位置继续消费。
 
-#### 4.2 kafka 文件存储机制
+### 2.2 kafka 文件存储机制
 
 > 导读：http://kafka.apache.org/documentation/#majordesignelements
 
@@ -438,6 +505,35 @@ index和log 是以当前segment的第一条消息的 offset命名，下图是 in
 - .log文件存储大量的数据
 
 索引文件中的元数据指向对应数据文件中 Message 的物理偏移地址。
+
+### 2.3 kafka 重平衡(reblance)机制
+
+Kafka的重平衡其实包含两个非常重要的阶段：消费组加入阶段(PreparingRebalance)、队列负载(CompletingRebalance).
+
+- PreparingRebalance：此阶段是消费者陆续加入消费组，该组第一个加入的消费者被推举为Leader，当该组所有已知memberId的消费者全部加入后，状态驱动到CompletingRebalance。
+
+- CompletingRebalance：PreparingRebalance状态完成后，如果消费者被推举为Leader，**Leader会采用该消费组中都支持的队列负载算法进行队列分布**，然后将结果回报给组协调器；如果消费者的角色为非Leader，会向组协调器发送同步队列分区算法，组协调器会将Leader节点分配的结果分配给消费者。
+
+**消费组如果在进行重平衡操作，将会暂停消息消费**，**频繁的重平衡会导致队列消息消费的速度受到极大的影响**。
+
+> 与重平衡相关的消费端参数：
+
+```bash
+# 两次poll方法调用的最大间隔时间，单位毫秒，默认为5分钟。如果消费端在该间隔内没有发起poll操作，该消费者将被剔除，触发重平衡，将该消费者分配的队列分配给其他消费者。
+max.poll.interval.ms
+
+# 消费者与broker的心跳超时时间,默认10s，broker在指定时间内没有收到心跳请求，broker端将会将该消费者移出，并触发重平衡。
+session.timeout.ms
+
+# 心跳间隔时间，消费者会以该频率向broker发送心跳，默认为3s，主要是确保session不会失
+heartbeat.interval.ms
+```
+
+
+
+
+
+
 
 ## 3. kafka 开发手册
 
