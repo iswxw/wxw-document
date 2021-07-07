@@ -1,4 +1,4 @@
-# ElasticStack 基础文档
+## ElasticStack 基础文档
 
 ## Elastic Stack简介
 
@@ -346,7 +346,7 @@ http://202.193.56.222:9200/
    	at org.elasticsearch.cli.Command.main(Command.java:90)
    	at org.elasticsearch.bootstrap.Elasticsearch.main(Elasticsearch.java:126)
    	at org.elasticsearch.bootstrap.Elasticsearch.main(Elasticsearch.java:92)
-
+   
    ```
 
    我们通过排查，发现是因为 /soft/elsearch/config/elasticsearch.keystore 存在问题
@@ -1622,6 +1622,16 @@ POST /itcast/person/_search
     }
 }
 ```
+
+
+
+## ElasticSearch核心技术
+
+
+
+
+
+
 
 ## ElasticSearch 集群
 

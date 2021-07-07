@@ -90,7 +90,14 @@
 - **Get 请求** : 默认为Get，只需要把网址写在后面就可以
 
 ```php
- curl 127.0.0.1:8080/ip/info   // 发送Get 请求
+## 不带参数
+curl 127.0.0.1:8080/ip/info   // 发送Get 请求
+   
+## 带字符串参数的
+curl -G -d 'q=kitties' -d 'count=20' https://google.com/search
+
+## 指定编码
+curl -G --data-urlencode 'comment=hello world' https://www.example.com
 ```
 
 - **Post 请求** ：POST方法必须把数据和网址分开，curl就要用到--data参数
@@ -188,6 +195,14 @@ curl --referer http://www.example.com http://www.example.com
   ```
 
 ### 实践案例
+
+
+
+
+
+相关文章
+
+1. Curl 用法指南：http://www.ruanyifeng.com/blog/2019/09/curl-reference.html
 
 ### 附件开发手册
 

@@ -124,9 +124,7 @@ sudo systemctl restart docker
 
 > 阿里加速地址：https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors
 
-### 2.2 Docker安装My SQL
-
-#### 1. 准备环境
+### 2.2 Docker安装MySQL
 
 > 资料来源：https://www.runoob.com/docker/docker-install-mysql.html
 
@@ -195,8 +193,6 @@ sudo systemctl restart docker
 
 ### 2.3 Docker 安装Ubuntu
 
-#### 1. 准备环境
-
 > 资料来源：https://www.runoob.com/docker/docker-install-ubuntu.html
 
 ```bash
@@ -216,7 +212,33 @@ docker exec -it ubuntu-test /bin/bash
 docker ps
 ```
 
+### 2.4 Docker 安装redis
 
+> 导读：https://www.runoob.com/docker/docker-install-redis.html
+
+```bash
+## 查看可用版本类型
+docker search redis
+
+## 拉取最新镜像
+docker pull redis
+
+## 查看本地镜像
+docker images
+
+## 运行容器
+$ docker run -itd --name redis-test -p 6379:6379 redis
+  
+  参数说明：
+  ------
+   -p 6379[服务器]:6379[容器]：映射容器服务的 6379 端口到宿主机的 6379 端口。外部可以直接通过宿主机ip:6379 访问到 Redis 的服务。
+
+## 通过 exec 命令进入 redis 容器
+$ docker exec -it redis-test /bin/bash
+
+## 查看容器的运行信息
+docker ps
+```
 
 ## 3. Docker 语法
 

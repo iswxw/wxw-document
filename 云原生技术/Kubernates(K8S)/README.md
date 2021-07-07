@@ -108,6 +108,13 @@ kind [快速入门](https://kind.sigs.k8s.io/docs/user/quick-start/)页面展示
 
 #### 2.1 centos 安装k8s集群
 
+#### 2.2 **Docker Desktop** 启动k8s
+
+相关文档
+
+1. [Docker Desktop for Mac/Windows 开启 Kubernetes](https://github.com/AliyunContainerService/k8s-for-docker-desktop) 
+2. [15分钟在笔记本上搭建 Kubernetes + Istio开发环境](https://developer.aliyun.com/article/672675) 
+
 ## K8S设计架构
 
 Kubernetes集群包含有节点代理kubelet和Master组件(APIs, scheduler, etc)，一切都基于分布式的存储系统。下面这张图是Kubernetes的架构图。

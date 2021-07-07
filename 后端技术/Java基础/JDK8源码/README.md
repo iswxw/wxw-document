@@ -3064,10 +3064,159 @@ private final void tryPresize(int size) {
 
 感谢 **Doug Lea** 对于 Java 发展做出的贡献，也希望我们可以向大师学习，磨炼自己的编程水平。借用笔者很喜欢的一个程序员大佬的一句话，学习是一条令人时而欣喜若狂、时而郁郁寡欢的道路。共勉！
 
+### 6. CountDownLatch
+
+#### 6.1 前言
+
+> countdownlatch是什么？能做什么？有什么意义？怎么用？
+
+- 一个CountDouwnLatch实例是不能重复使用的，也就是说它是一次性的，锁一经被打开就不能再关闭使用了，如果想重复使用，请考虑使用CyclicBarrier；
+
+
+
+#### 6.2 核心方法
+
+>  概览
+
+<img src="asserts/image-20210707145003326.png" alt="image-20210707145003326" style="zoom:50%;" /> 
+
+> 基本实现思路
+
+countdownlatch 底层基于 AbstractQueuedSynchronizer 实现，CountDownLatch 构造函数中指定的count直接赋给AQS的state；每次countDown()则都是release(1)减1，最后减到0时unpark阻塞线程；这一步是由最后一个执行countdown方法的线程执行的。而调用await()方法时，当前线程就会判断state属性是否为0，如果为0，则继续往下执行，如果不为0，则使当前线程进入等待状态，直到某个线程将state属性置为0，其就会唤醒在await()方法中等待的线程
+
+##### 6.2.1 CountDownLatch(1)
+
+```java
+public CountDownLatch(int count) {
+  if (count < 0) throw new IllegalArgumentException("count < 0");
+  this.sync = new Sync(count);
+}
+
+## AQS 实现同步器 设置初始 state 值
+Sync(int count) {
+  setState(count);
+}
+```
+
+##### 6.2.2 countDown()
+
+```java
+    public void countDown() {
+        sync.releaseShared(1);
+    }
+
+##  释放共享模式
+      public final boolean releaseShared(int arg) {
+        if (tryReleaseShared(arg)) {
+            doReleaseShared();
+            return true;
+        }
+        return false;
+    }
+##  判断是否可以释放
+  
+          protected boolean tryReleaseShared(int releases) {
+            // Decrement count; signal when transition to zero
+            // 计数自减，直到最后一个减为0时，返回 true 执行释放锁逻辑
+            for (;;) {
+                int c = getState();
+                if (c == 0)
+                    return false;
+                int nextc = c-1;
+                if (compareAndSetState(c, nextc))
+                    return nextc == 0;
+            }
+        }
+
+## 执行释放逻辑
+      private void doReleaseShared() {
+        /*
+         * Ensure that a release propagates, even if there are other
+         * in-progress acquires/releases.  This proceeds in the usual
+         * way of trying to unparkSuccessor of head if it needs
+         * signal. But if it does not, status is set to PROPAGATE to
+         * ensure that upon release, propagation continues.
+         * Additionally, we must loop in case a new node is added
+         * while we are doing this. Also, unlike other uses of
+         * unparkSuccessor, we need to know if CAS to reset status
+         * fails, if so rechecking.
+         */
+        for (;;) {
+            Node h = head;
+            if (h != null && h != tail) {
+                int ws = h.waitStatus;
+                if (ws == Node.SIGNAL) {
+                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
+                        continue;            // loop to recheck cases
+                    unparkSuccessor(h);
+                }
+                else if (ws == 0 &&
+                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+                    continue;                // loop on failed CAS
+            }
+            if (h == head)                   // loop if head changed
+                break;
+        }
+    }
+```
+
+##### 6.2.3 await()
+
+```java
+    // 等待
+    public void await() throws InterruptedException {
+        sync.acquireSharedInterruptibly(1);
+    }
+    // 中断 
+    public final void acquireSharedInterruptibly(int arg)
+            throws InterruptedException {
+        if (Thread.interrupted())
+            throw new InterruptedException();
+        if (tryAcquireShared(arg) < 0)
+            doAcquireSharedInterruptibly(arg);
+    }
+    
+    // 设置中断
+    private void doAcquireSharedInterruptibly(int arg)
+        throws InterruptedException {
+        final Node node = addWaiter(Node.SHARED);
+        boolean failed = true;
+        try {
+            for (;;) {
+                final Node p = node.predecessor();
+                if (p == head) {
+                    int r = tryAcquireShared(arg);
+                    if (r >= 0) {
+                        setHeadAndPropagate(node, r);
+                        p.next = null; // help GC
+                        failed = false;
+                        return;
+                    }
+                }
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                    parkAndCheckInterrupt())
+                    throw new InterruptedException();
+            }
+        } finally {
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+```
 
 
 
 
+
+#### 6.5 **CountDownLatch与CyclicBarrier比较** 
+
+CountDownLatch和CyclicBarrier都能够实现线程之间的等待，只不过它们侧重点不同：
+
+- 一个CountDouwnLatch实例是不能重复使用的，也就是说它是一次性的，锁一经被打开就不能再关闭使用了，如果想重复使用，请考虑使用CyclicBarrier；
+- CountDownLatch一般用于一个或多个线程，等待其他线程执行完任务后，再才执行；
+- CyclicBarrier 一般用于一组线程互相等待至某个状态，然后这一组线程再同时执行;，
+- CountDownLatch是减计数，计数减为0后不能重用
+- CyclicBarrier是加计数，可置0后复用。
 
 
 
