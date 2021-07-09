@@ -31,9 +31,7 @@
   - Metricbeat：可定期获取外部系统的监控指标信息，其可以监控、收集 Apache、HAProxy、MongoDB
     MySQL、Nginx、PostgreSQL、Redis、System、Zookeeper等服务；
 
-> Beats和Logstash其实都可以进行数据的采集，但是目前主流的是使用Beats进行数据采集，然后使用 Logstash进行数据的分割处理等，早期没有Beats的时候，使用的就是Logstash进行数据的采集。
-
-
+Beats和Logstash其实都可以进行数据的采集，但是目前主流的是使用Beats进行数据采集，然后使用 Logstash进行数据的分割处理等，早期没有Beats的时候，使用的就是Logstash进行数据的采集。
 
 **相关资料** 
 
@@ -1840,9 +1838,16 @@ shard = hash(routing) % number_1 of_primary_shards
 
 ##### 1. 搜索
 
+## ElasticSearch 实践
 
+### 1.  ES 客户端概述
 
+Java REST 客户端有两种风格：
 
+- [Java Low Level REST Client](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low.html)：Elasticsearch 的官方低级客户端。它允许通过 http 与 Elasticsearch 集群通信。将请求编组和响应取消编组给用户。它与所有 Elasticsearch 版本兼容。
+- [Java 高级 REST 客户端](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high.html)：Elasticsearch 的官方高级客户端。基于低级客户端，它公开 API 特定方法并处理请求编组和响应解组
+
+### 2. Java 高级 REST 客户端
 
 
 
