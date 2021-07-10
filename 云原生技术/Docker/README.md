@@ -1195,7 +1195,392 @@ Docker基于veth pair技术实现 网卡对，实现相同网络之间的通信�
 
 > 导读：https://www.runoob.com/docker/docker-compose.html
 
-### 6.2 Docker Swarm
+Compose 是用于定义和运行多容器 Docker 应用程序的工具。通过 Compose，您可以使用 YML 文件来配置应用程序需要的所有服务。然后，使用一个命令，就可以从 YML 文件配置中创建并启动所有服务。
+
+如果你还不了解 YML 文件配置，可以先阅读 [YAML 入门教程](https://www.runoob.com/w3cnote/yaml-intro.html)。
+
+Compose 使用的三个步骤：
+
+- 使用 Dockerfile 定义应用程序的环境。
+- 使用 docker-compose.yml 定义构成应用程序的服务，这样它们可以在隔离环境中一起运行。
+- 最后，执行 docker-compose up 命令来启动并运行整个应用程序。
+
+> docker-compose.yml 的配置案例如下（配置参数参考下文）：
+
+```yml
+# yaml 配置实例
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+   - "5000:5000"
+    volumes:
+   - .:/code
+    - logvolume01:/var/log
+    links:
+   - redis
+  redis:
+    image: redis
+volumes:
+  logvolume01: {}
+```
+
+#### 6.1.1 compose 安装
+
+Linux 上我们可以从 Github 上下载它的二进制包来使用，最新发行的版本地址：https://github.com/docker/compose/releases。
+
+运行以下命令以下载 Docker Compose 的当前稳定版本：
+
+```bash
+$ sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" \n
+-o /usr/local/bin/docker-compose
+```
+
+要安装其他版本的 Compose，请替换 1.24.1。将可执行权限应用于二进制文件：
+
+```bash
+$ sudo chmod +x /usr/local/bin/docker-compose
+```
+
+- 创建软链
+
+  ```bash
+  $ sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+  ```
+
+- 测试是否安装成功
+
+  ```bash
+  $ docker-compose --version
+  cker-compose version 1.24.1, build 4667896b
+  ```
+
+  **注意**： 对于 alpine，需要以下依赖包： py-pip，python-dev，libffi-dev，openssl-dev，gcc，libc-dev，和 make。
+
+> **macOS** 
+
+Mac 的 Docker 桌面版和 Docker Toolbox 已经包括 Compose 和其他 Docker 应用程序，因此 Mac 用户不需要单独安装 Compose。Docker 安装说明可以参阅 [MacOS Docker 安装](https://www.runoob.com/docker/macos-docker-install.html)。
+
+> Windows PC
+
+Windows 的 Docker 桌面版和 Docker Toolbox 已经包括 Compose 和其他 Docker 应用程序，因此 Windows 用户不需要单独安装 Compose。Docker 安装说明可以参阅[ Windows Docker 安装](https://www.runoob.com/docker/windows-docker-install.html)。
+
+#### 6.1.2 compose 使用
+
+**（1）准备** 
+
+- 创建一个测试目录
+
+  ```bash
+  $ mkdir compose-test
+  $ cd compose-test
+  ```
+
+- 在测试目录中创建一个名为 app.py 的文件，并复制粘贴以下内容：
+
+  ```bash
+  import time
+  
+  import redis
+  from flask import Flask
+  
+  app = Flask(__name__)
+  cache = redis.Redis(host='redis', port=6379)
+  
+  
+  def get_hit_count():
+      retries = 5
+      while True:
+          try:
+              return cache.incr('hits')
+          except redis.exceptions.ConnectionError as exc:
+              if retries == 0:
+                  raise exc
+              retries -= 1
+              time.sleep(0.5)
+  
+  
+  @app.route('/')
+  def hello():
+      count = get_hit_count()
+      return 'Hello World! I have been seen {} times.\n'.format(count)
+  ```
+
+  在此示例中，redis 是应用程序网络上的 redis 容器的主机名，该主机使用的端口为 6379。
+
+  在 composetest 目录中创建另一个名为 **requirements.txt** 的文件，内容如下：
+
+  ```bash
+  flask
+  redis
+  ```
+
+  **（2）创建 Dockerfile 文件** 
+
+  - 在 compose-test 目录中，创建一个名为的文件 Dockerfile，内容如下：
+
+    ```bash
+    FROM python:3.7-alpine
+    WORKDIR /code
+    ENV FLASK_APP app.py
+    ENV FLASK_RUN_HOST 0.0.0.0
+    RUN apk add --no-cache gcc musl-dev linux-headers
+    COPY requirements.txt requirements.txt
+    RUN pip install -r requirements.txt
+    COPY . .
+    CMD ["flask", "run"]
+    ```
+
+    **Dockerfile 内容解释：**
+
+    - **FROM python:3.7-alpine**: 从 Python 3.7 映像开始构建镜像。
+
+    - **WORKDIR /code**: 将工作目录设置为 /code。
+
+      ```bash
+      ## 设置 flask 命令使用的环境变量。
+      ENV FLASK_APP app.py
+      ENV FLASK_RUN_HOST 0.0.0.0
+      ```
+
+    - **RUN apk add --no-cache gcc musl-dev linux-headers**: 安装 gcc，以便诸如 MarkupSafe 和 SQLAlchemy 之类的 Python 包可以编译加速。
+
+    - 复制 requirements.txt 并安装 Python 依赖项。
+
+      ```bash
+      COPY requirements.txt requirements.txt
+      RUN pip install -r requirements.txt
+      ```
+
+    - **COPY . .**: 将 . 项目中的当前目录复制到 . 镜像中的工作目录。
+
+    - **CMD ["flask", "run"]**: 容器提供默认的执行命令为：flask run。
+
+**（3）创建 docker-compose.yml ** 
+
+- 在测试目录中创建一个名为 docker-compose.yml 的文件，然后粘贴以下内容：
+
+  ```bash
+  # yaml 配置
+  version: '3'
+  services:
+    web:
+      build: .
+      ports:
+       - "5000:5000"
+    redis:
+      image: "redis:alpine"
+  ```
+
+- 该 Compose 文件定义了两个服务：web 和 redis。
+  - **web**：该 web 服务使用从 Dockerfile 当前目录中构建的镜像。然后，它将容器和主机绑定到暴露的端口 5000。此示例服务使用 Flask Web 服务器的默认端口 5000 。
+  - **redis**：该 redis 服务使用 Docker Hub 的公共 Redis 映像。
+
+**（4）使用 Compose 命令构建和运行您的应用** 
+
+- 在测试目录中，执行以下命令来启动应用程序：
+
+  ```bash
+  docker-compose up
+  ```
+
+- 如果你想在后台执行该服务可以加上 **-d** 参数：
+
+  ```bash
+  docker-compose up -d
+  ```
+
+#### 6.1.3 yml 配置指令参考
+
+- `version` ：指定本 yml 依从的 compose 哪个版本制定的。
+
+- `build` :  指定为构建镜像上下文路径：
+
+  例如 webapp 服务，
+
+  - 指定为从上下文路径 ./dir/Dockerfile 所构建的镜像：
+
+    ```bash
+    ## 命令说明
+    - context：上下文路径。
+    - dockerfile：指定构建镜像的 Dockerfile 文件名。
+    - args：添加构建参数，这是只能在构建过程中访问的环境变量。
+    - labels：设置构建镜像的标签。
+    - target：多层构建，可以指定构建哪一层。
+    
+    # 案例一
+    ---
+    version: "3.7"
+    services:
+      webapp:
+        build: ./dir
+    ```
+
+  - 或者，作为具有在上下文指定的路径的对象，以及可选的 Dockerfile 和 args：
+
+    ```yml
+    version: "3.7"
+    services:
+      webapp:
+        build:
+          context: ./dir
+          dockerfile: Dockerfile-alternate
+          args:
+            buildno: 1
+          labels:
+            - "com.example.description=Accounting webapp"
+            - "com.example.department=Finance"
+            - "com.example.label-with-empty-value"
+          target: prod
+    ```
+
+- `volumes` 将主机的数据卷或着文件挂载到容器里。
+
+  ```yml
+  version: "3.7"
+  services:
+    db:
+      image: postgres:latest
+      volumes:
+        - "/localhost/postgres.sock:/var/run/postgres/postgres.sock"
+        - "/localhost/data:/var/lib/postgresql/data"
+  ```
+
+- `secrets` 存储敏感数据，例如密码
+
+  ```yml
+  version: "3.1"
+  services:
+  
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/my_secret
+    secrets:
+      - my_secret
+  
+  secrets:
+    my_secret:
+      file: ./my_secret.txt
+  ```
+
+- `restart` 
+
+  - no：是默认的重启策略，在任何情况下都不会重启容器。
+  - always：容器总是重新启动。
+  - on-failure：在容器非正常退出时（退出状态非0），才会重启容器。
+  - unless-stopped：在容器退出时总是重启容器，但是不考虑在Docker守护进程启动时就已经停止了的容器
+
+  ```yml
+  restart: "no"
+  restart: always
+  restart: on-failure
+  restart: unless-stopped
+  ```
+
+  注：swarm 集群模式，请改用 restart_policy。
+
+- `cap_add，cap_drop` 添加或删除容器拥有的宿主机的内核功能。
+
+  ```yml
+  cap_add:
+    - ALL # 开启全部权限
+  
+  cap_drop:
+    - SYS_PTRACE # 关闭 ptrace权限
+  ```
+
+- `cgroup_parent` :为容器指定父 cgroup 组，意味着将继承该组的资源限制。
+
+  ```yml
+  cgroup_parent: m-executor-abcd
+  ```
+
+- `command` 覆盖容器启动的默认命令
+
+  ```bash
+  command: ["bundle", "exec", "thin", "-p", "3000"]
+  ```
+
+- `container_name` : 指定自定义容器名称，而不是生成的默认名称。
+
+  ```bash
+  container_name: my-web-container
+  ```
+
+- ` depends_on  ` 设置依赖关系。
+
+  - docker-compose up ：以依赖性顺序启动服务。在以下示例中，先启动 db 和 redis ，才会启动 web。
+  - docker-compose up SERVICE ：自动包含 SERVICE 的依赖项。在以下示例中，docker-compose up web 还将创建并启动 db 和 redis。
+  - docker-compose stop ：按依赖关系顺序停止服务。在以下示例中，web 在 db 和 redis 之前停止。
+
+  ```yml
+  version: "3.7"
+  services:
+    web:
+      build: .
+      depends_on:
+        - db
+        - redis
+    redis:
+      image: redis
+    db:
+      image: postgres
+  ```
+
+  注意：web 服务不会等待 redis db 完全启动 之后才启动。
+
+- `deploy` : 指定与服务的部署和运行有关的配置。只在 swarm 模式下才会有用。
+
+  ```yml
+  version: "3.7"
+  services:
+    redis:
+      image: redis:alpine
+      deploy:
+        mode：replicated
+        replicas: 6
+        endpoint_mode: dnsrr
+        labels: 
+          description: "This redis service label"
+        resources:
+          limits:
+            cpus: '0.50'
+            memory: 50M
+          reservations:
+            cpus: '0.25'
+            memory: 20M
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+          window: 120s
+          
+  # 可以选参数：
+  endpoint_mode：访问集群服务的方式。
+  -----
+  endpoint_mode: vip 
+  # Docker 集群服务一个对外的虚拟 ip。所有的请求都会通过这个虚拟 ip 到达集群服务内部的机器。
+  endpoint_mode: dnsrr
+  # DNS 轮询（DNSRR）。所有的请求会自动轮询获取到集群 ip 列表中的一个 ip 地址。
+  
+  ```
+
+- **`labels`**：在服务上设置标签。可以用容器上的 labels（跟 deploy 同级的配置） 覆盖 deploy 下的 labels。
+
+- **`mode`**：指定服务提供的模式。
+
+  - **replicated**：复制服务，复制指定服务到集群的机器上。
+  - **global**：全局服务，服务将部署至集群的每个节点。
+
+  <img src="asserts/docker-composex.png" alt="img" style="zoom:50%;" /> 
+
+更多用法参考
+
+- https://www.runoob.com/docker/docker-compose.html
+
+### 6.2 Docker Swarm集群管理
 
 > 导读：https://www.runoob.com/docker/docker-swarm.html
 

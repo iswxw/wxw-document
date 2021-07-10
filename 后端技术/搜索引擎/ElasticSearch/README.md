@@ -4,11 +4,11 @@
 
 如果你没有听说过Elastic Stack，那你一定听说过ELK，实际上ELK是三款软件的简称，分别是Elasticsearch、Logstash、Kibana组成，在发展的过程中，又有新成员Beats的加入，所以就形成了Elastic Stack。所以说，ELK是旧的称呼，Elastic Stack是新的名字。
 
-![](https://gitee.com/wwxw/image/raw/master/blog/ElasticSatck/ElasticSearch/KSLh6Fx3Fz@B.png) 
+<img src="https://gitee.com/wwxw/image/raw/master/blog/ElasticSatck/ElasticSearch/KSLh6Fx3Fz@B.png" style="zoom:50%;" />  
 
 全系的Elastic Stack技术栈包括：
 
-![](https://gitee.com/wwxw/image/raw/master/blog/ElasticSatck/ElasticSearch/y19B!4LqehUt.png) 
+<img src="https://gitee.com/wwxw/image/raw/master/blog/ElasticSatck/ElasticSearch/y19B!4LqehUt.png" style="zoom:50%;" />  
 
 - **Elasticsearch** 
 
@@ -458,35 +458,77 @@ Elasticsearch最小的数据存储单元，JSON数据格式，类似于关系型
 
 **映射（mapping）** 
 
- 映射是定义文档及其包含的字段如何存储和索引的过程。
+映射是用于定义 ES 对索引中字段的存储类型、分词方式和是否存储等信息，就像数据库中的 Schema ，描述了文档可能具有的字段或属性、每个字段的数据类型
+
+- 只不过关系型数据库建表时必须指定字段类型，而 ES 对于字段类型可以不指定然后动态对字段类型猜测，也可以在创建索引时具体指定字段的类型。
+  - 对字段类型根据数据格式自动识别的映射称之为动态映射（Dynamic Mapping）
+  - 我们创建索引时具体定义字段类型的映射称之为静态映射或显示映射（Explicit Mapping）
+
+> 在讲解动态映射和静态映射的使用前，我们先来了解下 ES 中的数据有哪些字段类型？
+
+<img src="asserts/640-20210709170951502" alt="图片" style="zoom: 67%;" /> 
+
+> 我们再讲解为什么我们创建索引时需要建立静态映射而不使用动态映射。
+
+- Text 用于索引全文值的字段，例如电子邮件正文或产品说明。这些字段是被分词的，它们通过分词器传递 ，以在被索引之前将字符串转换为单个术语的列表。分析过程允许 Elasticsearch 搜索单个单词中每个完整的文本字段。文本字段不用于排序，很少用于聚合。
+
+- Keyword 用于索引结构化内容的字段，例如电子邮件地址，主机名，状态代码，邮政编码或标签。它们通常用于过滤，排序，和聚合。Keyword 字段只能按其确切值进行搜索。
+
+  通过对字段类型的了解我们知道有些字段需要明确定义的，例如某个字段是 Text 类型还是 Keyword 类型差别是很大的，时间字段也许我们需要指定它的时间格式，还有一些字段我们需要指定特定的分词器等等。
+
+如果采用动态映射是不能精确做到这些的，自动识别常常会与我们期望的有些差异。
+
+所以创建索引的时候一个完整的格式应该是指定分片和副本数以及 Mapping 的定义，如下：
+
+```json
+PUT my_index 
+{
+   "settings" : {
+      "number_of_shards" : 5,
+      "number_of_replicas" : 1
+   }
+  "mappings": {
+    "_doc": { 
+      "properties": { 
+        "title":    { "type": "text"  }, 
+        "name":     { "type": "text"  }, 
+        "age":      { "type": "integer" },  
+        "created":  {
+          "type":   "date", 
+          "format": "strict_date_optional_time||epoch_millis"
+        }
+      }
+    }
+  }
+}
+```
 
 #### （2）副本与分片
 
-**分片（**shard**）** 
+- **分片（**shard**）** ：就是单个Lucene索引文件，每个分片必须有一个主分片和零到多个副本。
 
-分片，是单个Lucene索引，而散布这些分片的过程叫作分片处理（sharding），由于单台机器的存储容量是有限的（如1TB），而Elasticsearch索引的数据可能特别大（PB级别，并且30GB/天的写入量），单台机器无法存储全部数据，就需要将索引中的数据切分为多个shard，分布在多台服务器上存储。利用shard可以很好地进行横向扩展，存储更多数据，让搜索和分析等操作分布到多台服务器上去执行，提升集群整体的吞吐量和性能。
-shard在使用时比较简单，只需要在创建索引时指定shard的数量即可，剩下的都交给Elasticsearch来完成，只是创建索引时一旦指定shard数量，后期就不能再更改了。
+由于单台机器的存储容量是有限的（如1TB），而Elasticsearch索引的数据可能特别大（PB级别，并且30GB/天的写入量），单台机器无法存储全部数据，就需要将索引中的数据切分为多个shard，分布在多台服务器上存储。利用shard可以很好地进行横向扩展，存储更多数据，让搜索和分析等操作分布到多台服务器上去执行，提升集群整体的吞吐量和性能。
 
-分片可以是主分片，也可以是副本分片，其中副本分片是主分片的完整副本。副本分片用于搜索，或者是在原有的主分片丢失后成为新的主分片。
+- shard在使用时比较简单，只需要在创建索引时指定shard的数量即可，剩下的都交给Elasticsearch来完成，只是创建索引时一旦指定shard数量，后期就不能再更改了。
 
-**注意**：可以在任何时候改变每个分片的副本分片的数量，因为副本分片总是可以被创建和移除的。这并不适用于索引划分为主分片的数量，在创建索引之前，必须决定主分片的数量。过少的分片将限制可扩展性，但是过多的分片会影响性能。默认设置的5份是一个不错的开始。
+- 分片可以是主分片，也可以是副本分片，其中副本分片是主分片的完整副本。副本分片用于搜索，或者是在原有的主分片丢失后成为新的主分片。
 
-**副本（replica）** 
+> **注意**：
 
-索引副本，完全拷贝shard的内容，shard与replica的关系可以是一对多，同一个shard可以有一个或多个replica，并且同一个shard下的replica数据完全一样，replica作为shard的数据拷贝，承担以下三个任务：
+可以在任何时候改变每个分片的副本分片的数量，因为副本分片总是可以被创建和移除的。这并不适用于索引划分为主分片的数量，在创建索引之前，必须决定主分片的数量。过少的分片将限制可扩展性，但是过多的分片会影响性能。默认设置的5份是一个不错的开始。
 
-1. shard故障或宕机时，其中一个replica可以升级成shard。
-2. replica保证数据不丢失（冗余机制），保证高可用。
-3. replica可以分担搜索请求，提升整个集群的吞吐量和性能。
+- **副本（replica）** 完全拷贝shard的内容，shard与replica的关系可以是一对多，同一个shard可以有0个或多个replica，并且同一个shard下的replica数据完全一样，replica作为shard的数据拷贝，承担以下三个任务：
+  1. shard故障或宕机时，其中一个replica可以升级成shard。
+  2. replica保证数据不丢失（冗余机制），保证高可用。
+  3. replica可以分担搜索请求，提升整个集群的吞吐量和性能。
 
-**shard的全称叫primary shard，replica全称叫replica shard**
+- **shard的全称叫 primary shard，replica全称叫replica shard**
+  - primary shard数量在创建索引时指定，后期不能修改
+  - replica shard后期可以修改。
 
-- primary shard数量在创建索引时指定，后期不能修改
-- replica shard后期可以修改。
+- 默认每个索引的primary shard值为5，replica shard值为1，含义是5个primary shard，5个replica shard，共10个shard。
 
-默认每个索引的primary shard值为5，replica shard值为1，含义是5个primary shard，5个replica shard，共10个shard。
-
-因此Elasticsearch最小的高可用配置是2台服务器。**【】【】**
+因此Elasticsearch最小的高可用配置是2台服务器。
 
 ### 1.4 Elasticsearch的工作原理
 
@@ -494,13 +536,13 @@ shard在使用时比较简单，只需要在创建索引时指定shard的数量�
 
 当Elasticsearch的node启动时，默认使用广播寻找集群中的其他node，并与之建立连接，如果集群已经存在，其中一个节点角色特殊一些，叫coordinate node（协调者，也叫master节点），负责管理集群node的状态，有新的node加入时，会更新集群拓扑信息。如果当前集群不存在，那么启动的node就自己成为coordinate node。
 
-![](https://img2018.cnblogs.com/blog/1834889/201911/1834889-20191115073615238-1620969013.png) 
+<img src="https://img2018.cnblogs.com/blog/1834889/201911/1834889-20191115073615238-1620969013.png" style="zoom:50%;" />  
 
 #### （2）应用程序与集群通信过程
 
 虽然Elasticsearch设置了Coordinate Node用来管理集群，但这种设置对客户端（应用程序）来说是透明的，客户端可以请求任何一个它已知的node，如果该node是集群当前的Coordinate，那么它会将请求转发到相应的Node上进行处理，如果该node不是Coordinate，那么该node会先将请求转交给Coordinate Node，再由Coordinate进行转发，搓着各node返回的数据全部交由Coordinate Node进行汇总，最后返回给客户端。
 
-![](https://img2018.cnblogs.com/blog/1834889/201911/1834889-20191115073615396-1105568420.png) 
+<img src="https://img2018.cnblogs.com/blog/1834889/201911/1834889-20191115073615396-1105568420.png" style="zoom: 50%;" />  
 
 #### （3）集群内node有效性检测
 
@@ -651,7 +693,7 @@ sysctl -w net.ipv4.tcp_retries2=5
 
 在Elasticsearch中，提供了功能丰富的RESTful API的操作，包括基本的CRUD、创建索引、删除索引等操作。
 
-#### （1）创建非结构化索引
+#### 1.6.1 创建非结构化索引
 
 在Lucene中，创建索引是需要定义字段名称以及字段的类型的，在Elasticsearch中提供了非结构化的索引，就是不需要创建索引结构，即可写入数据到索引中，实际上在Elasticsearch底层会进行结构化操作，此操作对用户是透明的。
 
@@ -776,7 +818,7 @@ GET 1 /haoke/user/_search
 GET /haoke/user/_search?q=age:20
 ```
 
-#### （2）DSL 搜索
+#### 1.6.2 DSL 搜索
 
 Elasticsearch提供丰富且灵活的查询语言叫做DSL查询(Query DSL),它允许你构建更加复杂、强大的查询。 DSL(Domain Specific Language特定领域语言)以JSON请求体的形式出现。
 
@@ -879,6 +921,16 @@ POST /haoke/user/_search
 
 从结果可以看出，年龄30的有2条数据，20的有一条，40的一条。
 
+#### 1.6.3 监控查看
+
+```bash
+## 查看当前节点的集群、版本信息
+curl http://localhost:9200/ 
+
+## kibana 下查看集群的健康状态
+GET /_cluster/health
+```
+
 ### 1.7 ElasticSearch 核心详解
 
 #### （1）文档
@@ -961,7 +1013,7 @@ GET /haoke/user/1005?_source=id,name
 GET /haoke/1 user/1005/_source
 ```
 
-![](https://gitee.com/moxi159753/LearningNotes/raw/master/ElasticStack/1_ElasticSearch%E4%BB%8B%E7%BB%8D%E4%B8%8E%E5%AE%89%E8%A3%85/images/image-20200923101239226.png) 
+<img src="https://gitee.com/moxi159753/LearningNotes/raw/master/ElasticStack/1_ElasticSearch%E4%BB%8B%E7%BB%8D%E4%B8%8E%E5%AE%89%E8%A3%85/images/image-20200923101239226.png" style="zoom:50%;" />  
 
 还可以这样：
 
@@ -969,7 +1021,7 @@ GET /haoke/1 user/1005/_source
 GET /haoke/user/1005/_source?_1 source=id,name
 ```
 
-![](https://gitee.com/moxi159753/LearningNotes/raw/master/ElasticStack/1_ElasticSearch%E4%BB%8B%E7%BB%8D%E4%B8%8E%E5%AE%89%E8%A3%85/images/image-20200923101319728.png) 
+<img src="https://gitee.com/moxi159753/LearningNotes/raw/master/ElasticStack/1_ElasticSearch%E4%BB%8B%E7%BB%8D%E4%B8%8E%E5%AE%89%E8%A3%85/images/image-20200923101319728.png" style="zoom:50%;" />  
 
 #### （3）判断文档是否存在
 
@@ -1621,15 +1673,136 @@ POST /itcast/person/_search
 }
 ```
 
+## ElasticSearch原理
+
+### 1. Lucene
+
+目前以 Lucene 为基础建立的开源可用全文搜索引擎主要是 Solr 和 Elasticsearch。但是 ES 本身就具有分布式的特性和易安装使用的特点，而 Solr 的分布式需要借助第三方来实现，例如通过使用 ZooKeeper 来达到分布式协调管理。
+
+不管是 Solr 还是 Elasticsearch 底层都是依赖于 Lucene，而 Lucene 能实现全文搜索主要是因为它实现了**倒排索引**的查询结构。
+
+#### 1.1 如何理解倒排索引？
+
+> 假如现有三份数据文档，文档的内容如下分别是
+
+```bash
+Java is the best programming language.
+PHP is the best programming language.
+Javascript is the best programming language.
+```
+
+为了创建倒排索引，我们通过分词器将每个文档的内容域拆分成单独的词（我们称它为词条或 Term），创建一个包含所有不重复词条的排序列表，然后列出每个词条出现在哪个文档。
+
+结果如下所示：
+
+```bash
+Term          Doc_1    Doc_2   Doc_3
+-------------------------------------
+Java        |   X   |        |
+is          |   X   |   X    |   X
+the         |   X   |   X    |   X
+best        |   X   |   X    |   X
+programming |   x   |   X    |   X
+language    |   X   |   X    |   X
+PHP         |       |   X    |
+Javascript  |       |        |   X
+-------------------------------------
+```
+
+这种结构由文档中所有不重复词的列表构成，对于其中每个词都有一个文档列表与之关联。
+
+这种由属性值来确定记录的位置的结构 **就是倒排索引** 。带有倒排索引的文件我们称为倒排文件。
+
+我们将上面的内容转换为图的形式来说明倒排索引的结构信息，如下图所示：
+
+<img src="asserts/640-20210709163529560" alt="图片" style="zoom:50%;" /> 
+
+其中主要有如下几个核心术语需要理解：
+
+- 词条（Term）：索引里面最小的存储和查询单元，对于英文来说是一个单词，对于中文来说一般指分词后的一个词。
+- 词典（Term Dictionary）：或字典，是词条 Term 的集合。搜索引擎的通常索引单位是单词，单词词典是由文档集合中出现过的所有单词构成的字符串集合，单词词典内每条索引项记载单词本身的一些信息以及指向“倒排列表”的指针。
+- 倒排表（Post list）：一个文档通常由多个词组成，倒排表记录的是某个词在哪些文档里出现过以及出现的位置。
+- 每条记录称为一个倒排项（Posting）。倒排表记录的不单是文档编号，还存储了词频等信息。
+- 倒排文件（Inverted File）：所有单词的倒排列表往往顺序地存储在磁盘的某个文件里，这个文件被称之为倒排文件，倒排文件是存储倒排索引的物理文件。
+
+从上图我们可以了解到倒排索引主要由两个部分组成：
+
+- 词典
+- 倒排文件
+
+词典和倒排表是 Lucene 中很重要的两种数据结构，是实现快速检索的重要基石。词典和倒排文件是分两部分存储的，词典在内存中而倒排文件存储在磁盘上。
+
+### 2. ES 机制原理
+
+ES 的基本概念和基本操作介绍完了之后，我们可能还有很多疑惑：
+
+- 它们内部是如何运行的？
+- 主分片和副本分片是如何同步的？
+- 创建索引的流程是什么样的？
+- ES 如何将索引数据分配到不同的分片上的？以及这些索引数据是如何存储的？
+- 为什么说 ES 是近实时搜索引擎而文档的 CRUD (创建-读取-更新-删除) 操作是实时的？
+- 以及 Elasticsearch 是怎样保证更新被持久化在断电时也不丢失数据？
+- 还有为什么删除文档不会立刻释放空间？
+
+带着这些疑问我们进入接下来的内容。
+
+#### 2.1 写数据流程
+
+下图描述了 3 个节点的集群，共拥有 12 个分片，其中有 4 个主分片（S0、S1、S2、S3）和 8 个副本分片（R0、R1、R2、R3），每个主分片对应两个副本分片，节点 1 是主节点（Master 节点）负责整个集群的状态。
+
+<img src="asserts/640-20210709173513158" alt="图片" style="zoom: 67%;" /> 
+
+- 写索引是只能写在主分片上，然后同步到副本分片。这里有四个主分片，一条数据 ES 是根据什么规则写到特定分片上的呢？
+
+- 这条索引数据为什么被写到 S0 上而不写到 S1 或 S2 上？那条数据为什么又被写到 S3 上而不写到 S0 上了？
+
+- 首先这肯定不会是随机的，否则将来要获取文档的时候我们就不知道从何处寻找了。
+
+实际上，这个过程是根据下面这个公式决定的：
+
+```bash
+shard = hash(routing) % number_of_primary_shards
+```
+
+- Routing 是一个可变值，默认是文档的 _id ，也可以设置成一个自定义的值。
+
+- Routing 通过 Hash 函数生成一个数字，然后这个数字再除以 number_of_primary_shards （主分片的数量）后得到余数。
+
+这个在 0 到 number_of_primary_shards-1 之间的余数，就是我们所寻求的文档所在分片的位置。
+
+这就解释了为什么我们要在创建索引的时候就确定好主分片的数量并且永远不会改变这个数量：因为如果数量变化了，那么所有之前路由的值都会无效，文档也再也找不到了。
+
+由于在 ES 集群中每个节点通过上面的计算公式都知道集群中的文档的存放位置，所以每个节点都有处理读写请求的能力。
+
+在一个写请求被发送到某个节点后，该节点即为前面说过的协调节点，协调节点会根据路由公式计算出需要写到哪个分片上，再将请求转发到该分片的主分片节点上。
+
+<img src="asserts/640.jpeg" alt="图片" style="zoom:67%;" /> 
+
+假如此时数据通过路由计算公式取余后得到的值是 shard=hash(routing)%4=0。
+
+则具体流程如下：
+
+- 客户端向 ES1 节点（协调节点）发送写请求，通过路由计算公式得到值为 0，则当前数据应被写到主分片 S0 上。
+- ES1 节点将请求转发到 S0 主分片所在的节点 ES3，ES3 接受请求并写入到磁盘。
+- 并发将数据复制到两个副本分片 R0 上，其中通过乐观并发控制数据的冲突。一旦所有的副本分片都报告成功，则节点 ES3 将向协调节点报告成功，协调节点向客户端报告成功。
+
+#### 2.2  存储数据流程
 
 
-## ElasticSearch核心技术
 
 
 
 
 
 
+
+
+
+
+
+相关文章
+
+1. [原来 Elasticsearch 还可以这么理解！](https://mp.weixin.qq.com/s/mq3Jz1vNxFklEWsjEQmEKw) 
 
 ## ElasticSearch 集群
 
@@ -1837,6 +2010,8 @@ shard = hash(routing) % number_1 of_primary_shards
 - 取回（fetch）
 
 ##### 1. 搜索
+
+
 
 ## ElasticSearch 实践
 
