@@ -56,6 +56,10 @@
 
 ### Nacos 实践
 
+
+
+相关文章
+
 - [Nacos与Spring Cloud一起使用](https://nacos.io/zh-cn/docs/use-nacos-with-springcloud.html)
 - [Nacos与Kubernetes一起使用](https://nacos.io/zh-cn/docs/use-nacos-with-kubernetes.html)
 - [Nacos与Dubbo一起使用](https://nacos.io/zh-cn/docs/use-nacos-with-dubbo.html)
@@ -178,31 +182,6 @@ Nacos 0.8.0版本完善了监控系统，支持通过暴露metrics数据接入�
 ![å¾ç](https://img.alicdn.com/tfs/TB1ALlUCFzqK1RjSZFCXXbbxVXa-2742-1476.png)
 
 
-
-#### 2.4 服务配置性能测试
-
-**测试目的** 
-
-让大家了解Nacos主要性能负载和容量，以帮助我们更好地管理Nacos性能质量，帮助用户更快地评估Nacos系统负载。
-
-- 相关教程地址：https://nacos.io/en-us/docs/nacos-config-benchmark.html
-
-#### 2.5 服务发现性能测试
-
-**测试目的** 
-
-主要了解Nacos服务发现性能负载和容量，以帮助我们更好地管理Nacos性能质量，帮助用户更快地评估Nacos系统负载。
-
-- 相关教程地址：https://nacos.io/en-us/docs/nacos-naming-benchmark.html
-
-#### 2.6 数据迁移至Nacos
-
-**NacosSync迁移用户指南** 
-
-- 启动NacosSync服务
-- 通过一个简单的示例，演示了如何向迁移Nacos的Zookeeper Dubbo客户端注册。
-
-> 具体迁移流程：https://nacos.io/en-us/docs/nacos-sync-use.html
 
 
 
