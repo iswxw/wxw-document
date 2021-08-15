@@ -22,7 +22,7 @@
 
 ## 1. kafka 初识
 
-### 1.1 kafka 概述
+### 1.1 kafka 基础回顾
 
 kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（Message Queue），主要应用于大数据实时处理领域。
 
@@ -72,7 +72,19 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 - **Leader：** 每个分区副本的 "主"，生产者发送数据的对象，以及消费者消费消息的对象都是Leader.
 - **Follower：** 每个分区多个副本的 “从节点” ，实时从Leader中同步数据，保持和Leader数据的同步。Leader发生故障时，某个Follower会成为新的Leader.
 
-#### 1.1.3 Consumer
+#### 1.1.3 kafka Consumer
+
+Kafka 有消费组的概念，每个消费者只能消费所分配到的分区的消息，每一个分区只能被一个消费组中的一个消费者所消费，所以同一个消费组中消费者的数量如果超过了分区的数量，将会出现有些消费者分配不到消费的分区。消费组与消费者关系如下图所示：
+
+<img src="asserts/640-16285005925262" alt="图片" style="zoom:80%;" /> 
+
+Kafka Consumer Client 消费消息通常包含以下步骤：
+
+1. 配置客户端，创建消费者
+2. 订阅主题
+3. 拉去消息并消费
+4. 提交消费位移
+5. 关闭消费者实例
 
 根据 KafkaConsumer 类上的注释上来看 KafkaConsumer 具有如下特征：
 
@@ -106,15 +118,43 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
   ## 允许 两次调用 poll 方法的最大间隔，即设置每一批任务最大的处理时间。
   max.poll.interval.ms
   
-  ## 每一次 poll 最大拉取的消息条数。
+  ## 每一次 poll 最大拉取的消息条数。如果处理逻辑很轻量，可以适当提高该值。
+  ## 但是max.poll.records条数据需要在在 session.timeout.ms 这个时间内处理完 。默认值为 500
   max.poll.records
+  
+  ## 连接 broker 地址，host：port 格式
+  bootstrap.servers。
+  
+  ## 消费者隶属的消费组
+  group.id
+  
+  ## ：与生产者的key.serializer对应，key 的反序列化方式。
+  key.deserializer
+  
+  ## 与生产者的value.serializer对应，value 的反序列化方式
+  value.deserializer
+  
+  ## 检测失败的时间。默认 10s 该参数是 Consumer Group 主动检测 （组内成员 comsummer) 崩溃的时间间隔，类似于心跳过期时间。
+  session.timeout.ms：coordinator 
+  
+  ## 该属性指定了消费者在读取一个没有偏移量后者偏移量无效（消费者长时间失效当前的偏移量已经过时并且被删除了）的分区的情况下，应该作何处理，默认值是 latest，也就是从最新记录读取数据（消费者启动之后生成的记录），另一个值是 earliest，意思是在偏移量无效的情况下，消费者从起始位置开始读取数据。
+  auto.offset.reset：
+  
+  ## 否自动提交位移，如果为false，则需要在程序中手动提交位移。对于精确到一次的语义，最好手动提交位移
+  enable.auto.commit：
+  
+  ## 单次拉取数据的最大字节数量
+  fetch.max.bytes：
+  
+  # 一次请求响应的最长等待时间。如果在超时时间内未得到响应，kafka 要么重发这条消息，要么超过重试次数的情况下直接置为失败。
+  request.timeout.ms：
   ```
-
+  
   对于消息处理时间不可预测的情况下上述两个参数可能不够用，那将如何是好呢？
-
+  
   通常的建议将消息拉取与消息消费分开，一个线程负责 poll 消息，处理这些消息使用另外的线程，这里就需要手动提交消费进度。为了控制消息拉起的过快，您可能会需要用到 Consumer#pause(Collection) 方法，暂时停止向该分区拉起消息。RocketMQ 的推模式就是采用了这种策略。
 
-#### 1.1.4 ConsumerGroup（CG）
+#### 1.1.4 Consumer Group
 
 > 导读：http://kafka.apache.org/documentation/#basic_ops_consumer_group
 
@@ -122,13 +162,63 @@ kafka 是一个分布式的基于**发布/订阅模式** 的**消息队列**（M
 
   位于不同consumerGroup组的 consumer端，可以同时消费相同topic的消息。若是消费组相同，则相当于负载，每条消息只能一个consumer端消费！
 
-
-
 相关文章
 
 1. [初始 Kafka Consumer 消费者](https://mp.weixin.qq.com/s/DaUcyjTqHIRhyWXb2v2ryg) 
 
-### 1.2 kafka 快速入门
+#### 1.1.5 分区和副本
+
+在分布式数据系统中，通常 **使用分区来提高系统的处理能力**，**通过副本来保证数据的高可用性**。多分区意味着并发处理的能力，这多个副本中，只有一个是 leader，而其他的都是 follower 副本。仅有 leader 副本可以对外提供服务。多个 follower 副本通常存放在和 leader 副本不同的 broker 中。通过这样的机制实现了高可用，当某台机器挂掉后，其他 follower 副本也能迅速”转正“，开始对外提供服务。
+
+> **为什么 follower 副本不提供读服务？** 
+
+这个问题本质上是对 **性能** 和 **一致性** 的取舍。
+
+试想一下，如果 follower 副本也对外提供服务那会怎么样呢？
+
+首先，性能是肯定会有所提升的。但同时，会出现一系列问题。类似数据库事务中的幻读，脏读。比如你现在写入一条数据到 kafka 主题 a，消费者 b 从主题 a 消费数据，却发现消费不到，因为消费者 b 去读取的那个分区副本中，最新消息还没写入。
+
+而这个时候，另一个消费者 c 却可以消费到最新那条数据，因为它消费了 leader 副本。Kafka 通过 WH 和 Offset 的管理来决定 Consumer 可以消费哪些数据，已经当前写入的数据。
+
+<img src="asserts/640-16285016032334" alt="图片" style="zoom:50%;" /> 
+
+**只有 Leader 可以对外提供读服务，那如何选举 Leader**
+
+kafka 会将与 leader 副本保持同步的副本放到 ISR 副本集合中。当然，leader 副本是一直存在于 ISR 副本集合中的，在某些特殊情况下，ISR 副本中甚至只有 leader 一个副本。当 leader 挂掉时，kakfa 通过 zookeeper 感知到这一情况，在 ISR 副本中选取新的副本成为 leader，对外提供服务。但这样还有一个问题，前面提到过，有可能 ISR 副本集合中，只有 leader，当 leader 副本挂掉后，ISR 集合就为空，这时候怎么办呢？这时候如果设置 unclean.leader.election.enable 参数为 true，那么 kafka 会在非同步，也就是不在 ISR 副本集合中的副本中，选取出副本成为 leader。
+
+>  kafka中的 ISR、AR又代表什么？
+
+- AR：Assigned Replicas。AR 是主题被创建后，分区创建时被分配的副本集合，副本个 数由副本因子决定。
+- ISR：In-Sync Replicas。Kafka 中特别重要的概念，指代的是 AR 中那些与 Leader 保 持同步的副本集合。
+
+在 AR 中的副本可能不在 ISR 中，但 Leader 副本天然就包含在 ISR 中。关于 ISR，还有一个常见的面试题目是如何判断副本是否应该属于 ISR。目前的判断 依据是：Follower 副本的 LEO 落后 Leader LEO 的时间，是否超过了 Broker 端参数 replica.lag.time.max.ms 值。如果超过了，副本就会被从 ISR 中移除。
+
+
+
+**副本的存在就会出现副本同步问题**
+
+Kafka 在所有分配的副本 (AR) 中维护一个可用的副本列表 (ISR)，Producer 向 Broker 发送消息时会根据`ack`配置来确定需要等待几个副本已经同步了消息才相应成功，Broker 内部会`ReplicaManager`服务来管理 flower 与 leader 之间的数据同步。
+
+<img src="asserts/640-16285017579866" alt="图片" style="zoom:50%;" /> 
+
+
+
+
+
+
+
+#### 1.1.6 Zookeeper
+
+<img src="asserts/640" alt="图片" style="zoom:80%;" /> 
+
+- Broker 注册：Broker 是分布式部署并且之间相互独立，Zookeeper 用来管理注册到集群的所有 Broker 节点。
+- Topic 注册：在 Kafka 中，同一个 Topic 的消息会被分成多个分区并将其分布在多个 Broker 上，这些分区信息及与 Broker 的对应关系也都是由 Zookeeper 在维护
+- 生产者负载均衡：由于同一个 Topic 消息会被分区并将其分布在多个 Broker 上，因此，生产者需要将消息合理地发送到这些分布式的 Broker 上。
+- 消费者负载均衡：与生产者类似，Kafka 中的消费者同样需要进行负载均衡来实现多个消费者合理地从对应的 Broker 服务器上接收消息，每个消费者分组包含若干消费者，每条消息都只会发送给分组中的一个消费者，不同的消费者分组消费自己特定的 Topic 下面的消息，互不干扰。
+
+ 
+
+### 1.2 kafka 环境
 
 > 来源 CSDN：https://blog.csdn.net/qq_41893274/article/details/115562660
 
@@ -506,15 +596,21 @@ index和log 是以当前segment的第一条消息的 offset命名，下图是 in
 
 索引文件中的元数据指向对应数据文件中 Message 的物理偏移地址。
 
-### 2.3 kafka 重平衡(reblance)机制
+### 2.3 kafka reblance 机制
 
-Kafka的重平衡其实包含两个非常重要的阶段：消费组加入阶段(PreparingRebalance)、队列负载(CompletingRebalance).
+rebalance 本质上是一种协议，规定了一个 consumer group 下的所有 consumer 如何达成一致来分配订阅 topic 的每个分区。比如某个 group 下有 20 个 consumer，它订阅了一个具有 100 个分区的 topic。正常情况下，Kafka 平均会为每个 consumer 分配 5 个分区。这个分配的过程就叫 rebalance。
 
-- PreparingRebalance：此阶段是消费者陆续加入消费组，该组第一个加入的消费者被推举为Leader，当该组所有已知memberId的消费者全部加入后，状态驱动到CompletingRebalance。
+##### 2.3.1 什么时候 reblance ?
 
-- CompletingRebalance：PreparingRebalance状态完成后，如果消费者被推举为Leader，**Leader会采用该消费组中都支持的队列负载算法进行队列分布**，然后将结果回报给组协调器；如果消费者的角色为非Leader，会向组协调器发送同步队列分区算法，组协调器会将Leader节点分配的结果分配给消费者。
+rebalance 的触发条件有三种：
 
-**消费组如果在进行重平衡操作，将会暂停消息消费**，**频繁的重平衡会导致队列消息消费的速度受到极大的影响**。
+- 组成员发生变更（新 consumer 加入组、已有 consumer 主动离开组或已有 consumer 崩溃了——这两者的区别后面会谈到）
+- 订阅主题数发生变更
+- 订阅主题的分区数发生变更
+
+##### 2.3.2 **如何进行组内分区分配？**
+
+Kafka 默认提供了两种分配策略：Range 和 Round-Robin。当然 Kafka 采用了可插拔式的分配策略，你可以创建自己的分配器以实现不同的分配策略。
 
 > 与重平衡相关的消费端参数：
 
@@ -535,7 +631,11 @@ heartbeat.interval.ms
 
 
 
-## 3. kafka 开发手册
+
+
+> 相关资料
+
+1. [从面试角度一文学完 Kafka](https://mp.weixin.qq.com/s/14TvxRQrziqzlm9mggmgGA) 
 
 
 

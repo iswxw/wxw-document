@@ -628,7 +628,19 @@ HBase 操作过程中需要大量的内存开销，毕竟 Table 是可以缓存�
 
 #### 1.2  Hive 整合实践
 
+### 2. 与phoenix 集成
 
+HBase，一个NoSQL数据库，可存储大量非关系型数据。
+
+HBase，可以用HBase shell进行操作，也可以用HBase Java api进行操作。HBase虽然是一个数据库，但是它的查询语句，很不太好用。要是能像使用Mysql等关系型数据库一样用sql语句操作HBase，那就很Perfect了。
+
+**现有工具有很多Hive，Tez，Impala，Shark/Spark，Phoenix等。今天主要记录Phoenix。**
+
+- phoenix，由saleforce.com开源的一个项目，后又捐给了Apache。它**相当于一个Java中间件，帮助开发者，像使用jdbc访问关系型数据库一些，访问NoSql数据库HBase。** 
+
+- phoenix，操作的表及数据，存储在hbase上。phoenix只是需要和Hbase进行表关联起来。然后再用工具进行一些读或写操作。
+
+其实，**可以把Phoenix只看成一种代替HBase的语法的一个工具。虽然可以用java可以用jdbc来连接phoenix，然后操作HBase，但是在生产环境中，不可以用在OLTP中。**在线事务处理的环境中，需要低延迟，而Phoenix在查询HBase时，虽然做了一些优化，但延迟还是不小。所以依然是用在OLAT中，再将结果返回存储下来。
 
 
 

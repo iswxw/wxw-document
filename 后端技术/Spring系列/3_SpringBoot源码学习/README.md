@@ -1,6 +1,4 @@
-## Spring Boot  ![](assets/68747470733a2f2f63692e737072696e672e696f2f6170692f76312f7465616d732f737072696e672d626f6f742f706970656c696e65732f737072696e672d626f6f742d322e342e782f6a6f62732f6275696c642f6261646765.svg) ![](assets/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667.svg)  <!-- {docsify-ignore} -->
-
-
+## Spring Boot  ![](asserts/68747470733a2f2f63692e737072696e672e696f2f6170692f76312f7465616d732f737072696e672d626f6f742f706970656c696e65732f737072696e672d626f6f742d322e342e782f6a6f62732f6275696c642f6261646765.svg) ![](asserts/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667.svg)  <!-- {docsify-ignore} -->
 
 
 
@@ -15,6 +13,14 @@
 ### 2. 后置处理器
 
 > [ConfigurationClassPostProcessor源码解析](https://zhuanlan.zhihu.com/p/82928873) 
+
+
+
+### 3. Spring 事务
+
+> [SpringBoot 与 事务机制](https://blog.csdn.net/qq_41893274/article/details/108713799) 
+
+
 
 ## SpringCloud系列源码
 
@@ -56,15 +62,15 @@ public class WebApplication {
   @Documented
   @Import(FeignClientsRegistrar.class)
   public @interface EnableFeignClients {
-
+  
   	String[] value() default {};
-
+  
   	String[] basePackages() default {};
-
+  
   	Class<?>[] basePackageClasses() default {};
-
+  
   	Class<?>[] defaultConfiguration() default {};
-
+  
   	Class<?>[] clients() default {};
   }
   ```
@@ -1327,7 +1333,7 @@ Response convertResponse(HttpURLConnection connection) throws IOException {
 
 最后放一张读源码时画的脑图
 
-![img](assets/beb77920a15c8b9f003965022c09c3f4.png) 
+<img src="asserts/beb77920a15c8b9f003965022c09c3f4.png" alt="img" style="zoom:80%;" />  
 
 
 

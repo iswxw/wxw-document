@@ -10,10 +10,9 @@ MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结
 - [Download Latest](https://github.com/mybatis/mybatis-3/releases) 
 - [Download Snapshot](https://oss.sonatype.org/content/repositories/snapshots/org/mybatis/mybatis/) 
 - [Mybatis 源码构建](https://github.com/tuguangquan/mybatis) 
+- [wxw-mybatis 源码](https://github.com/GitHubWxw/wxw-mybatis) 学习
 
 ## MyBatis 初识
-
-
 
 
 
@@ -27,7 +26,19 @@ MyBatis SQL映射器框架使将关系数据库与面向对象的应用程序结
 
 ### 4.  MyBatis 一二级缓存详解
 
+#### 4.1 一级缓存
 
+一级缓存默认开启，缓存范围为SqlSession会话，即一个session对象，范围太小，声明周期短。两个session对象查询后，数据存储在不同的内存地址中。当我们在commit提交后会强制清空namespace缓存。
+
+> 高缓存命中率，提高查询速度，使用二级缓存。
+
+#### 4.2 二级缓存
+
+
+
+相关文章
+
+1. https://github.com/GitHubWxw/wxw-concurrent/tree/dev-wxw/cloud-cached 
 
 ## MyBatis 实用篇
 
@@ -96,11 +107,7 @@ List<SchoolCustomer> getSchoolCustomerByPhone(Map<String, Object> params);
 
 
 
-
-
-**相关文章**
-
-1. [Mybatis 从0到1](https://my.oschina.net/u/4728925/blog/4783514) 
+**相关文章** 
 
 
 

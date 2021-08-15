@@ -28,11 +28,11 @@
 
 #### 2. 组件版本
 
-![1](img/1.png)
+<img src="asserts/1.png" alt="1" style="zoom: 67%;" /> 
 
 #### 3. 版本升级
 
-![2](img/2.png)
+<img src="asserts/2.png" alt="2" style="zoom:60%;" /> 
 
 ### （3）官网资料
 
@@ -72,7 +72,7 @@
 
 服务注册/发现是微服务架构中不可或缺的重要组件，起初服务都是单节点的甚至是单体服务，不保障高可用性，也不考虑服务的压力承载，服务之间调用单纯的通过接口访问（HttpClient/RestTemplate），直到后面出现了多个节点的分布式架构，起初的解决手段是在服务端负载均衡，同时在网关层收束接口，使不同的请求转发到对应不同端口上，这也是前后分离防止前端跨域的手段之一：
 
-![5](img/5.png)
+<img src="asserts/5.png" alt="5" style="zoom: 80%;" />  
 
 
 
@@ -82,7 +82,7 @@
 
 注册中心的解决方案很多，zookeeper、Eureka(当时时Eureka2.0已经闭源，不再更新，因此不建议后续项目使用此组件)、etcd、以及consul等。
 
-![6](img/6.png)
+<img src="asserts/6.png" alt="6" style="zoom:80%;" /> 
 
 - Eureka是很优秀的服务注册组件，但是Netflix将2.0闭源后，便已不是最优选择，不过现有的项目使用Eureka 1.x功能已足够使用，不必急于更换技术栈。
 - zookeeper是一个很强大的k-v组件，功能应是这些技术中最多的，但是我们只需要服务注册的组件，paxos的一致性算法也不如raft高效，保持长连接会对服务造成一定的影响。
@@ -102,7 +102,7 @@
 
   ```txt
   有关eureka 2.0的现有开源工作已停止。在2.x分支上作为现有工作资料库的一部分发布的代码库和工件被视为使用后果自负。
-
+  
   Eureka 1.x是Netflix服务发现系统的核心部分，仍然是一个活跃的项目。
   ```
 
@@ -122,7 +122,7 @@
 
 #### 2. zoo.cfg配置文件详解
 
-![3](img/3.png)
+![3](asserts/3.png) 
 
 - zookeeper常用命令
 
@@ -232,7 +232,7 @@ DC：dc1表示该节点属于DataCenter1
 
 ### 2.4 注册中心选型
 
-![13](img/13.png)
+![13](asserts/13.png) 
 
 #### 1. CAP理论知识
 
@@ -244,25 +244,25 @@ DC：dc1表示该节点属于DataCenter1
 
 - 分区容错性（**P**artition tolerance）
 
-  ![8](img/8.png)
+  <img src="asserts/8.png" alt="8" style="zoom:60%;" /> 
 
 最多满足其中的两个特性。也就是下图所描述的。分布式系统要么满足CA,要么CP，要么AP。无法同时满足CAP。
 
 **CAP理论关注粒度是数据，而不是整体系统设计的策略**
 
-![7](img/7.png)
+![7](asserts/7.png)
 
 #### 2. AP(Eureka)
 
-![9](img/9.png)
+![9](asserts/9.png) 
 
-![10](img/10.png)
+<img src="asserts/10.png" alt="10" style="zoom:60%;" /> 
 
 #### 3. CP(Zookeeper/Consul)
 
-![11](img/11.png)
+<img src="asserts/11.png" alt="11" style="zoom:60%;" /> 
 
-![12](img/12.png)
+<img src="asserts/12.png" alt="12" style="zoom:80%;" />  
 
 ### 2.5 Ribbon 负载均衡
 
@@ -278,7 +278,7 @@ Ribbon 提供客户端的软件负载均衡算法和服务调用。
 
 #### 2. 负载均衡理论知识
 
-![14](img/14.png)
+<img src="asserts/14.png" alt="14" style="zoom:60%;" /> 
 
 - **集中式LB**
 
@@ -294,14 +294,14 @@ Ribbon 提供客户端的软件负载均衡算法和服务调用。
 
 #### 3. 负载均衡架构
 
-![15](img/15.png)
+<img src="asserts/15.png" alt="15" style="zoom:60%;" /> 
 
 - Ribbon在工作中分为两步：
 
   1. 选择EurekaServer,优先选择在同一个区域内负载较少的server
   2. 再根据用户指定的策略，在从server取到的服务注册列表中选择一个地址。其中Ribbon提供了多种策略，比如：轮询、随机、根据响应时间加权。
 
-  ![16](img/16.png)
+  <img src="asserts/16.png" alt="16" style="zoom:60%;" /> 
 
 **Ribbon其实就是一个软负载均衡的客户端组件，他可以和其他所需请求的客户端结合使用，和eureka结合只是其中的一个实例。**
 
@@ -378,7 +378,7 @@ large_client_header_buffers 默认值 ：large_client_header_buffers 4 4k/8k
 
 > **IRule:根据特定算法从服务列表中选取一个要访问的服务**
 
-![17](img/17.png)
+<img src="asserts/17.png" alt="17" style="zoom: 80%;" />  
 
 1. RoundRobinRule: 轮询
 
@@ -400,13 +400,13 @@ large_client_header_buffers 默认值 ：large_client_header_buffers 4 4k/8k
 
 > **如何替换Ribbon的默认规则**
 
-![18](img/18.png)
+<img src="asserts/18.png" alt="18" style="zoom:60%;" /> 
 
 > **Ribbon 负载均衡算法**
 
 - 原理
 
-![19](img/19.png)
+<img src="asserts/19.png" alt="19" style="zoom:60%;" /> 
 
 ### 2.6 OpenFeign服务调用
 
@@ -679,9 +679,9 @@ public class OrderFeignController {
 
 - 访问<http://localhost/consumer/payment/get/5>
 
-![图片](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL20wQjhyNVZhQzl4eDdFaXcucG5nIXRodW1ibmFpbA.png)
+![图片](asserts/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL20wQjhyNVZhQzl4eDdFaXcucG5nIXRodW1ibmFpbA.png) 
 
-![图片](assets/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL2I2N3pzUnNXbnNJUWVPcXoucG5nIXRodW1ibmFpbA.png)
+![图片](asserts/aHR0cHM6Ly91cGxvYWRlci5zaGltby5pbS9mL2I2N3pzUnNXbnNJUWVPcXoucG5nIXRodW1ibmFpbA.png) 
 
 可以看到负载均衡起作用了。
 
@@ -689,7 +689,7 @@ public class OrderFeignController {
 
 #### 6. Open调用关系总结
 
-![22](img/22.png)
+<img src="asserts/22.png" alt="22" style="zoom:60%;" /> 
 
 #### 7. OpenFegin 高级功能
 
@@ -699,7 +699,7 @@ public class OrderFeignController {
 
 - 调用超时测试接口：<http://localhost:9001/consumer/payment/feign/timeout>会出现  
 
-  ![23](img/23.png)
+  <img src="asserts/23.png" alt="23" style="zoom:67%;" />  
 
 默认Feign客户端只等待一秒钟，但是服务端处理需要超过一秒，导致Feign客户端不想等待了，直接报错，为了避免这种情况，有时候我们需要设置Feign客户端的超时控制。（yml文件开启超时控制）
 
@@ -798,7 +798,7 @@ feign:
       @RequestMapping(method = RequestMethod.GET, value = "/hello")
       Hello iFailSometimes();
   }
-
+  
   @Component
   static class HystrixClientFallbackFactory implements FallbackFactory<HystrixClient> {
       @Override
@@ -819,17 +819,17 @@ feign:
 
 - 分布式系统面临的问题
 
-  ![24](img/24.png)
+  <img src="asserts/24.png" alt="24" style="zoom:60%;" /> 
 
 - 服务雪崩
 
-  ![25](img/25.png)
+  <img src="asserts/25.png" alt="25" style="zoom:60%;" /> 
 
 > 通常当你发现一个模块下的某个实例失败后，这时这个模块依然还会接受流量然后这个有问题的模块还调用了其他的模块，这样就发生了级联故障，或者叫雪崩。
 
 #### 1. Hystrix断路器 概述
 
-![26](img/26.png)
+![26](asserts/26.png) 
 
 - 主要功能
   1. 服务降级
@@ -917,7 +917,6 @@ feign:
 
 - 原生Linux版: ` /usr/local/software/nacos`
 - 自定义mysql-linux版：` /usr/local/software/nacos-mysql`
-
 
 
 

@@ -14,13 +14,13 @@
 
 #### 1、Dubbo 是什么？
 
-##### **临阵磨刀**  
+**临阵磨刀**  
 
 在单体架构拆分成分布式架构之后，远程通信的需求还是很有必要的： 
 
 ![60662014491](assets/1606620144913.png) 
 
-> 建立在远程通信的基础上进一步思考的问题——RPC(Remote Procedure call) 远程过程调用 ，比如Dubbo、Thrift、gRPC、OPenfegin等等
+> 建立在远程通信的基础上进一步思考的问题——RPC(Remote Procedure call) 远程过程调用 ，比如Dubbo、Thrift、gRPC、openfegin等等
 
 1. 数据传输方式：Socket、Http、Netty（高性能IIO通信框架）等
 
@@ -251,7 +251,7 @@ config的目录
 - all/pow.xml：定义了dubbo的打包脚本，使用dubbo库的时候，需要引入改pom文件。
 - dubbo-parent：是dubbo的父pom，dubbo的maven模块都会引入该pom文件。
 
-### Dubbo前言
+### Dubbo基础回顾
 
 #### （1）什么是SPI ？
 
@@ -369,8 +369,6 @@ Dubbo具有以下功能：连接性，鲁棒性，可伸缩性和可升级性。
 
 - 地址入口：http://dubbo.apache.org/en-us/docs/dev/design.html
 
-![/dev-guide/images/dubbo-framework.jpg](http://dubbo.apache.org/docs/en-us/dev/sources/images/dubbo-framework.jpg)
-
 图片描述：
 
 - 浅蓝色背景的左侧区域显示服务使用者接口，浅绿色背景的右侧区域显示服务提供者接口，中间区域显示两侧。
@@ -387,45 +385,6 @@ Dubbo具有以下功能：连接性，鲁棒性，可伸缩性和可升级性。
 - **交换层**：的请求和响应，同步传输异步封装，`Request`并且`Response`是中心，扩展接口是`Exchanger`，`ExchangeChannel`，`ExchangeClient`，`ExchangeServer`
 - **传输层**：米娜和网状的抽象，`Message`是中心，扩展接口是`Channel`，`Transporter`，`Client`，`Server`，`Codec`
 - **连载层**：可重复使用的工具，扩展接口`Serialization`，`ObjectInput`，`ObjectOutput`，`ThreadPool`
-
-##### 1、依赖关系
-
-![/dev-guide/images/dubbo-relation.jpg](http://dubbo.apache.org/docs/en-us/dev/sources/images/dubbo-relation.jpg)
-
-- 蓝色表示与业务交互，绿色表示仅与Dubbo内部交互。
-- 该映像仅包括RPC层，不包括Remoting层，整个Remoting隐藏在Protocol层中。
-
-##### 2、通话链
-
-- 展开总体设计图的红色调用链
-
-![/dev-guide/images/dubbo-extension.jpg](http://dubbo.apache.org/docs/en-us/dev/sources/images/dubbo-extension.jpg)
-
-##### 3、发布服务顺序
-
-- 扩展服务提供商的初始化链以暴露服务，该服务位于整体设计图的左侧，时序图如下所示：
-
-![/dev-guide/images/dubbo-export.jpg](http://dubbo.apache.org/docs/en-us/dev/sources/images/dubbo-export.jpg)
-
-#### （4）初始化过程
-
-##### 1、服务发布
-
-- #### 仅公开服务端口：
-
-没有注册表时，直接向提供者公开，解析的URL格式为： ` `ServiceConfig`： `dubbo://service-host/com.foo.FooService?version=1.0.0`。` 
-
-基于扩展点自适应机制，通过识别URL的协议头来调用服务器的export() 方法 DubboProtocol 并打开服务器端口 ` dubbo://` 。
-
-- #### 公开到注册表：
-
-将提供者的地址公开给Registry, URL格式解析为`ServiceConfig`：
-
-`registry://registry-host/org.apache.dubbo.registry.RegistryService?export=URL.encode("dubbo://service-host/com.foo.FooService?version=1.0.0")`，
-
-基于扩展点自适应机制，通过识别URL的协议头来调用服务器的export() 方法 DubboProtocol 并打开服务器端口 ` dubbo://` 。
-
-
 
 
 
