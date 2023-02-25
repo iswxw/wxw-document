@@ -1,7 +1,7 @@
 
 <!-- _coverpage.md -->
 
-<img width="180px" style="border-radius: 50%" bor src="https://blog.wxw.plus/GitHubWxw.github.io/img/head.jpg">
+<img width="180px" style="border-radius: 50%" bor src="https://profile.csdnimg.cn/A/D/4/1_qq_41893274">
 
 # wxw-document <small>v1.0.0</small>
 
