@@ -1,7 +1,7 @@
 
 <!-- _coverpage.md -->
 
-<img width="180px" style="border-radius: 50%" bor src="https://profile.csdnimg.cn/A/D/4/1_qq_41893274">
+<img width="180px" style="border-radius: 50%" bor src="https://foruda.gitee.com/avatar/1677028826419692338/4957203_javastudywxw_1603295555.png">
 
 # wxw-document <small>v1.0.0</small>
 
